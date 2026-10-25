@@ -48,5 +48,6 @@ Keep the W1-W4 scientific MVR first. Human-reviewed metrics and core/model check
 - `ALGORITHMS.md`: algorithm/data contracts and primary references, including robot-action DPO/GRPO adaptations.
 - `SIMULATION_DEMOS.md`: current replay and planned flagship features, evidence requirements.
 - `claims_ledger.md`: every externally reported research number; currently no result claims.
+- `STARTER_REPORT.md`: actual diagnostic runs, verification, failure visibility, and remaining gates.
 
 `make starter` runs checks and starter diagnostics when GNU Make and the pinned environment are available. `make reproduce` deliberately fails until the reviewed scientific reproduction exists; a few diagnostics are not a completed E1-E12 study. A single collision-free replay, model spread, transport interpolation, or pairwise shield is not a global safety certificate.
