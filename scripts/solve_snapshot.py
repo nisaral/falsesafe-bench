@@ -56,7 +56,7 @@ def main() -> int:
         started = time.monotonic()
         grid, value = solve_dubins_brt(speed=require_positive(config, 'speed'),
                                       turn_rate=require_positive(config, 'turn_rate'), horizon=horizon,
-                                      n=size, lo=lower, hi=upper, obstacles=config['obstacles'],
+                                      grid_size=size, lo=lower, hi=upper, obstacles=config['obstacles'],
                                       accuracy=config['accuracy'])
     else:
         raise ConfigurationError('Unknown true-dynamics system')

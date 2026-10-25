@@ -1,0 +1,22 @@
+{
+  "image": "preview.png",
+  "image_sha256": "26f0800984f31c390c58a2ce41b70998e2da45ad3746d7cce5cd8f1fdc55da17",
+  "source_run_id": "20261026_005759_simulation_s1_8ea95648",
+  "source_commit": "6c6b80a5027e0a755d15b21f2328bcf702edcd27",
+  "source_replay_sha256": "5567ded35709dd665381e15f912d95ab384be79e1d7f78983dbca60e2cc87692",
+  "source_html_sha256": "4739bfdc43c62d23d8128e6c17d7cf71e2c110d44ad8268db236019a35234251",
+  "browser_script_sha256": "42481ff4cb8ed1d9e0d3cc11b6f36fbb4bcd40a802621d0eaf888e76056ccec4",
+  "source_browser_check": "results/runs/20261026_005759_simulation_s1_8ea95648/browser_check.json",
+  "config": "configs/starters/fleet.json",
+  "seed": 1,
+  "split_seed": 42,
+  "split_role": "validation",
+  "selected_frame_index": 83,
+  "frame_selection_rule": "fixed midpoint of the recorded timeline; no outcome selection",
+  "browser": "Chrome/156.0.8078.47",
+  "node": "v22.13.0",
+  "learning": false,
+  "safety_certificate": false,
+  "benchmark_metrics": false,
+  "notes": "Unmodified screenshot of a scripted diagnostic, including a recorded collision. Full generated runs are retained locally and Git-ignored; regenerate using the source commit and config. This is not a trained-policy result."
+}

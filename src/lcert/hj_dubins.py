@@ -29,11 +29,11 @@ class DubinsCar(hj.ControlAndDisturbanceAffineDynamics):
 
 
 def solve_dubins_brt(speed: float = 1.0, turn_rate: float = 1.6, horizon: float = 1.0,
-                     n: int = 101, lo=(-4.0, -3.0, -np.pi), hi=(4.0, 3.0, np.pi),
+                     grid_size: int = 101, lo=(-4.0, -3.0, -np.pi), hi=(4.0, 3.0, np.pi),
                      obstacles=((0.0, 0.0, 0.94),), accuracy: str = 'very_high',
                      disturbance_bounds=(0.0, 0.0, 0.0)):
-    if isinstance(n, bool) or not isinstance(n, int) or n < 9:
-        raise ValueError('Dubins grid n must be an integer >= 9; do not shrink a configured grid silently')
+    if isinstance(grid_size, bool) or not isinstance(grid_size, int) or grid_size < 9:
+        raise ValueError('Dubins grid size must be an integer >= 9; do not shrink a configured grid silently')
     lower, upper = np.asarray(lo, float), np.asarray(hi, float)
     if lower.shape != (3,) or upper.shape != (3,) or not np.isfinite(lower).all() or not np.isfinite(upper).all() or not np.all(lower < upper):
         raise ValueError('Dubins grid requires finite, ordered 3D bounds')
@@ -43,7 +43,7 @@ def solve_dubins_brt(speed: float = 1.0, turn_rate: float = 1.6, horizon: float 
     if circles.ndim != 2 or circles.shape[1] != 3 or circles.shape[0] == 0 or not np.isfinite(circles).all() or np.any(circles[:, 2] <= 0):
         raise ValueError('At least one finite positive-radius failure circle is required')
     grid = hj.Grid.from_lattice_parameters_and_boundary_conditions(
-        hj.sets.Box(lower, upper), (n, n, n), periodic_dims=(2,))
+        hj.sets.Box(lower, upper), (grid_size, grid_size, grid_size), periodic_dims=(2,))
     target = jnp.min(jnp.stack([
         jnp.sqrt((grid.states[..., 0] - center_x)**2 + (grid.states[..., 1] - center_y)**2) - radius
         for center_x, center_y, radius in circles]), axis=0)

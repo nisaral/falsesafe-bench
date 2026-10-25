@@ -4,6 +4,10 @@ Learn dynamics, policies, population flows, and incentives from simulated behavi
 
 **Status: functional starter, not completed research.** The current demos use real, seeded simulator trajectories with scripted controllers. No dynamics model or RL policy has been trained, no learned-model safety filter is attached, and no benchmark result or unconditional safety guarantee is claimed.
 
+![Recorded scripted fleet replay with a visible collision; not learned or certified](demos/preview.png)
+
+Actual midpoint screenshot of the seeded fleet diagnostic, including its recorded failure. `demos/preview_manifest.json` links the source commit, config, run and hashes. This preview is not a successful-learning or safety result; the full replay preserves later domain exits too.
+
 ## Available now
 
 | Track | Implemented starter | Still gated or planned |
