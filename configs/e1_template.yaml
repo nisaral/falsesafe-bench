@@ -1,0 +1,10 @@
+# Template only. Copy to a new file per run set; fill before running. Not yet used by any code.
+experiment: E1
+system: double_integrator   # or dubins
+seeds: [0, 1, 2, 3, 4]
+split_seed: 12345
+data_sizes: [100, 300, 1000, 3000, 10000]
+coverage_gap: {enabled: true, region: null}   # must be set explicitly before running
+noise_std: null                               # must be set explicitly before running
+models: [ensemble_mlp, gp]
+ensemble: {members: 5, hidden: [64, 64]}

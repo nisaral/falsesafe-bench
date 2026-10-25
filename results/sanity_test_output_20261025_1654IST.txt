@@ -1,0 +1,17 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.1.1, pluggy-1.7.0 -- /workspace/lcenv/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/learning_certify_project
+configfile: pyproject.toml
+testpaths: tests
+collecting ... collected 4 items
+
+T=0.5 max|V-Va|=0.0006657 mean=6.427e-05 IoU=1.00000 false_safe_frac=0.00000 cell=0.0400
+PASSED
+T=1.0 max|V-Va|=0.0009511 mean=0.0001771 IoU=1.00000 false_safe_frac=0.00000 cell=0.0400
+PASSED
+negative control max|V-Va|=0.25
+PASSED
+tests/test_integrators.py::test_rk4_matches_closed_form PASSED
+
+============================== 4 passed in 2.25s ===============================

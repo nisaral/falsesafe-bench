@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "runlog",
+  "type": "object",
+  "required": ["run_id","experiment","command","git_commit","git_tree_clean","config_path","config_sha256","seed","split_seed","start_time_ist","end_time_ist","python_version","library_versions","hardware","status","metrics_path","test_split_used"],
+  "properties": {
+    "run_id": {"type": "string"},
+    "experiment": {"type": "string", "enum": ["E0","E1","E2","E3","E4","E5","sanity"]},
+    "command": {"type": "string"},
+    "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "git_tree_clean": {"type": "boolean"},
+    "config_path": {"type": "string"},
+    "config_sha256": {"type": "string"},
+    "seed": {"type": "integer"},
+    "split_seed": {"type": "integer"},
+    "start_time_ist": {"type": "string"},
+    "end_time_ist": {"type": "string"},
+    "python_version": {"type": "string"},
+    "library_versions": {"type": "object"},
+    "hardware": {"type": "string"},
+    "status": {"type": "string", "enum": ["ok","failed","invalid"]},
+    "failure_reason": {"type": "string"},
+    "metrics_path": {"type": "string"},
+    "test_split_used": {"type": "boolean"},
+    "notes": {"type": "string"}
+  }
+}

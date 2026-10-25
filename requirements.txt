@@ -1,0 +1,13 @@
+# Pins verified on PyPI 2026-10-25 (IST). jax..pytest, torch, tqdm were installed and run on the box; gpytorch, matplotlib, POT, pyyaml verified on PyPI only.
+jax==0.12.0.1
+jaxlib==0.12.0.1
+hj_reachability==0.7.0
+tqdm==4.70.1
+numpy==2.5.4
+scipy==1.18.1
+torch==2.14.1
+gpytorch==1.15.2
+matplotlib==3.11.2
+POT==0.9.7.post1
+pyyaml==6.0.3
+pytest==9.1.1
