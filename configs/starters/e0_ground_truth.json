@@ -1,0 +1,11 @@
+{
+  "experiment": "E0",
+  "seed": 0,
+  "split_seed": 42,
+  "split_role": "validation",
+  "system": "double_integrator",
+  "umax": 1.0,
+  "horizons": [0.5, 1.0],
+  "grid": {"n": 101, "lo": [-1.0, -2.0], "hi": [3.0, 2.0]},
+  "accuracy": "very_high"
+}

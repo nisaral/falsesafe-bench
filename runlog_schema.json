@@ -5,7 +5,7 @@
   "required": ["run_id","experiment","command","git_commit","git_tree_clean","config_path","config_sha256","seed","split_seed","start_time_ist","end_time_ist","python_version","library_versions","hardware","status","metrics_path","test_split_used"],
   "properties": {
     "run_id": {"type": "string"},
-    "experiment": {"type": "string", "enum": ["E0","E1","E2","E3","E4","E5","sanity"]},
+    "experiment": {"type": "string", "enum": ["E0","E1","E2","E3","E4","E5","E6","E7","E8","E9","E10","E11","E12","sanity","simulation","data"]},
     "command": {"type": "string"},
     "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "git_tree_clean": {"type": "boolean"},
@@ -14,14 +14,19 @@
     "seed": {"type": "integer"},
     "split_seed": {"type": "integer"},
     "start_time_ist": {"type": "string"},
-    "end_time_ist": {"type": "string"},
+    "end_time_ist": {"type": ["string", "null"]},
     "python_version": {"type": "string"},
     "library_versions": {"type": "object"},
     "hardware": {"type": "string"},
-    "status": {"type": "string", "enum": ["ok","failed","invalid"]},
+    "status": {"type": "string", "enum": ["running","ok","failed","invalid"]},
     "failure_reason": {"type": "string"},
     "metrics_path": {"type": "string"},
     "test_split_used": {"type": "boolean"},
-    "notes": {"type": "string"}
+    "notes": {"type": "string"},
+    "hardware": {"type": "object"},
+    "source_config_path": {"type": "string"},
+    "source_config_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "purpose": {"type": "string"},
+    "artifact_hashes": {"type": "object"}
   }
 }

@@ -1,0 +1,16 @@
+{
+  "experiment": "data",
+  "seed": 0,
+  "split_seed": 42,
+  "split_role": "train",
+  "system": "double_integrator",
+  "state_lo": [-1.0, -2.0],
+  "state_hi": [3.0, 2.0],
+  "umax": 1.0,
+  "dt": 0.05,
+  "trajectory_steps": 10,
+  "trajectory_counts": {"train": 32, "validation": 8, "test": 8},
+  "derivative_observation_noise_std": 0.01,
+  "coverage_gap": {"enabled": true, "lo": [0.25, -0.75], "hi": [0.9, 0.75]},
+  "max_sampling_attempts": 20000
+}
