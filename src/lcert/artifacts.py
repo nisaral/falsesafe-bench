@@ -85,6 +85,8 @@ def validate_runlog(record: dict[str, Any], root: Path | None = None) -> None:
         raise ValueError('Completed or failed run must have an actual end timestamp')
     if not record['git_tree_clean']:
         raise ValueError('Runlog cannot certify an uncommitted experiment tree')
+    if record['status'] == 'ok' and (record.get('git_commit_end') != record['git_commit'] or not record.get('git_tree_clean_end')):
+        raise ValueError('Successful runs require the same clean source tree at completion')
 
 
 class _Tee:
@@ -108,6 +110,9 @@ class RunRecord:
         if config.get('split_role') == 'test':
             raise ConfigurationError('Final test access needs reviewed evaluation and ledger logging')
         self.root = project_root()
+        schema = json.loads((self.root / 'runlog_schema.json').read_text(encoding='utf-8'))
+        if config['experiment'] not in schema['properties']['experiment']['enum']:
+            raise ConfigurationError('Experiment identifier is not registered in the runlog schema')
         source = source.resolve()
         if not source.is_relative_to(self.root):
             raise ConfigurationError('Run config must be inside this project')
@@ -115,6 +120,8 @@ class RunRecord:
         stamp = datetime.now(IST)
         identifier = f'{stamp:%Y%m%d_%H%M%S}_{config["experiment"]}_s{config["seed"]}_{uuid4().hex[:8]}'
         self.directory = self.root / 'results' / 'runs' / identifier
+        if not self.directory.resolve().is_relative_to(self.root):
+            raise ConfigurationError('Run directory must remain inside the project')
         self.directory.mkdir(parents=True, exist_ok=False)
         copied_config = self.directory / 'config.yaml'
         write_json(copied_config, config)
@@ -153,6 +160,27 @@ class RunRecord:
         return self
 
     def __exit__(self, error_type, error, error_traceback) -> bool:
+        original_error = error
+        integrity_error = None
+        self.record['git_tree_clean_end'] = False
+        try:
+            commit, clean = git_snapshot(self.root)
+            self.record['git_commit_end'] = commit
+            self.record['git_tree_clean_end'] = clean
+            if commit != self.record['git_commit']:
+                raise RuntimeError('Source commit changed during the run')
+            source = self.root / self.record['source_config_path']
+            copied = self.root / self.record['config_path']
+            if sha256_file(source) != self.record['source_config_sha256'] or sha256_file(copied) != self.record['config_sha256']:
+                raise RuntimeError('Run configuration changed during execution')
+            for filename, expected in self.record['artifact_hashes'].items():
+                if sha256_file(self.directory / filename) != expected:
+                    raise RuntimeError(f'Registered artifact changed during execution: {filename}')
+        except (OSError, RuntimeError, subprocess.SubprocessError) as verification_error:
+            integrity_error = verification_error
+            self.record['integrity_failure_reason'] = str(verification_error)
+            if error is None:
+                error_type, error, error_traceback = type(verification_error), verification_error, verification_error.__traceback__
         if error is not None:
             traceback.print_exception(error_type, error, error_traceback)
             self.record['failure_reason'] = f'{error_type.__name__}: {error}'
@@ -167,4 +195,6 @@ class RunRecord:
         self.track(self.directory / 'stdout.txt')
         validate_runlog(self.record, self.root)
         write_json(self.directory / 'runlog.json', self.record)
+        if original_error is None and integrity_error is not None:
+            raise integrity_error
         return False

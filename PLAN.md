@@ -3,7 +3,7 @@
 Author: Keyush Nisar. Plan written 2026-10-25 (IST). Horizon: 6 weeks (Oct 26 to Dec 6, 2026), ahead of the Dec 15 deadlines (UVic, MBZUAI, McGill).
 Status markers: [READ] = abstract read on arxiv.org on 2026-10-25. [TITLE] = only title seen. [UNVERIFIED] = not checked.
 
-Scope expanded with human approval on 2026-10-25 (IST). The six-week horizon remains the scientific core, not a commitment to finish every extension. All robot, RL, population, game, and visual work below is planned; no new implementation or experimental result is implied by this revision.
+Scope expanded with human approval on 2026-10-25 (IST). The six-week horizon remains the scientific core, not a commitment to finish every extension. The subsequent human request authorises starter implementation and GitHub setup/push: executable diagnostics and numerical primitives now exist (see START_HERE.md). Full training, safety-filter integration, protected evaluation, and reported extension studies remain gated; this is not a completed research result.
 
 ## 1. Motivation
 HJ reachability gives a safe set only if the dynamics model is right. In practice the model is learned from finite, unevenly covered data. A learned model that is confidently wrong in an unvisited region can make the computed safe set larger than the true one. That is the dangerous error ("false-safe"). The question is how that error grows with data size and with coverage gaps, and whether the model's own uncertainty, used as an HJ disturbance bound, closes it.
@@ -121,8 +121,8 @@ Search notes (arXiv abstract search, loose matching, counts rough): "reachabilit
   - Always state that ensemble disagreement for HJ safety is already used (2609.34300) and what is different here.
 
 ## 12. Compute budget
-- DI 2D grid 101^2: about 1 s per solve on CPU (measured on the box: whole 4-test suite 2.1 s).
-- Dubins 3D 101^3: estimate seconds to a minute per solve on CPU [UNVERIFIED]. E1 to E3: about 5 systems/settings x 5 N x 2 gap x 5 seeds x ~5 k values approx 1,250 solves. Budget: under 1 day CPU.
+- DI 2D grid 101^2 and Dubins 3D grid 101^3 retain the SCOPE.md per-solve limits. Actual starter solve timings belong in logged snapshot manifests; earlier setup-box timings are not a portable runtime guarantee.
+- E1 to E3 require the full reviewed system/data/gap/seed/inflation schedule. Estimate the whole-study runtime from verified runs before launching it; do not silently lower grid sizes or seed counts to fit an estimate.
 - Ensembles/GPs: small (thousands of points); exact GP up to N=10k needs GPU or sparse GP; budget 2 GPU-hours.
 - DeepReach stretch: several GPU-hours per system on the 24 GB card [UNVERIFIED].
 
@@ -133,8 +133,8 @@ These are future experiments, not new results or changes to H1 to H5. Proposed m
 
 | Exp | Question and method | Required comparison/check | Proposed outputs |
 |---|---|---|---|
-| E6: learning robot | Can a small PyTorch PPO navigation policy use a learned-dynamics HJ shield without losing all task progress? Start with one fixed-speed Dubins robot in a bounded obstacle arena | Same frozen policy: no shield, nominal shield, uncertainty-aware shield, true-dynamics oracle shield; scripted controller baseline. Separate shielded-training runs only at matched budgets | Collision and goal-reach fractions over a fixed horizon, interventions, time to goal, model error, and logged replay |
-| E7: learning fleet | How do shared/independent PPO policies and local shields behave for cooperative goal assignment or competitive crossing? Begin with the E4 three-agent setting | Scripted agents; unshielded and shielded matched policies; shared vs independent learners. Include deliberate pairwise-control conflicts; evaluate equilibrium claims separately | Fleet and per-agent collision/goal statistics, deadlock and intervention counts, pairwise FSV, and trajectories |
+| E6: learning robot | Can a small navigation policy use a learned-dynamics HJ shield without losing all task progress? Start with a PPO baseline and one fixed-speed Dubins robot; broader on/off-policy, offline, preference, and grouped comparisons are specified in ALGORITHMS.md | Same frozen policy: no shield, nominal shield, uncertainty-aware shield, true-dynamics oracle shield; scripted controller baseline. Separate shielded-training and algorithm comparisons only at reviewed matched budgets | Collision and goal-reach fractions over a fixed horizon, interventions, time to goal, model error, and logged replay |
+| E7: learning fleet | How do MAPPO/shared and independent PPO policies and local shields behave for cooperative goal assignment or competitive crossing? Begin with the E4 three-agent setting; critic/observation contracts require review | Scripted agents; unshielded and shielded matched policies; shared vs independent learners. Include deliberate pairwise-control conflicts; evaluate equilibrium claims separately | Fleet and per-agent collision/goal statistics, deadlock and intervention counts, pairwise FSV, and trajectories |
 | E8: population OT | Can entropic OT between observed fleet-position distributions explain held-out intermediate population snapshots? Use POT and simulator-generated data | Static/linear interpolation and known-simulator propagation; mass conservation and marginal residuals. Snapshot matching alone does not identify individual trajectories or incentives | Population discrepancy on held-out times, transport cost, residuals, and density/flow replay |
 | E9: Schrodinger bridge | Infer a finite-horizon stochastic path distribution between population marginals relative to an explicitly declared reference dynamics | Known-reference propagation and E8; check endpoint constraints, intermediate marginals, process-noise assumptions, and path-space objective. An OT interpolation alone is not a bridge | Endpoint/intermediate errors, numerical residuals, and sampled path replay |
 | E10: mean-field game | Solve a separate small discrete congestion game with a representative agent coupled to the population distribution | Independent best response to a frozen population and a cooperative planner; check best-response/distribution consistency and compare against a finite-agent simulation | Equilibrium consistency residuals, congestion/cost summaries, and density evolution; no equilibrium claim from a crowd animation alone |
@@ -143,9 +143,11 @@ These are future experiments, not new results or changes to H1 to H5. Proposed m
 
 E4 supplies the initial fleet safety study and E5 supplies the original QRE incentive-identifiability study. RL behaviour and QRE-generated behaviour must remain distinct datasets unless an explicitly reviewed model links them.
 
-Implementation locations, when authorised: src/lcert/envs/, rl/, safety/, population/, games/, constraints/, and visualization/, with entry points under scripts/. This revision does not create those modules. Use existing PyTorch/NumPy/POT/Matplotlib pins first; external RL/simulator/graphics frameworks require separate dependency approval.
+Starter implementations now live in src/lcert/envs/, rl/, population/, games/, constraints/, and visualization/, with entry points under scripts/. Learned-model safety filters and full study/training runners are not yet implemented. Use existing PyTorch/NumPy/POT/Matplotlib pins; external RL/simulator/graphics frameworks require separate dependency approval.
 
-The current runlog_schema.json accepts E0 to E5 and sanity only. E6 to E12 cannot run until the schema supports their identifiers and the extra checkpoint/rollout provenance is reviewed. Do not bypass validation or record an extension under a core identifier.
+The starter runlog schema reserves E0 to E12 plus sanity/simulation/data identifiers. Schema acceptance is not scientific approval: E1 to E12 remain blocked by the CLI until their protocol/evaluator/training gates are implemented and reviewed. Scripted robot and data diagnostics are not relabelled E6/E7 studies. Additional learned checkpoint/rollout provenance still needs review.
+
+Broader algorithm exploration is approved as a direction, not a result: REINFORCE/A2C/PPO, robot-action DPO/GRPO-style objectives, behaviour cloning, SAC/TD3, IQL/CQL, and MAPPO/independent PPO. Objective functions, replay, and policy-network primitives exist where explicitly marked in ALGORITHMS.md; complete trainers and matched comparisons do not. DPO/GRPO are proposed robot-action adaptations, not new language-model training or established robot-safety methods.
 
 ## 14. Flagship demonstration and delivery gates
 Working title: Learn-and-Shield Robot Lab. The full visual/artifact specification is in SIMULATION_DEMOS.md.

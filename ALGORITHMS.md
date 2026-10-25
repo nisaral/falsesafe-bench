@@ -7,10 +7,10 @@ Status: starter objectives and policy-network primitives, not trained algorithms
 - Robot DPO-style objective: preferred vs rejected trajectory log-likelihood ratios relative to a frozen reference policy. Pairs must share the same initial/context specification; sum the actual robot-action log-probabilities over each trajectory. This is offline preference optimisation, not an online exploration algorithm.
 - Robot GRPO-style objective: grouped rollouts from the same task context, group-relative rewards, valid-action masks, clipped ratios, and reference-policy KL estimation. Equal-reward groups have zero reward advantages, not NaNs.
 - Behaviour cloning: an explicit demonstrator-labelled offline baseline.
-- IQL expectile value loss: a building block only; replay, advantage-weighted actor fitting, and the complete IQL trainer are not implemented.
+- IQL expectile value loss: a building block only; the generic replay buffer exists, but IQL dataset integration, advantage-weighted actor fitting, and the complete trainer do not.
 - Categorical robot actor-critic: a small network for discrete bounded turn-rate commands. This is untrained source code, not a learned controller used in the starter demo.
 
-See src/lcert/rl/objectives.py, policies.py, and catalog.py. Numerical smoke checks use synthetic inputs and gradients only; they are not model/policy training or performance evidence.
+See src/lcert/rl/objectives.py, policies.py, replay.py, tasks.py, and catalog.py. Run `python scripts/check_scaffold.py` in the pinned environment. These checks use synthetic inputs and gradients only; they are not model/policy training or performance evidence. NavigationReward is a proposed reward primitive, not a frozen, human-reviewed benchmark reward.
 
 ## Registered next algorithms
 SAC and TD3 for continuous-control/off-policy comparisons; IQL and CQL for offline data; MAPPO and independent PPO for multi-agent comparisons. Their catalogue entries describe required data and critic contracts, and explicitly say when a full trainer is absent. Do not substitute one algorithm for another or claim a trainer exists because its name is registered.

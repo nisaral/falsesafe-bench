@@ -1,0 +1,13 @@
+{
+  "experiment": "E0",
+  "seed": 0,
+  "split_seed": 42,
+  "split_role": "validation",
+  "system": "dubins",
+  "speed": 1.0,
+  "turn_rate": 1.6,
+  "horizons": [1.0],
+  "grid": {"n": 101, "lo": [-4.0, -3.0, -3.141592653589793], "hi": [4.0, 3.0, 3.141592653589793]},
+  "obstacles": [[0.0, 0.0, 0.94]],
+  "accuracy": "very_high"
+}

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import torch
 from torch import nn
 from torch.distributions import Categorical
@@ -36,6 +38,6 @@ class CategoricalActorCritic(nn.Module):
 
 
 def discrete_turn_rates(turn_rate: float) -> tuple[float, float, float]:
-    if turn_rate <= 0:
-        raise ValueError('Turn-rate authority must be positive')
+    if isinstance(turn_rate, bool) or not math.isfinite(turn_rate) or turn_rate <= 0:
+        raise ValueError('Turn-rate authority must be positive and finite')
     return (-turn_rate, 0.0, turn_rate)
