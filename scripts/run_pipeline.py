@@ -47,6 +47,7 @@ def run_single_condition(
     gap_enabled: bool,
     inflation_k_values: list[float],
     output_dir: Path,
+    v_true_precomputed: np.ndarray | None = None,
 ) -> dict[float, CertificationMetrics]:
     """Execute training, reachability solve, and certification for a single seed & condition."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -108,7 +109,9 @@ def run_single_condition(
     p_lin = np.linspace(lo[0], hi[0], grid_size)
     v_lin = np.linspace(lo[1], hi[1], grid_size)
     P, Vv = np.meshgrid(p_lin, v_lin, indexing="ij")
-    if base_config.get("system") == "double_integrator_hidden_physics":
+    if v_true_precomputed is not None:
+        v_true = v_true_precomputed
+    elif base_config.get("system") == "double_integrator_hidden_physics":
         from lcert.hj_di import solve_di_hidden_physics_brt
         hp = base_config.get("hidden_physics", {})
         _, v_true = solve_di_hidden_physics_brt(
@@ -183,21 +186,52 @@ def run_pipeline(config_path: Path, max_sizes: int | None = None) -> dict:
     print("=" * 70)
     print(f"=== falsesafe-bench: Running {config.get('experiment', 'E1')} Sweep ===")
     print(f"System: {config.get('system')} | Seeds: {seeds} | Sizes: {data_sizes}")
-
     print(f"Inflation k: {inflation_k_values} | Output: {results_dir.relative_to(ROOT)}")
     print("=" * 70, flush=True)
 
+    gap_conditions = config.get("gap_conditions", [True, False])
     summary_records = []
-    # Loop over gap conditions: True (with coverage gap), False (uniform coverage)
-    for gap_enabled in (True, False):
+
+    # Loop over gap conditions
+    for gap_enabled in gap_conditions:
         gap_label = "gap" if gap_enabled else "no_gap"
         print(f"\n>>> Condition: {gap_label.upper()} (coverage_gap={gap_enabled})")
+
+        # Precompute ground truth BRT once per condition if applicable
+        grid_size = int(config.get("grid_size", 51))
+        umax = float(config.get("umax", 1.0))
+        horizon = float(config.get("horizon", 0.5))
+        lo = tuple(config.get("state_lo", [-1.0, -2.0]))
+        hi = tuple(config.get("state_hi", [3.0, 2.0]))
+        p_lin = np.linspace(lo[0], hi[0], grid_size)
+        v_lin = np.linspace(lo[1], hi[1], grid_size)
+        P, Vv = np.meshgrid(p_lin, v_lin, indexing="ij")
+
+        if config.get("system") == "double_integrator_hidden_physics" and gap_enabled:
+            print("Precomputing ground-truth BRT with hidden physics...", flush=True)
+            from lcert.hj_di import solve_di_hidden_physics_brt
+            hp = config.get("hidden_physics", {})
+            _, v_true_cached = solve_di_hidden_physics_brt(
+                umax=umax,
+                T=horizon,
+                n=grid_size,
+                lo=lo,
+                hi=hi,
+                pc=hp.get("pc", 0.7),
+                w=hp.get("w", 0.6),
+                eta=hp.get("eta", 0.5),
+                b=hp.get("b", 0.3),
+                s=hp.get("s", -1.0),
+                accuracy=config.get("accuracy", "medium"),
+            )
+        else:
+            v_true_cached = di_safe_analytic(P, Vv, umax, horizon)
 
         for num_traj in data_sizes:
             started = time.monotonic()
             run_metrics_by_k: dict[float, list[CertificationMetrics]] = {k: [] for k in inflation_k_values}
 
-            for seed in seeds:
+            for idx, seed in enumerate(seeds):
                 cond_dir = results_dir / f"{gap_label}_N{num_traj}_seed{seed}"
                 m_by_k = run_single_condition(
                     base_config=config,
@@ -206,9 +240,12 @@ def run_pipeline(config_path: Path, max_sizes: int | None = None) -> dict:
                     gap_enabled=gap_enabled,
                     inflation_k_values=inflation_k_values,
                     output_dir=cond_dir,
+                    v_true_precomputed=v_true_cached,
                 )
                 for k in inflation_k_values:
                     run_metrics_by_k[k].append(m_by_k[k])
+                if (idx + 1) % 5 == 0 or (idx + 1) == len(seeds):
+                    print(f"  Processed {idx + 1}/{len(seeds)} seeds...", flush=True)
 
             elapsed = time.monotonic() - started
             # Aggregate across seeds
@@ -228,13 +265,49 @@ def run_pipeline(config_path: Path, max_sizes: int | None = None) -> dict:
             record = {
                 "gap_enabled": gap_enabled,
                 "trajectories": num_traj,
-                "data_points": num_traj * config["trajectory_steps"],
+                "data_points": num_traj * config.get("trajectory_steps", 10),
                 "seeds": seeds,
                 "results": {
                     f"k_{k}": {metric_name: ci.to_dict() for metric_name, ci in agg_by_k[k].items()}
                     for k in inflation_k_values
                 },
             }
+
+            # Evaluate pre-registered Primary P1 test if k=0 and k=2 are present
+            if 0.0 in inflation_k_values and 2.0 in inflation_k_values:
+                fsv_k0 = [m.fsv for m in run_metrics_by_k[0.0]]
+                fsv_k2 = [m.fsv for m in run_metrics_by_k[2.0]]
+                fuv_k0 = [m.fuv for m in run_metrics_by_k[0.0]]
+                fuv_k2 = [m.fuv for m in run_metrics_by_k[2.0]]
+                red = compute_paired_bootstrap_reduction(
+                    fsv_k0, fsv_k2, confidence=0.95, n_resamples=10000, seed=20261027
+                )
+                cost_res = compute_asymmetric_safety_cost(fsv_k0, fuv_k0, fsv_k2, fuv_k2)
+                r_est = red["ratio_of_means_reduction_pct"]
+                ci_lo = red["ratio_of_means_ci_lower_pct"]
+                ci_hi = red["ratio_of_means_ci_upper_pct"]
+
+                decision = (
+                    "SUPPORTED"
+                    if r_est >= 50.0 and ci_lo > 0
+                    else ("PARTIALLY SUPPORTED" if ci_lo > 0 else "NOT SUPPORTED")
+                )
+                print("\n" + "-" * 70)
+                print(f"--- PRIMARY P1 CONFIRMATORY EVALUATION (N={num_traj}, n={len(seeds)} seeds) ---")
+                print(f"Nominal FSV (k=0.0): mean = {np.mean(fsv_k0):.4f}")
+                print(f"Inflated FSV (k=2.0): mean = {np.mean(fsv_k2):.4f}")
+                print(f"Ratio-of-Means FSV Reduction R: {r_est:.2f}% (95% BCa CI: [{ci_lo:.2f}%, {ci_hi:.2f}%])")
+                print(f"Delta FUV (FUV_k2 - FUV_k0): {cost_res['delta_fuv_mean']:+.4f}")
+                print(f"Break-even safety cost ratio r*: {cost_res['break_even_ratio_r_star']}")
+                print(f"Pre-registered P1 Decision: {decision}")
+                print("-" * 70 + "\n", flush=True)
+
+                record["p1_primary_evaluation"] = {
+                    "reduction": red,
+                    "cost": cost_res,
+                    "decision": decision,
+                }
+
             summary_records.append(record)
 
     summary_path = results_dir / "sweep_summary.json"

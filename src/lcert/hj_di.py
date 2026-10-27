@@ -66,6 +66,10 @@ class DoubleIntegratorHiddenPhysics(hj.Dynamics):
         u_opt = jnp.where(p_v >= 0.0, self.umax, -self.umax)
         return jnp.array([u_opt]), jnp.array([0.0])
 
+    def partial_max_magnitudes(self, state, time, value, grad_value_box):
+        del time, value, grad_value_box
+        return jnp.array([jnp.abs(state[1]) + 0.5, 2.5])
+
 
 def solve_di_hidden_physics_brt(
     umax=1.0, T=0.5, n=101, lo=(-1.0, -2.0), hi=(3.0, 2.0),

@@ -26,6 +26,8 @@ coverage_gap:
   lo: [0.4, -2.0]
   hi: [1.0, 2.0]
 
+gap_conditions: [true]
+
 hidden_physics:
   pc: 0.7
   w: 0.6
