@@ -505,7 +505,8 @@ def compute_asymmetric_safety_cost(
     """
     fsv_arr = np.asarray(fsv, dtype=float)
     fuv_arr = np.asarray(fuv, dtype=float)
-    return float(cost_false_safe * fsv_arr + cost_false_unsafe * fuv_arr)
+    res = cost_false_safe * fsv_arr + cost_false_unsafe * fuv_arr
+    return float(res) if res.ndim == 0 else res
 
 
 def aggregate_metric_runs(
