@@ -22,3 +22,12 @@ artifacts/
 *.npy
 *.pt
 *.pth
+
+# Agent/IDE-specific configs (keep local only)
+CLAUDE.md
+AGENTS.md
+.cursorrules
+KICKOFF_PROMPT.md
+SCOPE_UPDATE_REPORT.md
+STARTER_REPORT.md
+.agents/

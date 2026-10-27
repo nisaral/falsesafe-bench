@@ -1,53 +1,207 @@
-# Learn-and-Shield Robot Lab
+<div align="center">
 
-Learn dynamics, policies, population flows, and incentives from simulated behaviour, then audit learned-model safety with Hamilton-Jacobi reachability. The scientific question is false-safe error under finite data and coverage gaps, not whether a convincing animation looks safe.
+# 🛡️ falsesafe-bench
 
-**Status: functional starter, not completed research.** The current demos use real, seeded simulator trajectories with scripted controllers. No dynamics model or RL policy has been trained, no learned-model safety filter is attached, and no benchmark result or unconditional safety guarantee is claimed.
+### Measuring How Wrong "Safe" Can Be — When Robots Learn Their Own Physics
+
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+[![Status: Research Starter](https://img.shields.io/badge/status-research_starter-orange.svg)](#status)
+
+**A benchmark for measuring false-safe errors in Hamilton-Jacobi reachability when dynamics are learned from finite data.**
+
+[Quick Start](#quick-start) · [What This Does](#what-this-does) · [Experiments](#experiments) · [Contributing](#contributing) · [Roadmap](#roadmap)
+
+</div>
+
+---
+
+## What This Does
+
+When a robot learns a model of how it moves from data, it can compute a **safe set** — states where it's guaranteed not to crash. But what happens when the learned model is wrong?
+
+**falsesafe-bench** measures exactly that:
+
+```
+                    True Safe Set          Learned Safe Set
+                   ┌─────────────┐       ┌──────────────────┐
+                   │             │       │  FALSE-SAFE ⚠️    │
+                   │   ACTUALLY  │       │  (Model says safe │
+                   │    SAFE     │       │   but it's NOT)   │
+                   │             │       │                   │
+                   └─────────────┘       └──────────────────┘
+```
+
+The **false-safe volume** is the most dangerous error in safety-critical systems: states where your learned model confidently says "go ahead, it's safe" — but it isn't.
+
+### Key Questions
+
+| # | Hypothesis | Status |
+|---|---|---|
+| H1 | Learned-model safe sets have false-safe volume that grows in coverage gaps | 🔬 Testing |
+| H2 | Epistemic uncertainty inflation reduces false-safe volume by ≥50% | 🔬 Testing |
+| H3 | Inflation has a conservatism cost (false-unsafe volume rises) | 🔬 Testing |
+| H4 | Separating epistemic and aleatoric uncertainty beats a blended statistic | 🔬 Testing |
+| H5 | QRE inverse games exhibit the predicted scale ambiguity | 📋 Planned |
+
+## Status
+
+**Functional research starter, not completed research.** The current demos use real, seeded simulator trajectories with scripted controllers. No dynamics model or RL policy has been trained, no learned-model safety filter is attached, and no benchmark result is claimed yet.
 
 ![Recorded scripted fleet replay with a visible collision; not learned or certified](demos/preview.png)
 
-Actual midpoint screenshot of the seeded fleet diagnostic, including its recorded failure. `demos/preview_manifest.json` links the source commit, config, run and hashes. This preview is not a successful-learning or safety result; the full replay preserves later domain exits too.
+*Midpoint screenshot of the seeded fleet diagnostic, including its recorded failure. This is not a successful-learning or safety result.*
 
-## Available now
+## Architecture
 
-| Track | Implemented starter | Still gated or planned |
-|---|---|---|
-| Robot simulation | Single/fleet Dubins arena, bounded commands, terminal events, deterministic replay | Trained controllers, reviewed rewards, safety-filter integration |
-| Presentation | Standalone dark Canvas replay, trails, timeline/speed controls, events and provenance | Learned uncertainty/safety overlays and checkpoint comparisons |
-| Dynamics | Seeded trajectory splits, coverage gaps, synthetic derivative-observation noise, GP/MLP ensemble classes | Recovery/shuffled-label checks and trained-model evaluation |
-| Reachability | True-dynamics DI/Dubins BRT snapshots; raw-artifact plotting | Dubins refinement, protected metrics, learned-dynamics HJ |
-| Robot learning | REINFORCE/A2C/PPO, robot DPO/GRPO-style objectives, BC, IQL expectile loss, actor-critic, replay buffer | Complete trainers, SAC/TD3/CQL, MAPPO/independent PPO comparisons |
-| Populations/games | Entropic OT, finite-state Markov-reference bridge, toy congestion MFG, logit QRE and seeded play | Held-out studies, inverse-game estimator, population demos |
-| Geometry/physics | Body-frame transforms and a public fixed-speed kinematic prior | Matched-data geometric/PINN ablations |
+```
+falsesafe-bench/
+├── src/lcert/              # Core library
+│   ├── systems.py          # Double integrator & Dubins dynamics
+│   ├── hj_di.py            # HJ reachability for double integrator
+│   ├── hj_dubins.py        # HJ reachability for Dubins car
+│   ├── data.py             # Trajectory data collection with coverage gaps
+│   ├── models/             # MLP ensembles & Gaussian Processes
+│   ├── envs/               # Dubins arena & fleet simulation
+│   ├── rl/                 # RL algorithms (PPO, A2C, DPO, GRPO)
+│   ├── population/         # Optimal transport, bridges, MFG
+│   ├── games/              # QRE inverse game theory
+│   ├── constraints/        # Physics & geometry constraints
+│   └── visualization/      # Browser replay generation
+├── configs/                # Experiment configurations (immutable after use)
+├── scripts/                # Entry points & utilities
+├── tests/                  # Sanity tests (protected)
+├── demos/                  # Browser-based replay viewer
+└── results/                # Logged runs with full provenance
+```
 
-E0-E12 are registered with explicit readiness and blockers. Only E0 ground-truth diagnostics, scripted simulations, and data generation are runnable; naming an algorithm or experiment does not implement a full trainer or evaluator.
+## Tech Stack
 
-## Quick start on Windows
+| Component | Technology |
+|---|---|
+| HJ Solver | [hj_reachability](https://github.com/StanfordASL/hj_reachability) (JAX) |
+| Dynamics Learning | PyTorch (MLP ensembles) + GPyTorch (Gaussian Processes) |
+| RL | PyTorch (PPO, A2C, REINFORCE, DPO/GRPO) |
+| Optimal Transport | [POT](https://pythonot.github.io/) |
+| Visualization | Matplotlib + standalone HTML5 Canvas |
+| Numerics | NumPy, SciPy, JAX |
+| Runtime | Python 3.13, managed by [uv](https://github.com/astral-sh/uv) |
 
-Run from this repository's root. Prerequisites: Git and `uv`; the bootstrap provisions project-local Python 3.13 and installs the existing pinned `requirements.txt` without changing it.
+## Quick Start
+
+### Windows
 
 ```powershell
+git clone https://github.com/nisaral/falsesafe-bench.git
+cd falsesafe-bench
 .\scripts\bootstrap.ps1
+
+# Verify the installation
 .\.venv\Scripts\python.exe scripts/run_experiment.py doctor
-.\.venv\Scripts\python.exe scripts/check_scaffold.py
 .\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider
+
+# Run a single robot simulation
 .\.venv\Scripts\python.exe scripts/run_experiment.py simulate --config configs/starters/single_robot.json
+
+# Run a fleet simulation
 .\.venv\Scripts\python.exe scripts/run_experiment.py simulate --config configs/starters/fleet.json
 ```
 
-Open the printed run folder's `demo.html` in a browser. It works without a server or frontend dependencies. The badge explicitly says **scripted, not learned, no certificate**. See `START_HERE.md` for data, ground-truth, plotting, Linux/macOS setup, and next implementation steps.
+### Linux / macOS
 
-Run recording requires a committed, clean **project-local** Git tree. Commit config changes before running; never modify a config after it has been used. Config copies, seeds, commit, library/hardware information, stdout, artifact hashes, and failures live under `results/runs/<run_id>/`. Generated data, runs, figures, environments, secrets, and checkpoints are Git-ignored; no large artifacts or credentials are pushed.
+```bash
+git clone https://github.com/nisaral/falsesafe-bench.git
+cd falsesafe-bench
 
-## Research and integrity
+# Install uv if not present
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-Keep the W1-W4 scientific MVR first. Human-reviewed metrics and core/model checks precede reported studies; MVR sign-off precedes robot RL training, then fleet work. All remaining extensions have separately reviewed protocols and budgets.
+# Bootstrap
+uv python install 3.13
+uv venv --python 3.13
+source .venv/bin/activate
+uv pip install -r requirements.txt
 
-- `SCOPE.md`, `AGENTS.md`, `CLAUDE.md`: binding contract; protected tests and metrics are untouched.
-- `PLAN.md`: hypotheses, E0-E12 questions, sequencing and delivery gates.
-- `ALGORITHMS.md`: algorithm/data contracts and primary references, including robot-action DPO/GRPO adaptations.
-- `SIMULATION_DEMOS.md`: current replay and planned flagship features, evidence requirements.
-- `claims_ledger.md`: every externally reported research number; currently no result claims.
-- `STARTER_REPORT.md`: actual diagnostic runs, verification, failure visibility, and remaining gates.
+# Verify & run
+python scripts/run_experiment.py doctor
+python -m pytest -q -p no:cacheprovider
+python scripts/run_experiment.py simulate --config configs/starters/single_robot.json
+```
 
-`make starter` runs checks and starter diagnostics when GNU Make and the pinned environment are available. `make reproduce` deliberately fails until the reviewed scientific reproduction exists; a few diagnostics are not a completed E1-E12 study. A single collision-free replay, model spread, transport interpolation, or pairwise shield is not a global safety certificate.
+Open the printed run folder's `demo.html` in a browser. It works without a server or frontend dependencies.
+
+## Experiments
+
+| ID | What | System | Status |
+|---|---|---|---|
+| E0 | Ground-truth BRT vs analytic | Double Integrator | ✅ Passing |
+| E1 | FSV vs data size, gap vs no-gap | DI + Dubins | 🔬 Planned |
+| E2 | Epistemic inflation tradeoff | DI + Dubins | 🔬 Planned |
+| E3 | Separated vs blended uncertainty | DI + Dubins | 🔬 Planned |
+| E4 | Fleet pairwise safety | 3 Dubins | 📋 Extension |
+| E5 | QRE inverse games | 2×2 / 3×3 | 📋 Extension |
+| E6 | Learning robot with HJ shield | Dubins | 📋 Extension |
+| E7 | Multi-agent fleet learning | 3 Dubins | 📋 Extension |
+| E8-E12 | Population, physics, swarms | Various | 📋 Future |
+
+## Integrity
+
+Every number in this repo is traceable:
+- **No fabricated results.** If a metric isn't computed, it says so.
+- **All runs are logged** with seeds, git commit, configs, and artifact hashes.
+- **Negative results** are reported with the same prominence as positive ones.
+- **claims_ledger.md** tracks every number that leaves this repo.
+
+See [SCOPE.md](SCOPE.md) for the full integrity contract and [PLAN.md](PLAN.md) for the research plan.
+
+## Contributing
+
+We welcome contributions! Areas where help is especially valuable:
+
+- 🤖 **New robot environments** (quadrotors, car-like vehicles, manipulators)
+- 🧠 **Dynamics learning methods** (transformers, neural ODEs, conformal prediction)
+- 🛡️ **Safety methods** (CBFs, MPC, alternative reachability solvers)
+- 📊 **Benchmarking** (running experiments on new systems, comparing methods)
+- 📖 **Documentation** (tutorials, notebooks, examples)
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting PRs.
+
+## Roadmap
+
+- [x] Simulation engine with deterministic replay
+- [x] HJ reachability on double integrator (analytic match)
+- [x] Browser-based fleet replay viewer
+- [x] RL algorithm primitives
+- [ ] `metrics.py` — FSV/FUV/IoU computation pipeline
+- [ ] Trained dynamics models (ensembles + GPs)
+- [ ] Core experiments E1-E3 (the scientific heart)
+- [ ] Safety filter integration
+- [ ] Robot RL with shielding
+- [ ] Gymnasium-compatible environments
+- [ ] Interactive Colab notebooks
+- [ ] Documentation site
+
+## Citation
+
+If you use this work, please cite:
+
+```bibtex
+@software{falsesafe_bench,
+  author = {Nisar, Keyush},
+  title = {falsesafe-bench: Measuring False-Safe Errors in Hamilton-Jacobi Reachability Under Learned Dynamics},
+  year = {2026},
+  url = {https://github.com/nisaral/falsesafe-bench}
+}
+```
+
+## License
+
+This project is licensed under the Apache License 2.0 — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+**⚠️ This is a research tool, not a safety certification system. A collision-free simulation replay is not a safety guarantee.**
+
+</div>
