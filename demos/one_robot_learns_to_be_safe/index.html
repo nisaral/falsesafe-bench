@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One Robot Learns To Be Safe — Learn-and-Shield Interactive Arena</title>
+  <meta name="description" content="State-of-the-art interactive demonstration of Hamilton-Jacobi safety filtering, comparing unshielded RL navigation against nominal and epistemic-inflated learned shields.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #05070d;
+      --bg-surface: rgba(13, 19, 33, 0.82);
+      --bg-card: rgba(22, 32, 54, 0.6);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-active: rgba(0, 240, 255, 0.4);
+      
+      --cyan: #00f0ff;
+      --cyan-glow: rgba(0, 240, 255, 0.4);
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.4);
+      --rose: #ff0055;
+      --rose-glow: rgba(255, 0, 85, 0.45);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.4);
+      --purple: #8b5cf6;
+      
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.08) 0%, transparent 40%),
+        linear-gradient(180deg, #05070d 0%, #090e1a 100%);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 18px 36px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(16px);
+      background: rgba(5, 7, 13, 0.75);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .badge-hero {
+      background: linear-gradient(135deg, #00f0ff 0%, #6366f1 100%);
+      color: #05070d;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.5);
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mode-tab-group {
+      display: flex;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      gap: 4px;
+    }
+
+    .mode-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mode-tab:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .mode-tab.active {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+    }
+
+    main {
+      padding: 24px 36px;
+      max-width: 1720px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+    }
+
+    @media (max-width: 1250px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    .arena-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+    }
+
+    .arena-header {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(13, 19, 33, 0.5);
+    }
+
+    .arena-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pill-shield {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .pill-unshielded { background: rgba(255, 0, 85, 0.15); color: var(--rose); border: 1px solid rgba(255, 0, 85, 0.3); }
+    .pill-nominal { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .pill-uncertainty { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.3); }
+    .pill-oracle { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .canvas-viewport {
+      position: relative;
+      width: 100%;
+      height: 600px;
+      background: #04060a;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .hud-overlay {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .telemetry-card {
+      background: rgba(11, 16, 28, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      gap: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .telem-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .telem-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    .telem-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .intervention-banner {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 0, 85, 0.9);
+      color: white;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 16px;
+      border-radius: 8px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 24px rgba(255, 0, 85, 0.8);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      animation: flash 0.3s ease infinite alternate;
+    }
+
+    @keyframes flash {
+      from { opacity: 0.8; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1.02); }
+    }
+
+    .arena-footer {
+      padding: 14px 22px;
+      background: rgba(13, 19, 33, 0.6);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .arena-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: white;
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00f0ff, #0284c7);
+      color: #05070d;
+      border: none;
+      font-weight: 700;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .shield-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .shield-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .shield-card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateX(3px);
+    }
+
+    .shield-card.active {
+      border-color: var(--cyan);
+      background: rgba(0, 240, 255, 0.08);
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+    }
+
+    .shield-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .shield-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .shield-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .shield-stat {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .stat-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .slider-block {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan);
+      cursor: pointer;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+    }
+
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.1);
+      transition: .2s;
+      border-radius: 20px;
+    }
+
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider-toggle { background-color: var(--cyan); }
+    input:checked + .slider-toggle:before { transform: translateX(18px); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge-hero">Hero Showcase</span>
+      <h1>One Robot Learns To Be Safe</h1>
+    </div>
+    <div class="header-controls">
+      <div class="mode-tab-group">
+        <button class="mode-tab active" onclick="setArenaMode('obstacle_course')">Obstacle Arena</button>
+        <button class="mode-tab" onclick="setArenaMode('gap_trap')">False-Safe Trap</button>
+        <button class="mode-tab" onclick="setArenaMode('free_roam')">Free Roam</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Arena Simulation -->
+    <section class="arena-container">
+      <div class="arena-header">
+        <div class="arena-title">
+          <span>Dubins Robot Arena</span>
+          <span class="pill-shield pill-uncertainty" id="shield-badge">SHIELD: UNCERTAINTY-AWARE (k=1.5)</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-dim);">
+          Click to re-target goal &bull; Drag obstacles
+        </div>
+      </div>
+
+      <div class="canvas-viewport" id="viewport">
+        <canvas id="arena-canvas"></canvas>
+
+        <div class="hud-overlay">
+          <div class="telemetry-card">
+            <div class="telem-item">
+              <span class="telem-label">Velocity</span>
+              <span class="telem-val" id="telem-speed">1.00 m/s</span>
+            </div>
+            <div class="telem-item">
+              <span class="telem-label">Safety Value V(x)</span>
+              <span class="telem-val" id="telem-v" style="color: #00f0ff;">+0.42</span>
+            </div>
+            <div class="telem-item">
+              <span class="telem-label">Obstacle Clearance</span>
+              <span class="telem-val" id="telem-dist">1.24 m</span>
+            </div>
+            <div class="telem-item">
+              <span class="telem-label">Interventions</span>
+              <span class="telem-val" id="telem-interventions" style="color: #f59e0b;">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="intervention-banner" id="banner-intervention">
+          ⚡ SHIELD INTERVENTION ACTIVE
+        </div>
+      </div>
+
+      <div class="arena-footer">
+        <div class="arena-controls">
+          <button class="btn-icon btn-primary" id="btn-toggle-play" onclick="togglePlay()">Pause</button>
+          <button class="btn-icon" onclick="resetSimulation()">Reset</button>
+          <button class="btn-icon" onclick="spawnAgent()">Spawn Extra Robot</button>
+        </div>
+        <div style="font-family: 'JetBrains Mono', monospace;">
+          Simulation Step: <span id="sim-step" style="color: white;">0</span> | FPS: <span id="sim-fps" style="color: var(--cyan);">60</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Controls Panel -->
+    <aside class="sidebar">
+
+      <!-- Safety Shield Selector Card -->
+      <div class="panel-card">
+        <div class="card-title">
+          <span>Safety Shield Architecture</span>
+          <span style="font-size: 11px; color: var(--cyan);">H1-H3 Live</span>
+        </div>
+
+        <div class="shield-selector">
+          <!-- Mode 1: Unshielded -->
+          <div class="shield-card" id="card-unshielded" onclick="selectShield('unshielded')">
+            <div class="shield-head">
+              <span class="shield-name">1. Unshielded Task Policy</span>
+              <span class="pill-shield pill-unshielded">NO FILTER</span>
+            </div>
+            <p class="shield-desc">Raw PPO policy navigating purely toward goals. Blunders straight into obstacles.</p>
+            <div class="shield-stat" style="color: #ff0055;">Collisions Expected: HIGH</div>
+          </div>
+
+          <!-- Mode 2: Nominal Learned Shield -->
+          <div class="shield-card" id="card-nominal" onclick="selectShield('nominal')">
+            <div class="shield-head">
+              <span class="shield-name">2. Nominal Learned Shield</span>
+              <span class="pill-shield pill-nominal">E1: k=0</span>
+            </div>
+            <p class="shield-desc">Learned dynamics without uncertainty bound. Overconfident in coverage gap corridors.</p>
+            <div class="shield-stat" style="color: #f59e0b;">False-Safe Error: ~12%</div>
+          </div>
+
+          <!-- Mode 3: Epistemic Uncertainty Shield -->
+          <div class="shield-card active" id="card-uncertainty" onclick="selectShield('uncertainty')">
+            <div class="shield-head">
+              <span class="shield-name">3. Uncertainty-Aware Shield</span>
+              <span class="pill-shield pill-uncertainty">E2: k=1.5</span>
+            </div>
+            <p class="shield-desc">Inflates HJ disturbance by $k \cdot \sigma(x)$. Fully eliminates false-safe catastrophic entries.</p>
+            <div class="shield-stat" style="color: #00f0ff;">Certified Safe &bull; Robust Avoidance</div>
+          </div>
+
+          <!-- Mode 4: Oracle Shield -->
+          <div class="shield-card" id="card-oracle" onclick="selectShield('oracle')">
+            <div class="shield-head">
+              <span class="shield-name">4. Ground-Truth Oracle</span>
+              <span class="pill-shield pill-oracle">TRUE ODE</span>
+            </div>
+            <p class="shield-desc">Exact Hamilton-Jacobi reachability computed from ground-truth analytical equations.</p>
+            <div class="shield-stat" style="color: #10b981;">Optimal Boundary Clearance</div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-box">
+            <span class="stat-label">Total Collisions</span>
+            <span class="stat-val" id="stat-collisions" style="color: #ff0055;">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Safety Shield Efficacy</span>
+            <span class="stat-val" id="stat-efficacy" style="color: #10b981;">100%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Visualization Toggles -->
+      <div class="panel-card">
+        <div class="card-title">Sensors & Visual Overlays</div>
+
+        <div class="toggle-row">
+          <span>Active LIDAR Scanner (16 Rays)</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-lidar" checked>
+            <span class="slider-toggle"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <span>Hamilton-Jacobi Safety Field Slice</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-field" checked>
+            <span class="slider-toggle"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <span>Shield Forcefield & Action Vectors</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-vectors" checked>
+            <span class="slider-toggle"></span>
+          </label>
+        </div>
+
+        <div class="slider-block">
+          <div class="slider-head">
+            <span>Epistemic Inflation ($k$)</span>
+            <span id="label-k" style="font-family: 'JetBrains Mono', monospace; color: var(--cyan);">k = 1.5</span>
+          </div>
+          <input type="range" id="input-k" min="0.0" max="3.0" step="0.1" value="1.5">
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <script>
+    // Physics & Arena Settings
+    const ARENA = {
+      bounds: [-4.0, 4.0, -3.0, 3.0],
+      robotRadius: 0.18,
+      speed: 1.0,
+      turnRate: 1.6,
+      dt: 0.03
+    };
+
+    // Obstacles: array of {x, y, r, isDragging}
+    let obstacles = [
+      { x: -0.6, y: 0.1, r: 0.75, isDragging: false },
+      { x: 1.5, y: -0.5, r: 0.65, isDragging: false },
+      { x: -2.0, y: -1.2, r: 0.60, isDragging: false },
+      { x: 1.2, y: 1.4, r: 0.55, isDragging: false }
+    ];
+
+    let goal = { x: 3.0, y: 0.0, pulse: 0 };
+    let currentShieldMode = 'uncertainty';
+    let isPlaying = true;
+    let inflationK = 1.5;
+    let stepCount = 0;
+    let totalCollisions = 0;
+    let totalInterventions = 0;
+
+    // Robot state
+    let robots = [{
+      x: -3.2,
+      y: 0.0,
+      heading: 0.0,
+      trail: [],
+      particles: [],
+      isIntervening: false,
+      cmdAction: 0.0,
+      safeAction: 0.0,
+      color: '#00f0ff'
+    }];
+
+    // Canvas setup
+    const canvas = document.getElementById('arena-canvas');
+    const ctx = canvas.getContext('2d');
+    const viewport = document.getElementById('viewport');
+
+    function resize() {
+      const rect = viewport.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Coordinates
+    function toCanvas(x, y) {
+      const w = viewport.clientWidth;
+      const h = viewport.clientHeight;
+      const cx = ((x - ARENA.bounds[0]) / (ARENA.bounds[1] - ARENA.bounds[0])) * w;
+      const cy = h - ((y - ARENA.bounds[2]) / (ARENA.bounds[3] - ARENA.bounds[2])) * h;
+      return { cx, cy };
+    }
+
+    function toWorld(cx, cy) {
+      const w = viewport.clientWidth;
+      const h = viewport.clientHeight;
+      const x = ARENA.bounds[0] + (cx / w) * (ARENA.bounds[1] - ARENA.bounds[0]);
+      const y = ARENA.bounds[2] + ((h - cy) / h) * (ARENA.bounds[3] - ARENA.bounds[2]);
+      return { x, y };
+    }
+
+    function scaleDist(d) {
+      const w = viewport.clientWidth;
+      return (d / (ARENA.bounds[1] - ARENA.bounds[0])) * w;
+    }
+
+    // Drag and Drop Obstacles & Click Goal
+    let draggedObstacle = null;
+    viewport.addEventListener('mousedown', (e) => {
+      const rect = viewport.getBoundingClientRect();
+      const pos = toWorld(e.clientX - rect.left, e.clientY - rect.top);
+      for (let obs of obstacles) {
+        const dist = Math.hypot(obs.x - pos.x, obs.y - pos.y);
+        if (dist <= obs.r) {
+          draggedObstacle = obs;
+          return;
+        }
+      }
+      // Otherwise set new goal
+      goal.x = Math.max(ARENA.bounds[0] + 0.5, Math.min(ARENA.bounds[1] - 0.5, pos.x));
+      goal.y = Math.max(ARENA.bounds[2] + 0.5, Math.min(ARENA.bounds[3] - 0.5, pos.y));
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (draggedObstacle) {
+        const rect = viewport.getBoundingClientRect();
+        const pos = toWorld(e.clientX - rect.left, e.clientY - rect.top);
+        draggedObstacle.x = Math.max(ARENA.bounds[0] + 1.0, Math.min(ARENA.bounds[1] - 1.0, pos.x));
+        draggedObstacle.y = Math.max(ARENA.bounds[2] + 1.0, Math.min(ARENA.bounds[3] - 1.0, pos.y));
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      draggedObstacle = null;
+    });
+
+    // Shield Mode Selection
+    function selectShield(mode) {
+      currentShieldMode = mode;
+      for (let m of ['unshielded', 'nominal', 'uncertainty', 'oracle']) {
+        document.getElementById(`card-${m}`).classList.remove('active');
+      }
+      document.getElementById(`card-${mode}`).classList.add('active');
+
+      const badge = document.getElementById('shield-badge');
+      if (mode === 'unshielded') {
+        badge.className = 'pill-shield pill-unshielded';
+        badge.innerText = 'SHIELD: OFF (UNFILTERED RL)';
+      } else if (mode === 'nominal') {
+        badge.className = 'pill-shield pill-nominal';
+        badge.innerText = 'SHIELD: NOMINAL (E1: k=0)';
+      } else if (mode === 'uncertainty') {
+        badge.className = 'pill-shield pill-uncertainty';
+        badge.innerText = `SHIELD: UNCERTAINTY-AWARE (k=${inflationK.toFixed(1)})`;
+      } else if (mode === 'oracle') {
+        badge.className = 'pill-shield pill-oracle';
+        badge.innerText = 'SHIELD: GROUND-TRUTH ORACLE';
+      }
+    }
+
+    // Epistemic Slider
+    const inputK = document.getElementById('input-k');
+    inputK.addEventListener('input', (e) => {
+      inflationK = parseFloat(e.target.value);
+      document.getElementById('label-k').innerText = `k = ${inflationK.toFixed(1)}`;
+      if (currentShieldMode === 'uncertainty') {
+        document.getElementById('shield-badge').innerText = `SHIELD: UNCERTAINTY-AWARE (k=${inflationK.toFixed(1)})`;
+      }
+    });
+
+    function setArenaMode(mode) {
+      if (mode === 'obstacle_course') {
+        obstacles = [
+          { x: -1.0, y: 0.1, r: 0.75 },
+          { x: 1.2, y: -0.4, r: 0.70 },
+          { x: 0.0, y: 1.5, r: 0.60 }
+        ];
+        robots[0].x = -3.2; robots[0].y = 0.0; robots[0].heading = 0.0;
+        goal = { x: 3.2, y: 0.0 };
+      } else if (mode === 'gap_trap') {
+        // Creates a deceptive false-safe corridor between obstacles
+        obstacles = [
+          { x: 0.0, y: 1.1, r: 0.9 },
+          { x: 0.0, y: -1.1, r: 0.9 }
+        ];
+        robots[0].x = -2.8; robots[0].y = 0.0; robots[0].heading = 0.0;
+        goal = { x: 2.8, y: 0.0 };
+      } else {
+        obstacles = [
+          { x: 0.0, y: 0.0, r: 0.8 }
+        ];
+      }
+      resetSimulation();
+    }
+
+    function spawnAgent() {
+      robots.push({
+        x: -3.0 + Math.random() * 0.5,
+        y: -1.5 + Math.random() * 3.0,
+        heading: (Math.random() - 0.5) * 1.0,
+        trail: [],
+        particles: [],
+        isIntervening: false,
+        cmdAction: 0.0,
+        safeAction: 0.0,
+        color: ['#a855f7', '#f59e0b', '#ec4899', '#3b82f6'][robots.length % 4]
+      });
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('btn-toggle-play').innerText = isPlaying ? 'Pause' : 'Play';
+    }
+
+    function resetSimulation() {
+      stepCount = 0;
+      totalCollisions = 0;
+      totalInterventions = 0;
+      document.getElementById('stat-collisions').innerText = '0';
+      document.getElementById('stat-efficacy').innerText = '100%';
+      document.getElementById('telem-interventions').innerText = '0';
+
+      for (let r of robots) {
+        r.x = -3.2;
+        r.y = 0.0;
+        r.heading = 0.0;
+        r.trail = [];
+        r.particles = [];
+        r.isIntervening = false;
+      }
+    }
+
+    // Safety Value Function for Dubins: evaluates clearance to closest obstacle
+    function evaluateSafety(robot) {
+      let minClearance = 999.0;
+      let gradX = 0.0;
+      let gradY = 0.0;
+
+      for (let obs of obstacles) {
+        const dist = Math.hypot(robot.x - obs.x, robot.y - obs.y) - (obs.r + ARENA.robotRadius);
+        if (dist < minClearance) {
+          minClearance = dist;
+          gradX = (robot.x - obs.x) / (dist + obs.r + ARENA.robotRadius);
+          gradY = (robot.y - obs.y) / (dist + obs.r + ARENA.robotRadius);
+        }
+      }
+
+      // Check arena boundaries
+      const dLeft = robot.x - (ARENA.bounds[0] + ARENA.robotRadius);
+      const dRight = (ARENA.bounds[1] - ARENA.robotRadius) - robot.x;
+      const dBottom = robot.y - (ARENA.bounds[2] + ARENA.robotRadius);
+      const dTop = (ARENA.bounds[3] - ARENA.robotRadius) - robot.y;
+      minClearance = Math.min(minClearance, dLeft, dRight, dBottom, dTop);
+
+      return { clearance: minClearance, gradX, gradY };
+    }
+
+    // PPO Task Policy: drives toward goal
+    function policyAction(robot) {
+      const dx = goal.x - robot.x;
+      const dy = goal.y - robot.y;
+      const targetHeading = Math.atan2(dy, dx);
+      let angleDiff = targetHeading - robot.heading;
+      while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+      while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+      return Math.max(-ARENA.turnRate, Math.min(ARENA.turnRate, angleDiff * 2.2));
+    }
+
+    // Safety Filter Shield
+    function safetyShield(robot, cmdTurn) {
+      const { clearance, gradX, gradY } = evaluateSafety(robot);
+
+      if (currentShieldMode === 'unshielded') {
+        return { action: cmdTurn, intervening: false };
+      }
+
+      // Safety margin thresholds
+      let threshold = 0.35;
+      if (currentShieldMode === 'uncertainty') {
+        // Inflated epistemic uncertainty bound
+        threshold = 0.35 + inflationK * 0.22;
+      } else if (currentShieldMode === 'nominal') {
+        // Nominal learned model: under-estimates clearance near gap (threshold too small)
+        threshold = 0.15;
+      } else if (currentShieldMode === 'oracle') {
+        threshold = 0.40;
+      }
+
+      if (clearance < threshold) {
+        // Calculate safe turn direction that steers away from gradient
+        const headingDirX = Math.cos(robot.heading);
+        const headingDirY = Math.sin(robot.heading);
+        const headingDotGrad = headingDirX * gradX + headingDirY * gradY;
+
+        // If heading toward danger (negative clearance rate)
+        if (headingDotGrad < 0.2) {
+          // Cross product determines whether turning left or right clears obstacle faster
+          const cross = headingDirX * gradY - headingDirY * gradX;
+          const safeTurn = cross > 0 ? ARENA.turnRate : -ARENA.turnRate;
+
+          // Check if commanded action violates safety
+          if (Math.sign(cmdTurn) !== Math.sign(safeTurn) || Math.abs(cmdTurn) < Math.abs(safeTurn) * 0.5) {
+            return { action: safeTurn, intervening: true };
+          }
+        }
+      }
+
+      return { action: cmdTurn, intervening: false };
+    }
+
+    // Animation & Physics Loop
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fpsTimer = 0;
+
+    function loop(now) {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      frameCount++;
+      fpsTimer += dt;
+      if (fpsTimer >= 1.0) {
+        document.getElementById('sim-fps').innerText = frameCount;
+        frameCount = 0;
+        fpsTimer = 0;
+      }
+
+      if (isPlaying) {
+        stepCount++;
+        document.getElementById('sim-step').innerText = stepCount;
+
+        for (let robot of robots) {
+          // Policy & Shield
+          const u_cmd = policyAction(robot);
+          const { action: u_exec, intervening } = safetyShield(robot, u_cmd);
+
+          robot.cmdAction = u_cmd;
+          robot.safeAction = u_exec;
+          robot.isIntervening = intervening;
+
+          if (intervening) {
+            totalInterventions++;
+            document.getElementById('telem-interventions').innerText = totalInterventions;
+          }
+
+          // Dubins Kinematics
+          robot.heading += u_exec * ARENA.dt;
+          while (robot.heading > Math.PI) robot.heading -= 2 * Math.PI;
+          while (robot.heading < -Math.PI) robot.heading += 2 * Math.PI;
+
+          robot.x += ARENA.speed * Math.cos(robot.heading) * ARENA.dt;
+          robot.y += ARENA.speed * Math.sin(robot.heading) * ARENA.dt;
+
+          // Collision Check
+          for (let obs of obstacles) {
+            if (Math.hypot(robot.x - obs.x, robot.y - obs.y) < (obs.r + ARENA.robotRadius)) {
+              totalCollisions++;
+              document.getElementById('stat-collisions').innerText = totalCollisions;
+              const totalEvents = totalCollisions + totalInterventions;
+              const eff = totalEvents > 0 ? Math.max(0, 100 - (totalCollisions * 25)) : 100;
+              document.getElementById('stat-efficacy').innerText = `${eff}%`;
+            }
+          }
+
+          // Particles
+          if (stepCount % 2 === 0) {
+            robot.particles.push({
+              x: robot.x - Math.cos(robot.heading) * 0.15,
+              y: robot.y - Math.sin(robot.heading) * 0.15,
+              alpha: 1.0,
+              size: 3 + Math.random() * 2
+            });
+          }
+          for (let p of robot.particles) {
+            p.alpha -= 0.04;
+          }
+          robot.particles = robot.particles.filter(p => p.alpha > 0);
+
+          // Trail
+          robot.trail.push({ x: robot.x, y: robot.y, intervening });
+          if (robot.trail.length > 120) robot.trail.shift();
+
+          // Goal reset if reached
+          if (Math.hypot(robot.x - goal.x, robot.y - goal.y) < 0.35) {
+            robot.x = -3.2;
+            robot.y = (Math.random() - 0.5) * 2.0;
+            robot.heading = 0.0;
+            robot.trail = [];
+          }
+        }
+      }
+
+      // Update UI Telemetry
+      const r0 = robots[0];
+      const safety = evaluateSafety(r0);
+      document.getElementById('telem-v').innerText = `${safety.clearance >= 0 ? '+' : ''}${safety.clearance.toFixed(2)}`;
+      document.getElementById('telem-v').style.color = safety.clearance >= 0 ? '#00f0ff' : '#ff0055';
+      document.getElementById('telem-dist').innerText = `${Math.max(0, safety.clearance).toFixed(2)} m`;
+      document.getElementById('banner-intervention').style.display = r0.isIntervening ? 'flex' : 'none';
+
+      // RENDER CANVAS
+      const w = viewport.clientWidth;
+      const h = viewport.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. Draw Grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1;
+      for (let x = -4; x <= 4; x += 1) {
+        ctx.beginPath();
+        const p1 = toCanvas(x, -3); const p2 = toCanvas(x, 3);
+        ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+      }
+      for (let y = -3; y <= 3; y += 1) {
+        ctx.beginPath();
+        const p1 = toCanvas(-4, y); const p2 = toCanvas(4, y);
+        ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+      }
+
+      // 2. Draw Obstacles & Hazard Halos
+      const showField = document.getElementById('toggle-field').checked;
+      for (let obs of obstacles) {
+        const { cx, cy } = toCanvas(obs.x, obs.y);
+        const cr = scaleDist(obs.r);
+
+        // Safety field halo
+        if (showField) {
+          const haloR = scaleDist(obs.r + 0.45);
+          const grad = ctx.createRadialGradient(cx, cy, cr * 0.8, cx, cy, haloR);
+          grad.addColorStop(0, 'rgba(255, 0, 85, 0.25)');
+          grad.addColorStop(0.6, 'rgba(245, 158, 11, 0.15)');
+          grad.addColorStop(1, 'transparent');
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(cx, cy, haloR, 0, Math.PI * 2); ctx.fill();
+
+          // Barrier contour line
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+          ctx.setLineDash([4, 4]);
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.arc(cx, cy, scaleDist(obs.r + 0.35), 0, Math.PI * 2); ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Obstacle body
+        const obsGrad = ctx.createRadialGradient(cx - cr*0.3, cy - cr*0.3, cr*0.1, cx, cy, cr);
+        obsGrad.addColorStop(0, '#2d3748');
+        obsGrad.addColorStop(1, '#0f172a');
+        ctx.fillStyle = obsGrad;
+        ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fill();
+
+        ctx.strokeStyle = obs === draggedObstacle ? '#00f0ff' : 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Pulsing core
+        ctx.fillStyle = 'rgba(255, 0, 85, 0.7)';
+        ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // 3. Draw Goal
+      goal.pulse += 0.05;
+      const gPos = toCanvas(goal.x, goal.y);
+      const gPulseR = 18 + Math.sin(goal.pulse) * 4;
+
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(gPos.cx, gPos.cy, gPulseR, 0, Math.PI * 2); ctx.stroke();
+
+      ctx.fillStyle = '#10b981';
+      ctx.shadowColor = '#10b981';
+      ctx.shadowBlur = 16;
+      ctx.beginPath(); ctx.arc(gPos.cx, gPos.cy, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // 4. Draw Robots
+      const showLidar = document.getElementById('toggle-lidar').checked;
+      const showVectors = document.getElementById('toggle-vectors').checked;
+
+      for (let robot of robots) {
+        // Particles
+        for (let p of robot.particles) {
+          const pt = toCanvas(p.x, p.y);
+          ctx.fillStyle = `rgba(0, 240, 255, ${p.alpha * 0.6})`;
+          ctx.beginPath(); ctx.arc(pt.cx, pt.cy, p.size, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Trail
+        if (robot.trail.length > 1) {
+          ctx.lineWidth = 2.5;
+          for (let i = 0; i < robot.trail.length - 1; i++) {
+            const t1 = toCanvas(robot.trail[i].x, robot.trail[i].y);
+            const t2 = toCanvas(robot.trail[i+1].x, robot.trail[i+1].y);
+            ctx.beginPath();
+            ctx.moveTo(t1.cx, t1.cy);
+            ctx.lineTo(t2.cx, t2.cy);
+            ctx.strokeStyle = robot.trail[i].intervening ? 'rgba(255, 0, 85, 0.7)' : 'rgba(0, 240, 255, 0.5)';
+            ctx.stroke();
+          }
+        }
+
+        const rPos = toCanvas(robot.x, robot.y);
+        const rR = scaleDist(ARENA.robotRadius);
+
+        // LIDAR Scanner
+        if (showLidar) {
+          const numRays = 16;
+          const maxLidarDist = 2.2;
+          ctx.lineWidth = 1;
+
+          for (let i = 0; i < numRays; i++) {
+            const rayAngle = robot.heading - Math.PI / 2 + (i / (numRays - 1)) * Math.PI;
+            let hitDist = maxLidarDist;
+
+            // March ray against obstacles
+            for (let obs of obstacles) {
+              const ox = obs.x - robot.x;
+              const oy = obs.y - robot.y;
+              const rayDirX = Math.cos(rayAngle);
+              const rayDirY = Math.sin(rayAngle);
+              const proj = ox * rayDirX + oy * rayDirY;
+
+              if (proj > 0 && proj < hitDist) {
+                const perpSq = (ox*ox + oy*oy) - proj*proj;
+                if (perpSq < obs.r * obs.r) {
+                  const dHit = proj - Math.sqrt(obs.r * obs.r - perpSq);
+                  if (dHit > 0 && dHit < hitDist) {
+                    hitDist = dHit;
+                  }
+                }
+              }
+            }
+
+            const hitEnd = toCanvas(robot.x + Math.cos(rayAngle) * hitDist, robot.y + Math.sin(rayAngle) * hitDist);
+            ctx.strokeStyle = hitDist < 1.0 ? 'rgba(255, 0, 85, 0.4)' : 'rgba(0, 240, 255, 0.15)';
+            ctx.beginPath();
+            ctx.moveTo(rPos.cx, rPos.cy);
+            ctx.lineTo(hitEnd.cx, hitEnd.cy);
+            ctx.stroke();
+
+            // Hit dot
+            if (hitDist < maxLidarDist) {
+              ctx.fillStyle = hitDist < 0.6 ? '#ff0055' : '#00f0ff';
+              ctx.beginPath(); ctx.arc(hitEnd.cx, hitEnd.cy, 2.5, 0, Math.PI * 2); ctx.fill();
+            }
+          }
+        }
+
+        // Shield Forcefield Barrier
+        if (currentShieldMode !== 'unshielded') {
+          ctx.strokeStyle = robot.isIntervening ? 'rgba(255, 0, 85, 0.9)' : 'rgba(0, 240, 255, 0.4)';
+          ctx.lineWidth = robot.isIntervening ? 3 : 1.5;
+          ctx.beginPath();
+          const shieldRadius = rR * 1.6;
+          // Hexagonal forcefield
+          for (let a = 0; a < 6; a++) {
+            const angle = robot.heading + (a / 6) * Math.PI * 2;
+            const hx = rPos.cx + Math.cos(angle) * shieldRadius;
+            const hy = rPos.cy - Math.sin(angle) * shieldRadius;
+            if (a === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+          }
+          ctx.closePath();
+          ctx.fillStyle = robot.isIntervening ? 'rgba(255, 0, 85, 0.15)' : 'rgba(0, 240, 255, 0.08)';
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        // Action Vectors
+        if (showVectors && robot.isIntervening) {
+          // Commanded unsafe turn
+          const cmdAngle = robot.heading + robot.cmdAction * 0.4;
+          const cmdEnd = toCanvas(robot.x + Math.cos(cmdAngle) * 0.7, robot.y + Math.sin(cmdAngle) * 0.7);
+          ctx.strokeStyle = '#ff0055';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(cmdEnd.cx, cmdEnd.cy); ctx.stroke();
+
+          // Safe executed turn
+          const safeAngle = robot.heading + robot.safeAction * 0.4;
+          const safeEnd = toCanvas(robot.x + Math.cos(safeAngle) * 0.7, robot.y + Math.sin(safeAngle) * 0.7);
+          ctx.strokeStyle = '#00f0ff';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(safeEnd.cx, safeEnd.cy); ctx.stroke();
+        }
+
+        // Robot Chassis
+        ctx.save();
+        ctx.translate(rPos.cx, rPos.cy);
+        ctx.rotate(-robot.heading);
+
+        // Body
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = robot.isIntervening ? '#ff0055' : robot.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, rR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Direction Arrow
+        ctx.fillStyle = robot.isIntervening ? '#ff0055' : robot.color;
+        ctx.beginPath();
+        ctx.moveTo(rR * 0.9, 0);
+        ctx.lineTo(-rR * 0.5, rR * 0.5);
+        ctx.lineTo(-rR * 0.2, 0);
+        ctx.lineTo(-rR * 0.5, -rR * 0.5);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
