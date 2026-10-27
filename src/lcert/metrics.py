@@ -370,22 +370,22 @@ def compute_paired_bootstrap_reduction(
     num_resamples: int = 10000,
     seed: int = 42,
 ) -> PairedBootstrapResult:
-    """Compute non-parametric paired bootstrap confidence interval for metric reduction.
+    """Compute BCa bootstrap confidence interval for ratio-of-means metric reduction.
 
-    Solves the small-sample overlapping t-interval issue by directly evaluating the
-    paired relative reduction across matched seeds:
-        R_i = (base_i - treat_i) / base_i * 100%
+    Per PREREGISTRATION.md Section 4.1:
+        Estimand: R = (mean(FSV_base) - mean(FSV_treat)) / mean(FSV_base) * 100%
+    Resampled over matched seeds using BCa (bias-corrected and accelerated) bootstrap.
 
     Args:
         baseline_samples: Metric values for nominal/baseline model per seed.
         treatment_samples: Metric values for treatment (e.g. k=2.0) on the identical seeds.
-        target_reduction_pct: Hypothesis benchmark threshold (e.g. 50.0% for H2).
+        target_reduction_pct: Hypothesis benchmark threshold (e.g. 50.0% for P1/H2).
         confidence: Confidence level (default 0.95).
         num_resamples: Number of bootstrap iterations (default 10,000).
         seed: Random seed for bootstrap reproducibility.
 
     Returns:
-        PairedBootstrapResult with exact percentile confidence intervals.
+        PairedBootstrapResult with BCa confidence intervals on ratio of means.
     """
     base = np.asarray(baseline_samples, dtype=float)
     treat = np.asarray(treatment_samples, dtype=float)
@@ -399,39 +399,81 @@ def compute_paired_bootstrap_reduction(
     if n < 2:
         raise ValueError(f"At least 2 matched pairs required, got n={n}")
 
-    diff_abs = base - treat
-    # Avoid zero division if baseline is 0
-    with np.errstate(divide="ignore", invalid="ignore"):
-        rel_reduct = np.where(base > 0, (diff_abs / base) * 100.0, 0.0)
-
     mean_base = float(np.mean(base))
     mean_treat = float(np.mean(treat))
-    mean_diff_abs = float(np.mean(diff_abs))
-    mean_rel = float(np.mean(rel_reduct))
+    mean_diff_abs = mean_base - mean_treat
 
-    # Bootstrap Resampling
+    # Point estimate of ratio of means (percentage reduction)
+    if mean_base > 0:
+        theta_hat = float((mean_diff_abs / mean_base) * 100.0)
+    else:
+        theta_hat = 0.0
+
+    # Bootstrap Resampling over matched seeds
     rng = np.random.default_rng(seed)
     boot_indices = rng.integers(0, n, size=(num_resamples, n))
 
-    boot_diff_abs = np.mean(diff_abs[boot_indices], axis=1)
-    boot_rel_reduct = np.mean(rel_reduct[boot_indices], axis=1)
+    boot_base = np.mean(base[boot_indices], axis=1)
+    boot_treat = np.mean(treat[boot_indices], axis=1)
+    boot_diff_abs = boot_base - boot_treat
 
+    with np.errstate(divide="ignore", invalid="ignore"):
+        boot_theta = np.where(boot_base > 0, (boot_diff_abs / boot_base) * 100.0, 0.0)
+
+    # 1. Bias correction z0
+    prop_less = float(np.mean(boot_theta < theta_hat))
+    prop_less = max(1e-6, min(1.0 - 1e-6, prop_less))
+    z0 = float(scipy.stats.norm.ppf(prop_less))
+
+    # 2. Acceleration a via Jackknife
+    jack_thetas = np.zeros(n)
+    for i in range(n):
+        jk_base = np.delete(base, i)
+        jk_treat = np.delete(treat, i)
+        m_b = np.mean(jk_base)
+        m_t = np.mean(jk_treat)
+        jack_thetas[i] = ((m_b - m_t) / m_b) * 100.0 if m_b > 0 else 0.0
+
+    jack_mean = np.mean(jack_thetas)
+    u_i = jack_mean - jack_thetas
+    sum_cubes = np.sum(u_i ** 3)
+    sum_squares = np.sum(u_i ** 2)
+
+    if sum_squares > 1e-12:
+        a = float(sum_cubes / (6.0 * (sum_squares ** 1.5)))
+    else:
+        a = 0.0
+
+    # 3. BCa percentile endpoints
     alpha = 1.0 - confidence
+    z_lo = scipy.stats.norm.ppf(alpha / 2.0)
+    z_hi = scipy.stats.norm.ppf(1.0 - alpha / 2.0)
+
+    denom_lo = 1.0 - a * (z0 + z_lo)
+    denom_hi = 1.0 - a * (z0 + z_hi)
+
+    a1 = scipy.stats.norm.cdf(z0 + (z0 + z_lo) / (denom_lo if abs(denom_lo) > 1e-8 else 1.0))
+    a2 = scipy.stats.norm.cdf(z0 + (z0 + z_hi) / (denom_hi if abs(denom_hi) > 1e-8 else 1.0))
+
+    a1 = max(0.0001, min(0.9999, float(a1)))
+    a2 = max(0.0001, min(0.9999, float(a2)))
+
+    ci_rel_lo = float(np.percentile(boot_theta, 100.0 * min(a1, a2)))
+    ci_rel_hi = float(np.percentile(boot_theta, 100.0 * max(a1, a2)))
+
+    # Absolute difference intervals
     ci_abs_lo = float(np.percentile(boot_diff_abs, 100.0 * (alpha / 2.0)))
     ci_abs_hi = float(np.percentile(boot_diff_abs, 100.0 * (1.0 - alpha / 2.0)))
 
-    ci_rel_lo = float(np.percentile(boot_rel_reduct, 100.0 * (alpha / 2.0)))
-    ci_rel_hi = float(np.percentile(boot_rel_reduct, 100.0 * (1.0 - alpha / 2.0)))
-
-    # Empirical p-value: proportion of bootstrap iterations failing to meet target threshold
-    p_fail = float(np.mean(boot_rel_reduct < target_reduction_pct))
+    # Empirical p-value: fraction of bootstrap replicates below target reduction threshold
+    p_fail = float(np.mean(boot_theta < target_reduction_pct))
 
     return PairedBootstrapResult(
         mean_baseline=mean_base,
         mean_treatment=mean_treat,
         mean_reduction_abs=mean_diff_abs,
         ci_reduction_abs=(ci_abs_lo, ci_abs_hi),
-        mean_reduction_pct=mean_rel,
+        mean_reduction_pct=theta_hat,
         ci_reduction_pct=(ci_rel_lo, ci_rel_hi),
         target_reduction_pct=target_reduction_pct,
         p_value_meets_target=1.0 - p_fail,

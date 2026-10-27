@@ -27,7 +27,7 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
-from lcert.artifacts import write_json
+from lcert.artifacts import check_confirmatory_guard, write_json
 from lcert.config import load_config
 from lcert.data import generate_trajectory_splits
 from lcert.hj_learned import solve_learned_di_brt
@@ -108,7 +108,24 @@ def run_single_condition(
     p_lin = np.linspace(lo[0], hi[0], grid_size)
     v_lin = np.linspace(lo[1], hi[1], grid_size)
     P, Vv = np.meshgrid(p_lin, v_lin, indexing="ij")
-    v_true = di_safe_analytic(P, Vv, umax, horizon)
+    if base_config.get("system") == "double_integrator_hidden_physics":
+        from lcert.hj_di import solve_di_hidden_physics_brt
+        hp = base_config.get("hidden_physics", {})
+        _, v_true = solve_di_hidden_physics_brt(
+            umax=umax,
+            T=horizon,
+            n=grid_size,
+            lo=lo,
+            hi=hi,
+            pc=hp.get("pc", 0.7),
+            w=hp.get("w", 0.6),
+            eta=hp.get("eta", 0.5),
+            b=hp.get("b", 0.3),
+            s=hp.get("s", -1.0),
+            accuracy=base_config.get("accuracy", "medium"),
+        )
+    else:
+        v_true = di_safe_analytic(P, Vv, umax, horizon)
 
     states = np.stack([P, Vv], axis=-1)
 
@@ -157,12 +174,16 @@ def run_pipeline(config_path: Path, max_sizes: int | None = None) -> dict:
     seeds = config.get("seeds", [0, 1, 2, 3, 4])
     inflation_k_values = [float(k) for k in config.get("inflation_k_values", [0.0, 1.0])]
 
+    # Enforce confirmatory guard before touching any confirmatory seed
+    check_confirmatory_guard(seeds)
+
     results_dir = ROOT / "results" / "sweeps" / datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     results_dir.mkdir(parents=True, exist_ok=True)
 
     print("=" * 70)
     print(f"=== falsesafe-bench: Running {config.get('experiment', 'E1')} Sweep ===")
     print(f"System: {config.get('system')} | Seeds: {seeds} | Sizes: {data_sizes}")
+
     print(f"Inflation k: {inflation_k_values} | Output: {results_dir.relative_to(ROOT)}")
     print("=" * 70, flush=True)
 

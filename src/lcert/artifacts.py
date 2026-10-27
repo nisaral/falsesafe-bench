@@ -62,6 +62,26 @@ def git_snapshot(root: Path) -> tuple[str, bool]:
     return commit, clean
 
 
+def check_confirmatory_guard(seeds: list[int] | set[int] | tuple[int, ...], root: Path | None = None) -> None:
+    """Automated guard for confirmatory seeds 1000-1029 per PREREGISTRATION.md Section 8."""
+    confirmatory_seeds = set(range(1000, 1030))
+    if any(s in confirmatory_seeds for s in seeds):
+        r = root or project_root()
+        tag_check = subprocess.run(["git", "-C", str(r), "tag", "-l", "prereg-v1"], capture_output=True, text=True)
+        if "prereg-v1" not in tag_check.stdout:
+            raise RuntimeError(
+                "CONFIRMATORY GUARD VIOLATION: Pre-registration tag 'prereg-v1' not found. "
+                "Per PREREGISTRATION.md Section 8, confirmatory seeds 1000-1029 cannot be executed before tagging."
+            )
+        commit, clean = git_snapshot(r)
+        if not clean:
+            raise RuntimeError(
+                "CONFIRMATORY GUARD VIOLATION: Working tree is dirty. "
+                "Per PREREGISTRATION.md Section 8, confirmatory seeds 1000-1029 require a clean git working tree."
+            )
+        print(f"[GUARD PASSED] Tag 'prereg-v1' verified at commit {commit[:7]} and working tree clean.", flush=True)
+
+
 def validate_runlog(record: dict[str, Any], root: Path | None = None) -> None:
     schema = json.loads(((root or project_root()) / 'runlog_schema.json').read_text(encoding='utf-8'))
     missing = set(schema['required']) - record.keys()

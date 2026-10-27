@@ -16,9 +16,9 @@ def _in_box(state: np.ndarray, lower: np.ndarray, upper: np.ndarray) -> bool:
 def generate_trajectory_splits(config: dict) -> tuple[dict, dict]:
     """Synthetic noisy derivative observations along fixed, disjoint trajectories."""
     system = config.get('system')
-    if system not in ('double_integrator', 'dubins'):
-        raise ConfigurationError('Trajectory generator supports double_integrator and dubins')
-    dimensions = 2 if system == 'double_integrator' else 3
+    if system not in ('double_integrator', 'double_integrator_hidden_physics', 'dubins'):
+        raise ConfigurationError('Trajectory generator supports double_integrator, double_integrator_hidden_physics, and dubins')
+    dimensions = 2 if system in ('double_integrator', 'double_integrator_hidden_physics') else 3
     lower = np.asarray(config.get('state_lo'), dtype=float)
     upper = np.asarray(config.get('state_hi'), dtype=float)
     if lower.shape != (dimensions,) or upper.shape != lower.shape:

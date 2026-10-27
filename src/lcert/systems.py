@@ -32,3 +32,50 @@ def di_safe_analytic(p, v, umax, T):
     p = np.asarray(p, float); v = np.asarray(v, float)
     ts = np.clip(-v / umax, 0.0, T)
     return p + v * ts + 0.5 * umax * ts**2
+
+
+def double_integrator_hidden_physics_f(
+    x,
+    u,
+    p_c: float = 0.7,
+    w: float = 0.6,
+    eta: float = 0.5,
+    b: float = 0.3,
+    s: float = -1.0,
+):
+    """True dynamics with pre-registered hidden physics inside gap G = [p_c - w/2, p_c + w/2].
+
+    p' = v
+    v' = (1 - eta * 1_G(p)) * u + b * s * 1_G(p)
+    """
+    x = np.asarray(x, dtype=float)
+    u_arr = np.asarray(u, dtype=float) * np.ones_like(x[..., 1])
+    p = x[..., 0]
+    v = x[..., 1]
+
+    in_gap = (p >= (p_c - 0.5 * w)) & (p <= (p_c + 0.5 * w))
+    effective_u = np.where(in_gap, (1.0 - eta) * u_arr + b * s, u_arr)
+    return np.stack([v, effective_u], axis=-1)
+
+
+def double_integrator_benign_drag_f(
+    x,
+    u,
+    p_c: float = 0.7,
+    w: float = 0.6,
+    drag_coeff: float = 0.5,
+):
+    """Benign-drag control (C4): drag opposes motion and assists braking.
+
+    p' = v
+    v' = u - drag_coeff * v * |v| * 1_G(p)
+    """
+    x = np.asarray(x, dtype=float)
+    u_arr = np.asarray(u, dtype=float) * np.ones_like(x[..., 1])
+    p = x[..., 0]
+    v = x[..., 1]
+
+    in_gap = (p >= (p_c - 0.5 * w)) & (p <= (p_c + 0.5 * w))
+    drag = np.where(in_gap, -drag_coeff * v * np.abs(v), 0.0)
+    return np.stack([v, u_arr + drag], axis=-1)
+
