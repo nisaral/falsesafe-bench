@@ -271,16 +271,19 @@ def compute_confidence_interval(
     confidence: float = 0.95,
     min_samples: int = 5,
     enforce_min_samples: bool = False,
+    clip_bounds: tuple[float | None, float | None] | None = None,
 ) -> ConfidenceInterval:
     """Compute Student's t confidence interval over independent seed runs.
 
     Per SCOPE.md Section 3: "CI: 95% t-interval over seeds, n >= 5 seeds."
+    Optionally clips to physical domain bounds (e.g. [0, 1] for volume fractions).
 
     Args:
         samples: Array of numerical metric values across runs.
         confidence: Confidence level (default 0.95 for 95% CI).
         min_samples: Minimum required sample size (default 5).
         enforce_min_samples: If True, raises ValueError when len(samples) < min_samples.
+        clip_bounds: Optional (min_val, max_val) to clip confidence interval bounds.
 
     Returns:
         ConfidenceInterval with mean, lower, upper bounds, half_width, std, and n.
@@ -304,31 +307,163 @@ def compute_confidence_interval(
     sample_std = float(np.std(arr, ddof=1))
 
     if math.isclose(sample_std, 0.0, abs_tol=1e-15):
-        return ConfidenceInterval(
-            mean=mean,
-            ci_lower=mean,
-            ci_upper=mean,
-            half_width=0.0,
-            std=0.0,
-            sem=0.0,
-            n=n,
-            confidence=confidence,
-        )
+        ci_lo, ci_hi = mean, mean
+        half_width = 0.0
+        sem = 0.0
+    else:
+        sem = sample_std / math.sqrt(n)
+        t_crit = float(scipy.stats.t.ppf(0.5 + confidence / 2.0, df=n - 1))
+        half_width = t_crit * sem
+        ci_lo = mean - half_width
+        ci_hi = mean + half_width
 
-    sem = sample_std / math.sqrt(n)
-    t_crit = float(scipy.stats.t.ppf(0.5 + confidence / 2.0, df=n - 1))
-    half_width = t_crit * sem
+    if clip_bounds is not None:
+        if clip_bounds[0] is not None:
+            ci_lo = max(clip_bounds[0], ci_lo)
+        if clip_bounds[1] is not None:
+            ci_hi = min(clip_bounds[1], ci_hi)
 
     return ConfidenceInterval(
         mean=mean,
-        ci_lower=mean - half_width,
-        ci_upper=mean + half_width,
+        ci_lower=ci_lo,
+        ci_upper=ci_hi,
         half_width=half_width,
         std=sample_std,
         sem=sem,
         n=n,
         confidence=confidence,
     )
+
+
+@dataclass(frozen=True)
+class PairedBootstrapResult:
+    """Non-parametric paired bootstrap summary for comparing matched seed runs."""
+    mean_baseline: float
+    mean_treatment: float
+    mean_reduction_abs: float
+    ci_reduction_abs: tuple[float, float]
+    mean_reduction_pct: float
+    ci_reduction_pct: tuple[float, float]
+    target_reduction_pct: float
+    p_value_meets_target: float
+    n: int
+    num_resamples: int
+    confidence: float = 0.95
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def format(self, precision: int = 1) -> str:
+        return (
+            f"Reduction: {self.mean_reduction_pct:.{precision}f}% "
+            f"[{self.ci_reduction_pct[0]:.{precision}f}%, {self.ci_reduction_pct[1]:.{precision}f}%] "
+            f"(target >={self.target_reduction_pct:.0f}%, p={self.p_value_meets_target:.4f}, n={self.n})"
+        )
+
+
+def compute_paired_bootstrap_reduction(
+    baseline_samples: Sequence[float] | np.ndarray,
+    treatment_samples: Sequence[float] | np.ndarray,
+    *,
+    target_reduction_pct: float = 50.0,
+    confidence: float = 0.95,
+    num_resamples: int = 10000,
+    seed: int = 42,
+) -> PairedBootstrapResult:
+    """Compute non-parametric paired bootstrap confidence interval for metric reduction.
+
+    Solves the small-sample overlapping t-interval issue by directly evaluating the
+    paired relative reduction across matched seeds:
+        R_i = (base_i - treat_i) / base_i * 100%
+
+    Args:
+        baseline_samples: Metric values for nominal/baseline model per seed.
+        treatment_samples: Metric values for treatment (e.g. k=2.0) on the identical seeds.
+        target_reduction_pct: Hypothesis benchmark threshold (e.g. 50.0% for H2).
+        confidence: Confidence level (default 0.95).
+        num_resamples: Number of bootstrap iterations (default 10,000).
+        seed: Random seed for bootstrap reproducibility.
+
+    Returns:
+        PairedBootstrapResult with exact percentile confidence intervals.
+    """
+    base = np.asarray(baseline_samples, dtype=float)
+    treat = np.asarray(treatment_samples, dtype=float)
+
+    if base.shape != treat.shape or base.ndim != 1:
+        raise ValueError(f"baseline and treatment must be 1D arrays of identical length, got {base.shape} and {treat.shape}")
+    if not (np.isfinite(base).all() and np.isfinite(treat).all()):
+        raise ValueError("Samples contain NaN or Inf values")
+
+    n = len(base)
+    if n < 2:
+        raise ValueError(f"At least 2 matched pairs required, got n={n}")
+
+    diff_abs = base - treat
+    # Avoid zero division if baseline is 0
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rel_reduct = np.where(base > 0, (diff_abs / base) * 100.0, 0.0)
+
+    mean_base = float(np.mean(base))
+    mean_treat = float(np.mean(treat))
+    mean_diff_abs = float(np.mean(diff_abs))
+    mean_rel = float(np.mean(rel_reduct))
+
+    # Bootstrap Resampling
+    rng = np.random.default_rng(seed)
+    boot_indices = rng.integers(0, n, size=(num_resamples, n))
+
+    boot_diff_abs = np.mean(diff_abs[boot_indices], axis=1)
+    boot_rel_reduct = np.mean(rel_reduct[boot_indices], axis=1)
+
+    alpha = 1.0 - confidence
+    ci_abs_lo = float(np.percentile(boot_diff_abs, 100.0 * (alpha / 2.0)))
+    ci_abs_hi = float(np.percentile(boot_diff_abs, 100.0 * (1.0 - alpha / 2.0)))
+
+    ci_rel_lo = float(np.percentile(boot_rel_reduct, 100.0 * (alpha / 2.0)))
+    ci_rel_hi = float(np.percentile(boot_rel_reduct, 100.0 * (1.0 - alpha / 2.0)))
+
+    # Empirical p-value: proportion of bootstrap iterations failing to meet target threshold
+    p_fail = float(np.mean(boot_rel_reduct < target_reduction_pct))
+
+    return PairedBootstrapResult(
+        mean_baseline=mean_base,
+        mean_treatment=mean_treat,
+        mean_reduction_abs=mean_diff_abs,
+        ci_reduction_abs=(ci_abs_lo, ci_abs_hi),
+        mean_reduction_pct=mean_rel,
+        ci_reduction_pct=(ci_rel_lo, ci_rel_hi),
+        target_reduction_pct=target_reduction_pct,
+        p_value_meets_target=1.0 - p_fail,
+        n=n,
+        num_resamples=num_resamples,
+        confidence=confidence,
+    )
+
+
+def compute_asymmetric_safety_cost(
+    fsv: float | Sequence[float] | np.ndarray,
+    fuv: float | Sequence[float] | np.ndarray,
+    cost_false_safe: float = 10.0,
+    cost_false_unsafe: float = 1.0,
+) -> float | np.ndarray:
+    """Compute formal asymmetric safety cost C = c_FS * FSV + c_FU * FUV.
+
+    In safety-critical robotics, a False-Safe (catastrophic physical collision)
+    is orders of magnitude more severe than a False-Unsafe (unnecessary braking/conservatism).
+
+    Args:
+        fsv: False-safe volume (catastrophic crash risk).
+        fuv: False-unsafe volume (conservatism / efficiency loss).
+        cost_false_safe: Penalty weight per unit FSV (default 10.0).
+        cost_false_unsafe: Penalty weight per unit FUV (default 1.0).
+
+    Returns:
+        Scalar or array of composite safety cost values.
+    """
+    fsv_arr = np.asarray(fsv, dtype=float)
+    fuv_arr = np.asarray(fuv, dtype=float)
+    return float(cost_false_safe * fsv_arr + cost_false_unsafe * fuv_arr)
 
 
 def aggregate_metric_runs(
@@ -351,18 +486,21 @@ def aggregate_metric_runs(
     if not metrics_list:
         raise ValueError("metrics_list cannot be empty")
 
+    volume_keys = {"fsv", "fuv", "iou", "safe_hat_volume", "safe_true_volume", "gap_fsv", "gap_fuv", "non_gap_fsv"}
     keys = ["fsv", "fuv", "iou", "safe_hat_volume", "safe_true_volume", "rmse", "max_abs_error"]
-    # Check if optional gap metrics exist across runs
     if all(m.gap_fsv is not None for m in metrics_list):
         keys.extend(["gap_fsv", "gap_fuv", "non_gap_fsv"])
 
     result: dict[str, ConfidenceInterval] = {}
     for key in keys:
         values = [getattr(m, key) for m in metrics_list]
+        clip = (0.0, 1.0) if key in volume_keys else None
         result[key] = compute_confidence_interval(
             values,
             confidence=confidence,
             min_samples=min_samples,
             enforce_min_samples=enforce_min_samples,
+            clip_bounds=clip,
         )
     return result
+

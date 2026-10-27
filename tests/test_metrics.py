@@ -8,9 +8,12 @@ import pytest
 from lcert.metrics import (
     CertificationMetrics,
     ConfidenceInterval,
+    PairedBootstrapResult,
     aggregate_metric_runs,
+    compute_asymmetric_safety_cost,
     compute_certification_metrics,
     compute_confidence_interval,
+    compute_paired_bootstrap_reduction,
     coverage_gap_mask,
     interior_mask,
 )
@@ -210,3 +213,42 @@ def test_aggregate_metric_runs():
     assert "iou" in agg
     assert agg["fsv"].mean == pytest.approx(0.11)
     assert agg["fsv"].n == 3
+    # Volume metrics should have non-negative lower bounds
+    assert agg["fsv"].ci_lower >= 0.0
+
+
+def test_confidence_interval_clipping():
+    # Mean near 0 with variance: unbounded CI lower bound would be negative
+    samples = [0.0001, 0.0002, 0.0000, 0.0008, 0.0001]
+    ci_unclipped = compute_confidence_interval(samples, clip_bounds=None)
+    assert ci_unclipped.ci_lower < 0.0
+
+    ci_clipped = compute_confidence_interval(samples, clip_bounds=(0.0, 1.0))
+    assert ci_clipped.ci_lower == 0.0
+    assert ci_clipped.ci_upper <= 1.0
+
+
+def test_paired_bootstrap_reduction():
+    # Nominal vs k=2.0 on 5 matched seeds
+    nominal = [0.0035, 0.0028, 0.0041, 0.0019, 0.0027]
+    inflated = [0.0009, 0.0007, 0.0011, 0.0005, 0.0008]
+
+    res = compute_paired_bootstrap_reduction(nominal, inflated, target_reduction_pct=50.0, seed=42)
+    assert res.mean_reduction_pct > 70.0
+    assert res.ci_reduction_pct[0] > 60.0  # Lower bound of reduction is well above 50%
+    assert res.p_value_meets_target >= 0.99
+    assert res.n == 5
+
+
+def test_asymmetric_safety_cost():
+    # Nominal: high FSV, low FUV
+    cost_nominal = compute_asymmetric_safety_cost(fsv=0.0030, fuv=0.0005, cost_false_safe=10.0, cost_false_unsafe=1.0)
+    # Inflated: low FSV, higher FUV
+    cost_inflated = compute_asymmetric_safety_cost(fsv=0.0008, fuv=0.0042, cost_false_safe=10.0, cost_false_unsafe=1.0)
+
+    # Cost of nominal = 10*0.0030 + 1*0.0005 = 0.0305
+    # Cost of inflated = 10*0.0008 + 1*0.0042 = 0.0122
+    assert cost_nominal == pytest.approx(0.0305)
+    assert cost_inflated == pytest.approx(0.0122)
+    assert cost_inflated < cost_nominal * 0.5  # More than 50% net cost reduction!
+
