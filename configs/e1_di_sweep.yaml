@@ -1,0 +1,29 @@
+experiment: E1
+title: "Nominal FSV vs data size and coverage gap on double integrator"
+system: double_integrator
+state_lo: [-1.0, -2.0]
+state_hi: [3.0, 2.0]
+umax: 1.0
+dt: 0.05
+trajectory_steps: 10
+horizon: 0.5
+grid_size: 51
+accuracy: "medium"
+seed: 0
+seeds: [0, 1, 2, 3, 4]
+split_seed: 42
+data_sizes_trajectories: [10, 30, 100]
+val_trajectories: 10
+test_trajectories: 10
+derivative_observation_noise_std: 0.01
+coverage_gap:
+  enabled: true
+  lo: [0.25, -0.75]
+  hi: [1.25, 0.75]
+model:
+  type: ensemble_mlp
+  members: 3
+  hidden_sizes: [32, 32]
+  epochs: 60
+  learning_rate: 0.002
+inflation_k_values: [0.0, 0.5, 1.0, 2.0]

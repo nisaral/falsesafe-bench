@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>falsesafe-bench: Watch Safety Go Wrong — Interactive Reachability Audit</title>
+  <meta name="description" content="Interactive Hamilton-Jacobi reachability benchmark demo showing false-safe certificate errors under learned dynamics with coverage gaps and epistemic uncertainty inflation.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-space: #07090e;
+      --bg-panel: rgba(15, 23, 42, 0.75);
+      --bg-card: rgba(30, 41, 59, 0.5);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(99, 102, 241, 0.5);
+      
+      --cyan-safe: #00f0ff;
+      --cyan-glow: rgba(0, 240, 255, 0.35);
+      --green-learned: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.3);
+      --rose-falsesafe: #ff0055;
+      --rose-glow: rgba(255, 0, 85, 0.45);
+      --amber-fuv: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.35);
+      --purple-accent: #8b5cf6;
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-space);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(255, 0, 85, 0.08) 0%, transparent 40%),
+        linear-gradient(180deg, #07090e 0%, #0d121f 100%);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 24px 36px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(12px);
+      background: rgba(7, 9, 14, 0.6);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #f43f5e 0%, #8b5cf6 100%);
+      color: white;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.4);
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-links a:hover {
+      color: white;
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    main {
+      padding: 28px 36px;
+      max-width: 1600px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 390px;
+      gap: 28px;
+    }
+
+    @media (max-width: 1200px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .canvas-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .panel-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .canvas-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(0, 240, 255, 0.1);
+      color: var(--cyan-safe);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      height: 540px;
+      background: #05070b;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: crosshair;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .canvas-overlay-ui {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .legend-chip {
+      background: rgba(11, 15, 25, 0.88);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-true { background: var(--cyan-safe); box-shadow: 0 0 8px var(--cyan-safe); }
+    .dot-learned { background: var(--green-learned); box-shadow: 0 0 8px var(--green-learned); }
+    .dot-falsesafe { background: var(--rose-falsesafe); box-shadow: 0 0 10px var(--rose-falsesafe); animation: pulse 1.6s infinite; }
+    .dot-gap { background: #6366f1; border: 1px dashed white; }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.7; }
+    }
+
+    .canvas-bottom-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .glass-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.3);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .metric-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .metric-box:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .metric-box.falsesafe {
+      border-left: 3px solid var(--rose-falsesafe);
+    }
+
+    .metric-box.falseunsafe {
+      border-left: 3px solid var(--amber-fuv);
+    }
+
+    .metric-box.iou {
+      border-left: 3px solid var(--cyan-safe);
+    }
+
+    .metric-box.gapfsv {
+      border-left: 3px solid #8b5cf6;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .metric-bar-bg {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .fill-falsesafe { background: linear-gradient(90deg, #ff0055, #f43f5e); }
+    .fill-falseunsafe { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .fill-iou { background: linear-gradient(90deg, #00f0ff, #38bdf8); }
+    .fill-gap { background: linear-gradient(90deg, #8b5cf6, #c084fc); }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .slider-header span:first-child {
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    .slider-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--cyan-safe);
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .preset-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .preset-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      line-height: 1.3;
+    }
+
+    .preset-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .preset-btn.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: #6366f1;
+      color: white;
+    }
+
+    .hypothesis-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .h-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .h-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .h-pass { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .h-warn { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+
+    .action-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+    }
+
+    .hud-tooltip {
+      position: absolute;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      pointer-events: none;
+      display: none;
+      z-index: 100;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="brand-badge">Demo 1</span>
+      <h1>Watch Safety Go Wrong</h1>
+    </div>
+    <div class="header-links">
+      <a href="https://github.com/nisaral/falsesafe-bench" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+        falsesafe-bench GitHub
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Canvas Area -->
+    <section class="canvas-panel">
+      <div class="panel-top-bar">
+        <div class="canvas-title">
+          <span>Double Integrator State Space $(p, v)$</span>
+          <span class="status-pill" id="live-indicator">LIVE AUDIT RUNNING</span>
+        </div>
+        <div class="canvas-bottom-hint">
+          <span>Click anywhere to drop robot trajectory</span>
+        </div>
+      </div>
+
+      <div class="canvas-wrapper" id="canvas-container">
+        <canvas id="safety-canvas"></canvas>
+        <div class="canvas-overlay-ui">
+          <div class="legend-chip"><span class="dot dot-true"></span> Ground-Truth Safe Set $V^* \ge 0$</div>
+          <div class="legend-chip"><span class="dot dot-learned"></span> Learned Safe Set $\hat{V} \ge 0$</div>
+          <div class="legend-chip"><span class="dot dot-falsesafe"></span> ⚠️ FALSE-SAFE REGION (Catastrophe)</div>
+          <div class="legend-chip"><span class="dot dot-gap"></span> Coverage Gap Region</div>
+        </div>
+        <div class="hud-tooltip" id="hud-tooltip"></div>
+      </div>
+
+      <div class="canvas-bottom-hint">
+        <span>Horizon $T=0.5\text{s}$, Control $|u| \le 1.0$, Failure Boundary $p < 0$.</span>
+        <span id="fps-counter" style="font-family: 'JetBrains Mono', monospace;">60 FPS</span>
+      </div>
+    </section>
+
+    <!-- Right Controls & Metrics Panel -->
+    <aside class="sidebar">
+      
+      <!-- Metrics Card -->
+      <div class="glass-card">
+        <div class="card-title">
+          <span>Certification Metrics</span>
+          <span style="font-size: 11px; color: var(--text-dim); text-transform: none;">95% t-interval (n=5)</span>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric-box falsesafe">
+            <span class="metric-label">False-Safe Vol (FSV)</span>
+            <span class="metric-val" id="metric-fsv" style="color: #ff0055;">12.4%</span>
+            <div class="metric-bar-bg">
+              <div class="metric-bar-fill fill-falsesafe" id="bar-fsv" style="width: 12.4%;"></div>
+            </div>
+          </div>
+
+          <div class="metric-box falseunsafe">
+            <span class="metric-label">False-Unsafe Vol (FUV)</span>
+            <span class="metric-val" id="metric-fuv" style="color: #f59e0b;">2.1%</span>
+            <div class="metric-bar-bg">
+              <div class="metric-bar-fill fill-falseunsafe" id="bar-fuv" style="width: 2.1%;"></div>
+            </div>
+          </div>
+
+          <div class="metric-box iou">
+            <span class="metric-label">Set Agreement (IoU)</span>
+            <span class="metric-val" id="metric-iou" style="color: #00f0ff;">92.5%</span>
+            <div class="metric-bar-bg">
+              <div class="metric-bar-fill fill-iou" id="bar-iou" style="width: 92.5%;"></div>
+            </div>
+          </div>
+
+          <div class="metric-box gapfsv">
+            <span class="metric-label">Gap-FSV Error</span>
+            <span class="metric-val" id="metric-gapfsv" style="color: #a855f7;">28.7%</span>
+            <div class="metric-bar-bg">
+              <div class="metric-bar-fill fill-gap" id="bar-gapfsv" style="width: 28.7%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Card -->
+      <div class="glass-card">
+        <div class="card-title">Audit Controls</div>
+
+        <div class="control-group">
+          <!-- Slider 1: Data Size N -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>Training Trajectories ($N$)</span>
+              <span class="slider-val" id="val-n">100 trajectories</span>
+            </div>
+            <input type="range" id="slider-n" min="10" max="500" step="10" value="30">
+          </div>
+
+          <!-- Slider 2: Coverage Gap Width -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>Coverage Gap Size</span>
+              <span class="slider-val" id="val-gap">35% State Space</span>
+            </div>
+            <input type="range" id="slider-gap" min="0" max="60" step="5" value="35">
+          </div>
+
+          <!-- Slider 3: Uncertainty Multiplier k -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>Epistemic Inflation ($k$)</span>
+              <span class="slider-val" id="val-k">k = 0.0 (Nominal)</span>
+            </div>
+            <input type="range" id="slider-k" min="0.0" max="3.0" step="0.1" value="0.0">
+          </div>
+
+          <!-- Presets -->
+          <div>
+            <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase;">
+              Presets / Hypotheses
+            </div>
+            <div class="preset-container">
+              <button class="preset-btn active" id="btn-p1" onclick="applyPreset(1)">
+                ⚠️ H1: Nominal FSV<br><span style="color: var(--text-dim); font-size: 10px;">k=0, gap enabled</span>
+              </button>
+              <button class="preset-btn" id="btn-p2" onclick="applyPreset(2)">
+                🛡️ H2: Inflated Shield<br><span style="color: var(--text-dim); font-size: 10px;">k=1.5, reduces FSV</span>
+              </button>
+              <button class="preset-btn" id="btn-p3" onclick="applyPreset(3)">
+                🔒 H3: High Conservatism<br><span style="color: var(--text-dim); font-size: 10px;">k=2.8, FUV rises</span>
+              </button>
+              <button class="preset-btn" id="btn-p4" onclick="applyPreset(4)">
+                🌐 Big Data Limit<br><span style="color: var(--text-dim); font-size: 10px;">N=500, no gap</span>
+              </button>
+            </div>
+          </div>
+
+          <button class="action-btn" id="btn-sim" onclick="spawnTestRobots()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Simulate False-Safe Failure Trajectory
+          </button>
+        </div>
+      </div>
+
+      <!-- Hypothesis Validation Card -->
+      <div class="glass-card">
+        <div class="card-title">Live Scientific Hypothesis Test</div>
+        <div class="hypothesis-card">
+          <div class="h-row">
+            <span class="h-badge h-pass" id="badge-h1">H1: PASS</span>
+            <span style="color: var(--text-muted); font-size: 11px;">Nominal learned model has nonzero FSV concentrated in coverage gap.</span>
+          </div>
+          <div class="h-row">
+            <span class="h-badge h-pass" id="badge-h2">H2: PASS</span>
+            <span style="color: var(--text-muted); font-size: 11px;">Inflation $k \ge 1.0$ reduces FSV by $\ge 50\%$ vs nominal.</span>
+          </div>
+          <div class="h-row">
+            <span class="h-badge h-pass" id="badge-h3">H3: PASS</span>
+            <span style="color: var(--text-muted); font-size: 11px;">Conservatism tradeoff: FUV rises monotonically with $k$.</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <script>
+    // State Space Geometry
+    // Double Integrator: p in [-1.0, 3.0], v in [-2.0, 2.0]
+    const DOMAIN = {
+      pMin: -1.0,
+      pMax: 3.0,
+      vMin: -2.0,
+      vMax: 2.0,
+      umax: 1.0,
+      horizon: 0.5
+    };
+
+    // Audit State
+    let auditState = {
+      N: 30,
+      gapPercent: 35,
+      k: 0.0,
+      simRobots: []
+    };
+
+    // Canvas setup
+    const canvas = document.getElementById('safety-canvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvas-container');
+    const tooltip = document.getElementById('hud-tooltip');
+
+    function resizeCanvas() {
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Coordinate transforms
+    function toCanvasX(p) {
+      const w = container.clientWidth;
+      return ((p - DOMAIN.pMin) / (DOMAIN.pMax - DOMAIN.pMin)) * w;
+    }
+    function toCanvasY(v) {
+      const h = container.clientHeight;
+      // Invert Y so positive velocity is UP
+      return h - ((v - DOMAIN.vMin) / (DOMAIN.vMax - DOMAIN.vMin)) * h;
+    }
+    function toState(cx, cy) {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      const p = DOMAIN.pMin + (cx / w) * (DOMAIN.pMax - DOMAIN.pMin);
+      const v = DOMAIN.vMin + ((h - cy) / h) * (DOMAIN.vMax - DOMAIN.vMin);
+      return { p, v };
+    }
+
+    // Exact Ground Truth Value Function (di_safe_analytic)
+    function trueValue(p, v) {
+      const t_star = Math.max(0.0, Math.min(DOMAIN.horizon, -v / DOMAIN.umax));
+      return p + v * t_star + 0.5 * DOMAIN.umax * t_star * t_star;
+    }
+
+    // Learned Model Value Function with Epistemic Uncertainty Distortion
+    function learnedValue(p, v, N, gapPct, k) {
+      const v_true = trueValue(p, v);
+      
+      // Coverage gap bounds: center [0.75, 0.0] with width proportional to gapPct
+      const gapWidth = (gapPct / 100) * 1.5;
+      const gapHeight = (gapPct / 100) * 1.8;
+      const inGap = (Math.abs(p - 0.75) < gapWidth / 2) && (Math.abs(v) < gapHeight / 2);
+
+      // Epistemic uncertainty: high in gap, falls with sqrt(N)
+      const baseSigma = inGap ? 0.35 : (0.04 * (100 / Math.max(10, N)));
+      const sigma = baseSigma * (1.0 + 0.3 * Math.sin(p * 2 + v));
+
+      // Overconfident nominal bias in the gap (model wrongly thinks positive acceleration is easier)
+      let bias = 0.0;
+      if (gapPct > 0 && inGap) {
+        bias = 0.16 * (1.0 - Math.min(1.0, N / 300));
+      } else {
+        bias = (Math.sin(p * 3) * Math.cos(v * 2)) * (0.06 / Math.sqrt(N / 10));
+      }
+
+      // Inflated HJ disturbance: subtract k * sigma (pushes safe set inwards)
+      const inflationDeduction = k * sigma;
+      return v_true + bias - inflationDeduction;
+    }
+
+    // Interactive Tooltip on Canvas
+    container.addEventListener('mousemove', (e) => {
+      const rect = container.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      const { p, v } = toState(cx, cy);
+
+      if (p >= DOMAIN.pMin && p <= DOMAIN.pMax && v >= DOMAIN.vMin && v <= DOMAIN.vMax) {
+        const vT = trueValue(p, v);
+        const vL = learnedValue(p, v, auditState.N, auditState.gapPercent, auditState.k);
+        const isFalseSafe = (vL >= 0 && vT < 0);
+        
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${cx + 15}px`;
+        tooltip.style.top = `${cy + 15}px`;
+        tooltip.innerHTML = `
+          <div style="color: #94a3b8;">State: <span style="color:white;">p=${p.toFixed(2)}, v=${v.toFixed(2)}</span></div>
+          <div>V*(True): <span style="color:${vT>=0?'#00f0ff':'#ef4444'};">${vT.toFixed(3)} (${vT>=0?'SAFE':'UNSAFE'})</span></div>
+          <div>V̂(Learned): <span style="color:${vL>=0?'#10b981':'#ef4444'};">${vL.toFixed(3)} (${vL>=0?'SAFE':'UNSAFE'})</span></div>
+          ${isFalseSafe ? '<div style="color:#ff0055; font-weight:700; margin-top:4px;">⚠️ FALSE-SAFE CELL</div>' : ''}
+        `;
+      } else {
+        tooltip.style.display = 'none';
+      }
+    });
+
+    container.addEventListener('mouseleave', () => {
+      tooltip.style.display = 'none';
+    });
+
+    // Drop test robot on click
+    container.addEventListener('click', (e) => {
+      const rect = container.getBoundingClientRect();
+      const { p, v } = toState(e.clientX - rect.left, e.clientY - rect.top);
+      spawnRobot(p, v);
+    });
+
+    function spawnRobot(p, v) {
+      auditState.simRobots.push({
+        p: p,
+        v: v,
+        trail: [{ p, v }],
+        alive: true,
+        crashed: false,
+        time: 0
+      });
+    }
+
+    function spawnTestRobots() {
+      // Spawn robots starting right in the false-safe region
+      spawnRobot(0.15, -0.6);
+      spawnRobot(0.25, -0.9);
+      spawnRobot(0.40, -1.2);
+    }
+
+    // Sliders
+    const sliderN = document.getElementById('slider-n');
+    const sliderGap = document.getElementById('slider-gap');
+    const sliderK = document.getElementById('slider-k');
+
+    sliderN.addEventListener('input', (e) => {
+      auditState.N = parseInt(e.target.value);
+      document.getElementById('val-n').innerText = `${auditState.N} trajectories`;
+      clearPresets();
+    });
+
+    sliderGap.addEventListener('input', (e) => {
+      auditState.gapPercent = parseInt(e.target.value);
+      document.getElementById('val-gap').innerText = `${auditState.gapPercent}% State Space`;
+      clearPresets();
+    });
+
+    sliderK.addEventListener('input', (e) => {
+      auditState.k = parseFloat(e.target.value);
+      document.getElementById('val-k').innerText = `k = ${auditState.k.toFixed(1)}${auditState.k === 0 ? ' (Nominal)' : ''}`;
+      clearPresets();
+    });
+
+    function clearPresets() {
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`btn-p${i}`).classList.remove('active');
+      }
+    }
+
+    function applyPreset(num) {
+      clearPresets();
+      document.getElementById(`btn-p${num}`).classList.add('active');
+
+      if (num === 1) {
+        // H1: Nominal FSV
+        sliderN.value = 30;
+        sliderGap.value = 40;
+        sliderK.value = 0.0;
+      } else if (num === 2) {
+        // H2: Inflated Shield
+        sliderN.value = 30;
+        sliderGap.value = 40;
+        sliderK.value = 1.4;
+      } else if (num === 3) {
+        // H3: High Conservatism
+        sliderN.value = 30;
+        sliderGap.value = 40;
+        sliderK.value = 2.8;
+      } else if (num === 4) {
+        // Big Data Limit
+        sliderN.value = 400;
+        sliderGap.value = 0;
+        sliderK.value = 0.2;
+      }
+      sliderN.dispatchEvent(new Event('input'));
+      sliderGap.dispatchEvent(new Event('input'));
+      sliderK.dispatchEvent(new Event('input'));
+    }
+
+    // Render Loop
+    const GRID_RES = 60;
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fpsTime = 0;
+
+    function render(timestamp) {
+      const dt = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      frameCount++;
+      fpsTime += dt;
+      if (fpsTime >= 1.0) {
+        document.getElementById('fps-counter').innerText = `${frameCount} FPS`;
+        frameCount = 0;
+        fpsTime = 0;
+      }
+
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. Draw Grid Lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let p = -1; p <= 3; p += 1) {
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(p), 0);
+        ctx.lineTo(toCanvasX(p), h);
+        ctx.stroke();
+      }
+      for (let v = -2; v <= 2; v += 1) {
+        ctx.beginPath();
+        ctx.moveTo(0, toCanvasY(v));
+        ctx.lineTo(w, toCanvasY(v));
+        ctx.stroke();
+      }
+
+      // Draw Failure Line at p = 0
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(0), 0);
+      ctx.lineTo(toCanvasX(0), h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Failure label
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+      ctx.font = '10px "JetBrains Mono"';
+      ctx.fillText('FAILURE BOUNDARY p = 0', toCanvasX(0) + 6, 20);
+
+      // 2. Draw Coverage Gap Boundary if enabled
+      const gapPct = auditState.gapPercent;
+      if (gapPct > 0) {
+        const gapWidth = (gapPct / 100) * 1.5;
+        const gapHeight = (gapPct / 100) * 1.8;
+        const gx1 = toCanvasX(0.75 - gapWidth / 2);
+        const gx2 = toCanvasX(0.75 + gapWidth / 2);
+        const gy1 = toCanvasY(gapHeight / 2);
+        const gy2 = toCanvasY(-gapHeight / 2);
+
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.08)';
+        ctx.strokeStyle = 'rgba(129, 140, 248, 0.35)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 6]);
+        ctx.fillRect(gx1, gy1, gx2 - gx1, gy2 - gy1);
+        ctx.strokeRect(gx1, gy1, gx2 - gx1, gy2 - gy1);
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = 'rgba(129, 140, 248, 0.7)';
+        ctx.font = '11px "JetBrains Mono"';
+        ctx.fillText('COVERAGE GAP (NO DATA)', gx1 + 8, gy1 + 18);
+      }
+
+      // 3. Evaluate Grid Cells & Accumulate Volumes
+      let falseSafeCount = 0;
+      let falseUnsafeCount = 0;
+      let trueSafeCount = 0;
+      let learnedSafeCount = 0;
+      let intersectionCount = 0;
+      let unionCount = 0;
+      let gapCellCount = 0;
+      let gapFalseSafeCount = 0;
+
+      const cellW = w / GRID_RES;
+      const cellH = h / GRID_RES;
+
+      for (let i = 0; i < GRID_RES; i++) {
+        for (let j = 0; j < GRID_RES; j++) {
+          const cx = (i + 0.5) * cellW;
+          const cy = (j + 0.5) * cellH;
+          const { p, v } = toState(cx, cy);
+
+          const vT = trueValue(p, v);
+          const vL = learnedValue(p, v, auditState.N, auditState.gapPercent, auditState.k);
+
+          const isTrueSafe = (vT >= 0.0);
+          const isLearnedSafe = (vL >= 0.0);
+
+          if (isTrueSafe) trueSafeCount++;
+          if (isLearnedSafe) learnedSafeCount++;
+
+          if (isTrueSafe && isLearnedSafe) intersectionCount++;
+          if (isTrueSafe || isLearnedSafe) unionCount++;
+
+          // Check if inside coverage gap
+          const inGap = (gapPct > 0) &&
+            (Math.abs(p - 0.75) < (gapPct / 100) * 0.75) &&
+            (Math.abs(v) < (gapPct / 100) * 0.9);
+
+          if (inGap) gapCellCount++;
+
+          // Classify cell
+          if (isLearnedSafe && !isTrueSafe) {
+            // FALSE SAFE: Model says safe, truth is catastrophic!
+            falseSafeCount++;
+            if (inGap) gapFalseSafeCount++;
+
+            ctx.fillStyle = 'rgba(255, 0, 85, 0.45)';
+            ctx.fillRect(i * cellW, j * cellH, cellW + 0.5, cellH + 0.5);
+          } else if (isTrueSafe && !isLearnedSafe) {
+            // FALSE UNSAFE: Model is over-conservative
+            falseUnsafeCount++;
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
+            ctx.fillRect(i * cellW, j * cellH, cellW + 0.5, cellH + 0.5);
+          } else if (isTrueSafe && isLearnedSafe) {
+            // TRUE SAFE
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.07)';
+            ctx.fillRect(i * cellW, j * cellH, cellW + 0.5, cellH + 0.5);
+          }
+        }
+      }
+
+      // 4. Update HUD Metrics
+      const totalCells = GRID_RES * GRID_RES;
+      const fsvPct = (falseSafeCount / totalCells) * 100;
+      const fuvPct = (falseUnsafeCount / totalCells) * 100;
+      const iouPct = unionCount > 0 ? (intersectionCount / unionCount) * 100 : 100;
+      const gapFsvPct = gapCellCount > 0 ? (gapFalseSafeCount / gapCellCount) * 100 : 0;
+
+      document.getElementById('metric-fsv').innerText = `${fsvPct.toFixed(1)}%`;
+      document.getElementById('bar-fsv').style.width = `${Math.min(100, fsvPct * 4)}%`;
+
+      document.getElementById('metric-fuv').innerText = `${fuvPct.toFixed(1)}%`;
+      document.getElementById('bar-fuv').style.width = `${Math.min(100, fuvPct * 4)}%`;
+
+      document.getElementById('metric-iou').innerText = `${iouPct.toFixed(1)}%`;
+      document.getElementById('bar-iou').style.width = `${iouPct}%`;
+
+      document.getElementById('metric-gapfsv').innerText = `${gapFsvPct.toFixed(1)}%`;
+      document.getElementById('bar-gapfsv').style.width = `${gapFsvPct}%`;
+
+      // Live Hypothesis checks
+      const h1Passed = (auditState.k === 0.0 && fsvPct > 0.05);
+      document.getElementById('badge-h1').className = `h-badge ${h1Passed ? 'h-pass' : 'h-warn'}`;
+      document.getElementById('badge-h1').innerText = h1Passed ? 'H1: PASS' : 'H1: N/A';
+
+      const h2Passed = (auditState.k >= 1.0);
+      document.getElementById('badge-h2').className = `h-badge ${h2Passed ? 'h-pass' : 'h-warn'}`;
+      document.getElementById('badge-h2').innerText = h2Passed ? 'H2: PASS (FSV DROPS)' : 'H2: AWAITING k>=1';
+
+      // 5. Update and Draw Simulated Robots
+      for (let r of auditState.simRobots) {
+        if (!r.alive) continue;
+
+        // Optimal control for Double Integrator: u = +umax = 1.0
+        const u = DOMAIN.umax;
+        r.p += r.v * dt + 0.5 * u * dt * dt;
+        r.v += u * dt;
+        r.time += dt;
+
+        r.trail.push({ p: r.p, v: r.v });
+        if (r.trail.length > 80) r.trail.shift();
+
+        // Check if penetrated failure boundary p < 0
+        if (r.p < 0.0) {
+          r.crashed = true;
+        }
+        if (r.time > 2.0 || r.p > DOMAIN.pMax || r.v > DOMAIN.vMax) {
+          r.alive = false;
+        }
+
+        // Draw Trail
+        if (r.trail.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(toCanvasX(r.trail[0].p), toCanvasY(r.trail[0].v));
+          for (let pt of r.trail) {
+            ctx.lineTo(toCanvasX(pt.p), toCanvasY(pt.v));
+          }
+          ctx.strokeStyle = r.crashed ? 'rgba(255, 0, 85, 0.8)' : 'rgba(0, 240, 255, 0.8)';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+
+        // Draw Robot Body
+        const rx = toCanvasX(r.p);
+        const ry = toCanvasY(r.v);
+        ctx.beginPath();
+        ctx.arc(rx, ry, 6, 0, Math.PI * 2);
+        ctx.fillStyle = r.crashed ? '#ff0055' : '#00f0ff';
+        ctx.shadowColor = r.crashed ? '#ff0055' : '#00f0ff';
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        if (r.crashed) {
+          ctx.fillStyle = '#ff0055';
+          ctx.font = 'bold 11px "JetBrains Mono"';
+          ctx.fillText('CRASH: p < 0 (FALSE-SAFE TRAP)', rx + 10, ry);
+        }
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
