@@ -1,0 +1,26 @@
+// Dev Container configuration for falsesafe-bench
+// Open this repo in VS Code + Dev Containers extension for one-click setup
+{
+  "name": "falsesafe-bench",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/uv:1": {}
+  },
+  "postCreateCommand": "bash scripts/bootstrap.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": ".venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["-q", "-p", "no:cacheprovider"]
+      }
+    }
+  },
+  "forwardPorts": [],
+  "remoteUser": "vscode"
+}
