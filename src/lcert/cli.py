@@ -117,14 +117,14 @@ def _execute_config(config_path: Path, operation: str, command: list[str]) -> Pa
         else:
             _ground_truth(config, run)
         print(f'Artifacts: {run.directory}')
-    return run.directory
-
 
 def main(arguments: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description='Learn-and-Shield reproducible starter tools')
     subcommands = parser.add_subparsers(dest='operation', required=True)
-    for name in ('list', 'algorithms', 'doctor', 'reproduce'):
+    for name in ('list', 'algorithms', 'doctor', 'reproduce', 'studio'):
         subcommands.add_parser(name)
+    sweep_cmd = subcommands.add_parser('sweep')
+    sweep_cmd.add_argument('--config', type=Path, default=Path('configs/e1_di_sweep.yaml'))
     for name in ('validate', 'simulate', 'generate-data', 'run'):
         command = subcommands.add_parser(name)
         command.add_argument('--config', type=Path, required=True)
@@ -136,6 +136,17 @@ def main(arguments: list[str] | None = None) -> int:
             report = environment_report()
             print(json.dumps(report, indent=2))
             return 0 if report['ready'] else 1
+        if options.operation == 'studio':
+            import webbrowser
+            studio_path = project_root() / 'demos' / 'studio' / 'index.html'
+            print(f'Opening Mission Control Studio v3.0: {studio_path}')
+            webbrowser.open(studio_path.as_uri())
+            return 0
+        if options.operation == 'sweep':
+            from scripts.run_pipeline import run_sweep
+            summary = run_sweep(options.config)
+            print(f'Sweep completed successfully: {summary}')
+            return 0
         if options.operation == 'list':
             print(json.dumps([specification.to_dict() for specification in EXPERIMENTS], indent=2))
         elif options.operation == 'algorithms':

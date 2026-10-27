@@ -1,4 +1,5 @@
+from .arena_env import SafeArenaEnv
 from .dubins import ArenaSettings, Circle, Pose, advance_dubins
 from .fleet import RobotArena
 
-__all__ = ['ArenaSettings', 'Circle', 'Pose', 'RobotArena', 'advance_dubins']
+__all__ = ['ArenaSettings', 'Circle', 'Pose', 'RobotArena', 'SafeArenaEnv', 'advance_dubins']
