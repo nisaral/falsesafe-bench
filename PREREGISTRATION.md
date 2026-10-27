@@ -3,7 +3,7 @@
 **Status:** REGISTERED & FROZEN (Tagged `prereg-v1`).
 **Date drafted:** 2026-10-27
 **Author(s):** Nisar & Keyush (falsesafe-bench contributors)
-**Code commit this registration refers to:** 143c50b
+**Code commit this registration refers to:** 1f07f5c
 
 > **Rule of this document:** everything below is decided *before* any confirmatory (n=30) result exists. We report whatever those runs produce. A null or negative result replaces the old claim in `claims_ledger.md`. It is not re-framed.
 
@@ -177,5 +177,5 @@ _(empty)_
 - [x] Fill author, commit hash, $p_c$ and $s$ (Section 2.2). Do not look at FSV while choosing them.
 - [x] Confirm the horizon, failure function, and control bounds in `systems.py` match what this text assumes.
 - [x] Add the confirmatory guard to `scripts/run_pipeline.py` (Section 8).
-- [ ] Commit this file, then `git tag -a prereg-v1 -m "Pre-registration v1"` and push the tag.
+- [x] Commit this file, then `git tag -a prereg-v1 -m "Pre-registration v1"` and push the tag.
 - [ ] Only then run seeds 1000-1029.
