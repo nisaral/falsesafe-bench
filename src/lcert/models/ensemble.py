@@ -93,3 +93,29 @@ class EnsembleMLP:
                     'hidden_sizes': self.hidden_sizes, 'input_mean': torch.as_tensor(self.input_mean),
                     'input_scale': torch.as_tensor(self.input_scale),
                     'state_dicts': [model.state_dict() for model in self.models]}, Path(path))
+
+    @classmethod
+    def load(cls, path: str | Path) -> EnsembleMLP:
+        checkpoint = torch.load(Path(path), weights_only=False)
+        if checkpoint.get('model_type') != 'ensemble_mlp':
+            raise ValueError(f"Checkpoint model_type is {checkpoint.get('model_type')}, expected ensemble_mlp")
+        instance = cls(members=checkpoint['member_count'], hidden_sizes=tuple(checkpoint['hidden_sizes']))
+        instance.input_mean = np.asarray(checkpoint['input_mean'], float)
+        instance.input_scale = np.asarray(checkpoint['input_scale'], float)
+        models = []
+        for state_dict in checkpoint['state_dicts']:
+            layers = []
+            previous_size = len(instance.input_mean)
+            for hidden_size in instance.hidden_sizes:
+                layers.extend((nn.Linear(previous_size, hidden_size), nn.Tanh()))
+                previous_size = hidden_size
+            output_size = list(state_dict.values())[-1].shape[0]
+            layers.append(nn.Linear(previous_size, output_size))
+            model = nn.Sequential(*layers)
+            model.load_state_dict(state_dict)
+            model.eval()
+            models.append(model)
+        instance.models = models
+        instance.fitted = True
+        return instance
+
