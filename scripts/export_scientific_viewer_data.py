@@ -80,6 +80,7 @@ def build_viewer_dataset(sweep_dir: Path, output_file: Path):
         "derivative_observation_noise_std": 0.01,
         "split_seed": 42,
         "seed": 1000,
+        "max_sampling_attempts": 200000,
         "coverage_gap": {"enabled": True, "lo": [0.4, -2.0], "hi": [1.0, 2.0]},
     }
     splits, _ = generate_trajectory_splits(data_cfg)
@@ -136,7 +137,7 @@ def build_viewer_dataset(sweep_dir: Path, output_file: Path):
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(viewer_payload, f, indent=2)
 
-    print(f"[OK] Scientific viewer data successfully written to: {output_file.relative_to(ROOT)}")
+    print(f"[OK] Scientific viewer data successfully written to: {output_file.resolve().relative_to(ROOT)}")
 
 
 def main():
