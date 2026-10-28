@@ -1,0 +1,15 @@
+{
+  "S4_directional": {
+    "C0_gap_containment": 0.0,
+    "C2_gap_containment": 1.0,
+    "L_gap_containment": 0.0,
+    "verdict": "Confirmed: C0 severely under-covers in gap (0%); L_hat underestimates; C2 restores containment."
+  },
+  "S6_closed_loop": {
+    "mean_crash_rate_k0": 0.098,
+    "mean_crash_rate_k2": 0.098,
+    "spearman_rho": 0.11839990248437077,
+    "kendall_tau": 0.1032370802417528,
+    "interpretation": "weak"
+  }
+}

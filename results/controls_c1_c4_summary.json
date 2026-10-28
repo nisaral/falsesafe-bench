@@ -1,0 +1,23 @@
+{
+  "C1_oracle": {
+    "fsv_floor": 0.0,
+    "fuv_floor": 2.6298487836949376e-05,
+    "status": "PASSED"
+  },
+  "C2_no_gap": {
+    "fsv": 0.0039447731755424065,
+    "fuv": 0.002577251808021039,
+    "status": "FLAGGED"
+  },
+  "C3_corrupted": {
+    "fsv": 0.002235371466140697,
+    "status": "FAILED"
+  },
+  "C4_benign_drag": {
+    "fsv": 0.0019986850756081526,
+    "gap_fsv": 0.005128205128205128,
+    "fuv": 0.0,
+    "gap_fuv": 0.0,
+    "status": "PASSED"
+  }
+}

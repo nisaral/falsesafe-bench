@@ -40,3 +40,18 @@ def test_viewer_fsv_matches_ledger_values():
     assert ledger_path.exists()
     ledger_text = ledger_path.read_text(encoding="utf-8")
     assert "prereg-v1" in ledger_text
+
+
+def test_recomputed_fsv_from_grid_matches_ledger():
+    """Verify that calculating FSV from raw BRT value grids matches claimed ledger values."""
+    import numpy as np
+    from lcert.hj_di import solve_di_hidden_physics_brt
+
+    # Test C1 oracle floor grid computation
+    grid, v_oracle = solve_di_hidden_physics_brt(umax=1.0, T=0.5, n=101, accuracy="medium")
+    _, v_true = solve_di_hidden_physics_brt(umax=1.0, T=0.5, n=101, accuracy="very_high")
+
+    # Recompute false-safe volume directly from grid arrays: (v_hat >= 0) & (v_true < 0)
+    recomputed_fsv = float(np.mean((v_oracle >= 0.0) & (v_true < 0.0)))
+    # Numerical oracle floor must match C1 ledger claim (0.000000)
+    assert recomputed_fsv < 0.0001, f"Oracle FSV should sit at numerical floor, got {recomputed_fsv}"

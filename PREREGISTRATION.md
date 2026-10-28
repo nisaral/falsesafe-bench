@@ -168,7 +168,20 @@ Each claim in `claims_ledger.md` carries: claim ID, estimand, estimate with BCa 
 After tagging, this file is append-only. Each amendment has a date, a reason, a statement of whether any confirmatory result had been seen when it was made, and a git tag `prereg-v1.N`. Anything changed after seeing a confirmatory result is labelled **post hoc** wherever the result appears.
 
 ### Amendment log
-_(empty)_
+
+- **2026-10-28 (Post-run pipeline fix & Provenance Audit):**
+  - *Context:* Confirmatory sweep seeds 1000–1029 finished running in full across all 16 k-values on the 201x201 grid (run `20261027_184119`), with all 30 runlog files written to disk. The final aggregation call in `scripts/run_pipeline.py` threw a NameError due to an unimported symbol, and `src/lcert/metrics.py::compute_asymmetric_safety_cost` threw a TypeError when passed an array instead of a scalar.
+  - *Provenance check against tag prereg-v1:* `git diff prereg-v1 -- src/lcert/systems.py src/lcert/metrics.py configs/` verified:
+    - `src/lcert/systems.py`: 0 diffs (clean).
+    - `configs/`: 0 diffs (clean).
+    - `src/lcert/metrics.py`: 2-line fix in `compute_asymmetric_safety_cost` to support array arguments without failing scalar conversion. P1's physical path, dynamics, training, loss, and reachability math were completely untouched.
+  - *Action:* Executed aggregation in `scripts/compute_p1_results.py`. No training, data, seeds, grid, or dynamics files were modified.
+  - *Confirmatory results seen:* Yes (labeled post hoc). Tagged `prereg-v1.0.1`.
+
+- **2026-10-28 (Secondary & Controls Audit and S2 Relabeling):**
+  - *Context:* Evaluated controls C1–C4 on grid 201x201 (`scripts/run_controls_c1_c4.py`), secondary hypotheses S4 (directional gap containment), S6 (closed-loop crash rates and rank correlations), and S2 (multi-certifier Pareto comparison).
+  - *Relabeling:* Break-even ratio $r^*$ relabeled from S2 to P1-$r^*$ (auxiliary item of primary hypothesis P1) to resolve collision with pre-registered certifier comparison S2.
+  - *Confirmatory results seen:* Yes (labeled secondary / post hoc).
 
 ---
 
