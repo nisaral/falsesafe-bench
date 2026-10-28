@@ -2,8 +2,8 @@
 
 **Status:** DRAFT until committed and tagged `prereg-v2`. After tagging this file is frozen; changes follow Section 12.
 **Date drafted:** 2026-10-28
-**Author(s):** <<FILL>>
-**Code commit this registration refers to:** <<FILL>>
+**Author(s):** Keyush Nisar
+**Code commit this registration refers to:** 785681e
 **Relation to v1:** `PREREGISTRATION.md` (tag `prereg-v1`) stays in force and is not altered by this file. All v2 ledger IDs carry the prefix `v2-` (for example `v2-P2`, `v2-S1`) so they can never collide with v1 IDs.
 
 > **Rule of this document:** everything below is decided before any confirmatory latent result exists. We report whatever the confirmatory runs produce. A negative or null result goes into the ledger as it is.
