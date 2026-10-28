@@ -3,41 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>falsesafe-bench — Mission Control & Multi-Task Safety Audit Studio v3.0</title>
+  <title>falsesafe-bench — Autonomous Systems Safety Certification & Simulation Lab</title>
   <meta name="description" content="State-of-the-art Hamilton-Jacobi reachability safety auditing cockpit with 7 multi-task robotic simulation environments, 2D/2.5D isometric view, side-by-side comparative split screen, interactive manual driving, and live millisecond telemetry.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-base: #050811;
-      --bg-surface: rgba(12, 18, 34, 0.92);
-      --bg-card: rgba(19, 28, 50, 0.7);
-      --bg-card-hover: rgba(28, 42, 75, 0.9);
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-focus: rgba(0, 240, 255, 0.5);
+      --bg-base: #0a0e17;
+      --bg-surface: #111726;
+      --bg-card: #162032;
+      --bg-card-hover: #1e293b;
+      --border-subtle: #1f293d;
+      --border-focus: #38bdf8;
 
-      --cyan: #00f0ff;
-      --cyan-dim: rgba(0, 240, 255, 0.15);
-      --cyan-glow: rgba(0, 240, 255, 0.45);
-      --rose: #ff0055;
-      --rose-dim: rgba(255, 0, 85, 0.15);
-      --rose-glow: rgba(255, 0, 85, 0.5);
+      --cyan: #38bdf8;
+      --cyan-dim: rgba(56, 189, 248, 0.12);
+      --cyan-glow: rgba(56, 189, 248, 0.25);
+      --rose: #ef4444;
+      --rose-dim: rgba(239, 68, 68, 0.12);
+      --rose-glow: rgba(239, 68, 68, 0.25);
       --amber: #f59e0b;
-      --amber-dim: rgba(245, 158, 11, 0.15);
+      --amber-dim: rgba(245, 158, 11, 0.12);
       --green: #10b981;
-      --green-dim: rgba(16, 185, 129, 0.15);
-      --purple: #8b5cf6;
+      --green-dim: rgba(16, 185, 129, 0.12);
+      --purple: #818cf8;
       --indigo: #6366f1;
 
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
 
-      --radius-xl: 18px;
-      --radius-lg: 14px;
-      --radius-md: 10px;
-      --radius-sm: 6px;
+      --radius-xl: 10px;
+      --radius-lg: 8px;
+      --radius-md: 6px;
+      --radius-sm: 4px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,11 +45,10 @@
     body {
       background-color: var(--bg-base);
       background-image:
-        radial-gradient(circle at 12% 8%, rgba(99, 102, 241, 0.14) 0%, transparent 45%),
-        radial-gradient(circle at 88% 92%, rgba(0, 240, 255, 0.09) 0%, transparent 45%),
-        linear-gradient(180deg, #050811 0%, #080d1a 100%);
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.03) 0%, transparent 60%),
+        linear-gradient(180deg, #0a0e17 0%, #0f1523 100%);
       color: var(--text);
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
       display: flex;
@@ -58,9 +57,8 @@
 
     /* TOP NAVIGATION */
     header {
-      padding: 14px 28px;
-      background: rgba(5, 8, 17, 0.88);
-      backdrop-filter: blur(24px);
+      padding: 12px 28px;
+      background: #0d121f;
       border-bottom: 1px solid var(--border-subtle);
       display: flex;
       justify-content: space-between;
@@ -73,19 +71,19 @@
     .brand-wrap {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
     .brand-badge {
-      background: linear-gradient(135deg, #00f0ff 0%, #6366f1 100%);
-      color: #050811;
-      font-weight: 800;
-      font-size: 11px;
-      letter-spacing: 1.5px;
+      background: #1e293b;
+      color: #38bdf8;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
       padding: 4px 10px;
-      border-radius: 9999px;
-      box-shadow: 0 0 18px rgba(0, 240, 255, 0.4);
+      border-radius: 4px;
+      border: 1px solid #334155;
     }
 
     h1 {
@@ -102,7 +100,7 @@
       font-size: 11px;
       color: var(--cyan);
       background: var(--cyan-dim);
-      border: 1px solid rgba(0, 240, 255, 0.25);
+      border: 1px solid rgba(56, 189, 248, 0.25);
       padding: 2px 7px;
       border-radius: 5px;
     }
@@ -141,10 +139,10 @@
     }
 
     .task-tab.active {
-      background: linear-gradient(135deg, #00f0ff, #0284c7);
-      color: #050811;
+      background: #1e293b;
+      color: #38bdf8;
       font-weight: 700;
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+      border: 1px solid #38bdf8;
     }
 
     .header-actions {
@@ -261,7 +259,7 @@
       background: var(--cyan);
       color: #050811;
       font-weight: 700;
-      box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
     }
 
     .status-badge {
@@ -285,8 +283,8 @@
     }
 
     .status-nominal { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
-    .status-safe { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.3); }
-    .status-danger { background: var(--rose-dim); color: var(--rose); border: 1px solid rgba(255, 0, 85, 0.3); }
+    .status-safe { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .status-danger { background: var(--rose-dim); color: var(--rose); border: 1px solid rgba(239, 68, 68, 0.3); }
 
     .canvas-container {
       position: relative;
@@ -336,14 +334,14 @@
     }
 
     .banner-unshielded {
-      background: rgba(255, 0, 85, 0.2);
-      border: 1px solid rgba(255, 0, 85, 0.4);
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
       color: var(--rose);
     }
 
     .banner-shielded {
-      background: rgba(0, 240, 255, 0.2);
-      border: 1px solid rgba(0, 240, 255, 0.4);
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.4);
       color: var(--cyan);
     }
 
@@ -393,21 +391,20 @@
 
     .intervention-alert {
       position: absolute;
-      top: 16px;
-      right: 16px;
-      background: linear-gradient(135deg, #ff0055, #f43f5e);
-      color: white;
+      top: 14px;
+      right: 14px;
+      background: #7f1d1d;
+      border: 1px solid #ef4444;
+      color: #fee2e2;
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
-      font-weight: 800;
-      padding: 8px 16px;
+      font-weight: 700;
+      padding: 7px 14px;
       border-radius: var(--radius-md);
-      letter-spacing: 1px;
-      box-shadow: 0 0 24px rgba(255, 0, 85, 0.85);
+      letter-spacing: 0.5px;
       display: none;
       align-items: center;
       gap: 8px;
-      animation: alertPulse 0.35s ease infinite alternate;
       z-index: 30;
     }
 
@@ -580,8 +577,8 @@
 
     .shield-option.active {
       border-color: var(--cyan);
-      background: rgba(0, 240, 255, 0.08);
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+      background: rgba(56, 189, 248, 0.08);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
     }
 
     .shield-top {
@@ -718,16 +715,15 @@
     }
 
     .btn-studio.primary {
-      background: linear-gradient(135deg, #00f0ff, #0284c7);
-      color: #050811;
-      font-weight: 700;
-      border: none;
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 600;
+      border: 1px solid #38bdf8;
     }
 
     .btn-studio.primary:hover {
-      box-shadow: 0 0 22px rgba(0, 240, 255, 0.55);
-      transform: translateY(-1px);
+      background: #0369a1;
+      transform: none;
     }
 
     /* INCIDENT LOG */
@@ -775,7 +771,7 @@
       max-height: 85vh;
       overflow-y: auto;
       padding: 28px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.2);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.2);
       display: flex;
       flex-direction: column;
       gap: 18px;
@@ -806,8 +802,8 @@
   <!-- HEADER -->
   <header>
     <div class="brand-wrap">
-      <span class="brand-badge">Mission Control</span>
-      <h1>falsesafe-bench <span class="version-tag">Studio v3.0</span></h1>
+      <span class="brand-badge">SIMULATION LAB</span>
+      <h1>falsesafe-bench <span class="version-tag">Verification Lab</span></h1>
     </div>
 
     <!-- 7 Multi-Task Scenario Tabs -->
@@ -864,20 +860,20 @@
           <div class="topbar-controls">
             <!-- 2D / 2.5D Isometric Selector -->
             <div class="segmented-control">
-              <button class="seg-btn active" id="btn-view-2d" onclick="setViewMode('2d')">2D Tactical</button>
-              <button class="seg-btn" id="btn-view-3d" onclick="setViewMode('3d')">2.5D Hologram</button>
+              <button class="seg-btn active" id="btn-view-2d" onclick="setViewMode('2d')">2D Orthographic Grid</button>
+              <button class="seg-btn" id="btn-view-3d" onclick="setViewMode('3d')">3D Isometric View</button>
             </div>
 
             <!-- Single vs Dual Comparative Split -->
             <div class="segmented-control">
               <button class="seg-btn active" id="btn-mode-single" onclick="setDisplayMode('single')">Single View</button>
-              <button class="seg-btn" id="btn-mode-split" onclick="setDisplayMode('split')">Dual Compare</button>
+              <button class="seg-btn" id="btn-mode-split" onclick="setDisplayMode('split')">Dual Telemetry Compare</button>
             </div>
 
             <!-- Autonomous AI vs Manual Driving -->
             <div class="segmented-control">
               <button class="seg-btn active" id="btn-ctrl-auto" onclick="setControlMode('auto')">Auto AI</button>
-              <button class="seg-btn" id="btn-ctrl-manual" onclick="setControlMode('manual')">Manual WASD</button>
+              <button class="seg-btn" id="btn-ctrl-manual" onclick="setControlMode('manual')">Manual Steering (WASD)</button>
             </div>
           </div>
         </div>
@@ -908,7 +904,7 @@
               </div>
               <div class="stat-pair">
                 <span class="stat-k">Safety Margin V(x)</span>
-                <span class="stat-v" id="hud-v" style="color: #00f0ff;">+0.42</span>
+                <span class="stat-v" id="hud-v" style="color: #38bdf8;">+0.42</span>
               </div>
               <div class="stat-pair">
                 <span class="stat-k">Min Hazard Clearance</span>
@@ -943,8 +939,8 @@
             <span style="font-size: 10px; color: var(--text-dim); text-transform: none;">(HJI Value V(t) vs Action Divergence)</span>
           </div>
           <div class="chart-legend">
-            <div class="legend-item"><span class="legend-dot" style="background: #00f0ff;"></span> Safety Value V(t)</div>
-            <div class="legend-item"><span class="legend-dot" style="background: #ff0055;"></span> Policy/Manual u_cmd</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #38bdf8;"></span> Safety Value V(t)</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #ef4444;"></span> Policy/Manual u_cmd</div>
             <div class="legend-item"><span class="legend-dot" style="background: #10b981;"></span> Executed u_exec</div>
             <div class="legend-item"><span class="legend-dot" style="background: #f59e0b;"></span> Epistemic Uncertainty σ</div>
           </div>
@@ -973,7 +969,7 @@
           <div class="shield-option" id="shield-unshielded" onclick="setShield('unshielded')">
             <div class="shield-top">
               <span class="shield-title">1. Unshielded Baseline</span>
-              <span class="version-tag" style="color: #ff0055; background: rgba(255,0,85,0.15); border-color: rgba(255,0,85,0.3);">NO SHIELD</span>
+              <span class="version-tag" style="color: #ef4444; background: rgba(255,0,85,0.15); border-color: rgba(255,0,85,0.3);">NO SHIELD</span>
             </div>
             <span class="shield-sub">Unchecked policy. Blindly crashes into boundaries, walls, and moving hazards.</span>
           </div>
@@ -1078,11 +1074,11 @@
           <span>Verified Claims Ledger (5-Seed CI)</span>
         </div>
         <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
-          <div style="background: rgba(255,255,255,0.03); padding: 7px 10px; border-radius: 6px; border-left: 3px solid #ff0055;">
-            <strong style="color: #ff0055;">C1 (H1 Validated):</strong> Nominal model yields FSV = <strong>0.0030</strong> in coverage void.
+          <div style="background: rgba(255,255,255,0.03); padding: 7px 10px; border-radius: 6px; border-left: 3px solid #ef4444;">
+            <strong style="color: #ef4444;">C1 (H1 Validated):</strong> Nominal model yields FSV = <strong>0.0030</strong> in coverage void.
           </div>
-          <div style="background: rgba(255,255,255,0.03); padding: 7px 10px; border-radius: 6px; border-left: 3px solid #00f0ff;">
-            <strong style="color: #00f0ff;">C2 (H2 Validated):</strong> Epistemic inflation k=2.0 cuts FSV by <strong>72.7%</strong> (&ge; 50% bar).
+          <div style="background: rgba(255,255,255,0.03); padding: 7px 10px; border-radius: 6px; border-left: 3px solid #38bdf8;">
+            <strong style="color: #38bdf8;">C2 (H2 Validated):</strong> Epistemic inflation k=2.0 cuts FSV by <strong>72.7%</strong> (&ge; 50% bar).
           </div>
           <div style="background: rgba(255,255,255,0.03); padding: 7px 10px; border-radius: 6px; border-left: 3px solid #f59e0b;">
             <strong style="color: #f59e0b;">C3 (H3 Validated):</strong> Tradeoff: FUV rises 0.0005 &rarr; 0.0042 along Pareto frontier.
@@ -1185,7 +1181,7 @@
     let step = 0;
     let totalInterventions = 0;
 
-    // Keyboard state for Manual WASD
+    // Keyboard state for Manual Steering (WASD)
     const keys = { w: false, a: false, s: false, d: false };
     window.addEventListener('keydown', (e) => {
       const k = e.key.toLowerCase();
@@ -1777,6 +1773,7 @@
     }
 
     // Render Canvas
+    // Render Realistic Simulation Lab Arena
     function renderSceneOnContext(ctx, width, height, ag, isSplitLeft = false) {
       const cfg = tasks[currentTask];
       ctx.clearRect(0, 0, width, height);
@@ -1792,146 +1789,264 @@
       };
 
       if (cfg.robotType === 'dubins' || cfg.robotType === 'highway') {
-        // 1. Grid
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+        // ==========================================
+        // 1. REALISTIC TESTBED FLOOR & COORDINATE GRID
+        // ==========================================
+        // Arena background
+        ctx.fillStyle = '#0a0e17';
+        ctx.fillRect(0, 0, width, height);
+
+        // 0.5m Minor Grid lines
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
         ctx.lineWidth = 1;
-        for (let x = -4; x <= 4; x += 1) {
+        for (let x = -4; x <= 4; x += 0.5) {
           const p1 = project(x, -2.6, 0); const p2 = project(x, 2.6, 0);
           ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
         }
-        for (let y = -2.6; y <= 2.6; y += 1) {
+        for (let y = -2.5; y <= 2.5; y += 0.5) {
           const p1 = project(-4, y, 0); const p2 = project(4, y, 0);
           ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
         }
 
-        // 2. Coverage Void Blueprint
+        // 1.0m Major Grid lines with Coordinate Labels
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+        ctx.lineWidth = 1.2;
+        ctx.font = '9px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#475569';
+        for (let x = -4; x <= 4; x += 1) {
+          const p1 = project(x, -2.6, 0); const p2 = project(x, 2.6, 0);
+          ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+          if (viewMode !== '3d') {
+            ctx.fillText(`${x > 0 ? '+' : ''}${x}m`, p1.cx - 8, height - 8);
+          }
+        }
+        for (let y = -2; y <= 2; y += 1) {
+          const p1 = project(-4, y, 0); const p2 = project(4, y, 0);
+          ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+          if (viewMode !== '3d') {
+            ctx.fillText(`${y > 0 ? '+' : ''}${y}m`, 8, p1.cy + 3);
+          }
+        }
+
+        // Testbed Coordinate Origin (0, 0) Calibration Crosshair
+        const orig = project(0, 0, 0);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(orig.cx, orig.cy, 12, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(orig.cx, orig.cy, 4, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(orig.cx - 16, orig.cy); ctx.lineTo(orig.cx + 16, orig.cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(orig.cx, orig.cy - 16); ctx.lineTo(orig.cx + 16, orig.cy); ctx.stroke();
+
+        // Facility Containment Boundary Fence
+        const bTopL = project(cfg.bounds[0], cfg.bounds[3], 0);
+        const bTopR = project(cfg.bounds[1], cfg.bounds[3], 0);
+        const bBotR = project(cfg.bounds[1], cfg.bounds[2], 0);
+        const bBotL = project(cfg.bounds[0], cfg.bounds[2], 0);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(bTopL.cx, bTopL.cy); ctx.lineTo(bTopR.cx, bTopR.cy);
+        ctx.lineTo(bBotR.cx, bBotR.cy); ctx.lineTo(bBotL.cx, bBotL.cy);
+        ctx.closePath(); ctx.stroke();
+
+        // ==========================================
+        // 2. COVERAGE GAP BLUEPRINT / TEST SECTOR B
+        // ==========================================
         if (showGap && cfg.gap) {
           const g1 = project(cfg.gap.x1, cfg.gap.y2, 0);
           const g2 = project(cfg.gap.x2, cfg.gap.y2, 0);
           const g3 = project(cfg.gap.x2, cfg.gap.y1, 0);
           const g4 = project(cfg.gap.x1, cfg.gap.y1, 0);
-          ctx.fillStyle = 'rgba(99, 102, 241, 0.08)';
-          ctx.strokeStyle = 'rgba(129, 140, 248, 0.35)';
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([5, 5]);
+
+          // Technical blueprint fill
+          ctx.fillStyle = 'rgba(30, 41, 59, 0.4)';
           ctx.beginPath();
           ctx.moveTo(g1.cx, g1.cy); ctx.lineTo(g2.cx, g2.cy); ctx.lineTo(g3.cx, g3.cy); ctx.lineTo(g4.cx, g4.cy);
-          ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.closePath(); ctx.fill();
+
+          // Border & corner ticks
+          ctx.strokeStyle = '#0284c7';
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(g1.cx, g1.cy); ctx.lineTo(g2.cx, g2.cy); ctx.lineTo(g3.cx, g3.cy); ctx.lineTo(g4.cx, g4.cy);
+          ctx.closePath(); ctx.stroke();
           ctx.setLineDash([]);
-          ctx.fillStyle = 'rgba(129, 140, 248, 0.8)';
-          ctx.font = '10px "JetBrains Mono"';
-          ctx.fillText('COVERAGE GAP (HIGH σ)', g1.cx + 6, g1.cy + 14);
+
+          // Stencil sector label
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '10px "JetBrains Mono", monospace';
+          ctx.fillText('SECTOR B // ZERO-DATA COVERAGE VOID (σ = 0.42)', g1.cx + 8, g1.cy + 16);
         }
 
-        // 3. Obstacles (3D Extruded Cylinders in 2.5D Mode)
+        // ==========================================
+        // 3. INDUSTRIAL SAFETY BOLLARDS (OBSTACLES)
+        // ==========================================
         if (cfg.obstacles) {
           for (let obs of cfg.obstacles) {
             const basePos = project(obs.x, obs.y, 0);
             const rPx = scaleLength(obs.r, width);
 
+            // Floor contact shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.beginPath();
+            ctx.ellipse(basePos.cx + 2, basePos.cy + 4, rPx * 1.05, rPx * 0.7, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Calibrated Standoff Keep-Out Zone
+            if (showField) {
+              const keepOutR = scaleLength(obs.r + 0.22, width);
+              ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+              ctx.lineWidth = 1;
+              ctx.setLineDash([3, 3]);
+              ctx.beginPath(); ctx.arc(basePos.cx, basePos.cy, keepOutR, 0, Math.PI * 2); ctx.stroke();
+              ctx.setLineDash([]);
+            }
+
             if (viewMode === '3d') {
-              // 3D Extruded Cylinder
+              // 3D Extruded Industrial Bollard
               const topPos = project(obs.x, obs.y, 1.2);
               const gradSide = ctx.createLinearGradient(basePos.cx - rPx, 0, basePos.cx + rPx, 0);
-              gradSide.addColorStop(0, '#1e293b');
-              gradSide.addColorStop(0.5, '#475569');
-              gradSide.addColorStop(1, '#0f172a');
+              gradSide.addColorStop(0, '#0f172a');
+              gradSide.addColorStop(0.3, '#334155');
+              gradSide.addColorStop(0.7, '#1e293b');
+              gradSide.addColorStop(1, '#0b0f19');
               ctx.fillStyle = gradSide;
               ctx.beginPath();
-              ctx.ellipse(basePos.cx, basePos.cy, rPx, rPx * 0.5, 0, 0, Math.PI);
+              ctx.ellipse(basePos.cx, basePos.cy, rPx, rPx * 0.45, 0, 0, Math.PI);
               ctx.lineTo(topPos.cx + rPx, topPos.cy);
-              ctx.ellipse(topPos.cx, topPos.cy, rPx, rPx * 0.5, 0, 0, Math.PI, true);
+              ctx.ellipse(topPos.cx, topPos.cy, rPx, rPx * 0.45, 0, 0, Math.PI, true);
               ctx.closePath(); ctx.fill();
 
-              // Top Cap
-              ctx.fillStyle = '#334155';
-              ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
-              ctx.lineWidth = 1.5;
+              // Top Cap with Industrial Hazard Collar
+              ctx.fillStyle = '#f59e0b';
               ctx.beginPath();
-              ctx.ellipse(topPos.cx, topPos.cy, rPx, rPx * 0.5, 0, 0, Math.PI * 2);
-              ctx.fill(); ctx.stroke();
+              ctx.ellipse(topPos.cx, topPos.cy, rPx, rPx * 0.45, 0, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#1e293b';
+              ctx.beginPath();
+              ctx.ellipse(topPos.cx, topPos.cy, rPx * 0.75, rPx * 0.35, 0, 0, Math.PI * 2);
+              ctx.fill();
             } else {
-              // 2D Tactical View
-              if (showField) {
-                const halo = ctx.createRadialGradient(basePos.cx, basePos.cy, rPx * 0.7, basePos.cx, basePos.cy, rPx * 1.6);
-                halo.addColorStop(0, 'rgba(255, 0, 85, 0.25)');
-                halo.addColorStop(0.6, 'rgba(245, 158, 11, 0.12)');
-                halo.addColorStop(1, 'transparent');
-                ctx.fillStyle = halo;
-                ctx.beginPath(); ctx.arc(basePos.cx, basePos.cy, rPx * 1.6, 0, Math.PI * 2); ctx.fill();
-              }
-              const grad = ctx.createRadialGradient(basePos.cx - rPx*0.3, basePos.cy - rPx*0.3, rPx*0.1, basePos.cx, basePos.cy, rPx);
-              grad.addColorStop(0, '#334155'); grad.addColorStop(1, '#0f172a');
-              ctx.fillStyle = grad;
+              // 2D Orthographic Bollard
+              // Steel outer casing
+              ctx.fillStyle = '#1e293b';
               ctx.beginPath(); ctx.arc(basePos.cx, basePos.cy, rPx, 0, Math.PI * 2); ctx.fill();
-              ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-              ctx.lineWidth = 1.5; ctx.stroke();
+              ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+
+              // Hazard Warning Collar (Yellow stripes)
+              ctx.strokeStyle = '#f59e0b';
+              ctx.lineWidth = 3;
+              ctx.setLineDash([6, 6]);
+              ctx.beginPath(); ctx.arc(basePos.cx, basePos.cy, rPx - 2, 0, Math.PI * 2); ctx.stroke();
+              ctx.setLineDash([]);
+
+              // Central Steel Cap & ID
+              ctx.fillStyle = '#0f172a';
+              ctx.beginPath(); ctx.arc(basePos.cx, basePos.cy, rPx * 0.5, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = '#94a3b8';
+              ctx.font = '8px "JetBrains Mono", monospace';
+              ctx.fillText('OBS', basePos.cx - 7, basePos.cy + 3);
             }
           }
         }
 
-        // 4. Skyscrapers in Urban Canyon
+        // ==========================================
+        // 4. STRUCTURES IN URBAN CANYON
+        // ==========================================
         if (cfg.skyscrapers) {
           for (let b of cfg.skyscrapers) {
             const p1 = project(b.x1, b.y2, 0); const p2 = project(b.x2, b.y2, 0);
             const p3 = project(b.x2, b.y1, 0); const p4 = project(b.x1, b.y1, 0);
-            ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+            ctx.fillStyle = '#1e293b';
+            ctx.strokeStyle = '#475569';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.lineTo(p3.cx, p3.cy); ctx.lineTo(p4.cx, p4.cy);
             ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#64748b';
+            ctx.font = '9px "JetBrains Mono"';
+            ctx.fillText('STRUCTURE', p1.cx + 8, p1.cy + 16);
           }
         }
 
-        // 5. Traffic in Highway Merge
+        // ==========================================
+        // 5. HIGHWAY TRAFFIC & PURSUER
+        // ==========================================
         if (cfg.traffic) {
           for (let car of cfg.traffic) {
             const carPos = project(car.x, car.y, 0);
-            ctx.fillStyle = '#f59e0b';
-            ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 10;
-            ctx.beginPath(); ctx.arc(carPos.cx, carPos.cy, 9, 0, Math.PI * 2); ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 10px "JetBrains Mono"';
+            ctx.fillStyle = '#334155';
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(carPos.cx, carPos.cy, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 9px "JetBrains Mono"';
             ctx.fillText('TRAFFIC', carPos.cx + 12, carPos.cy + 3);
           }
         }
 
-        // 6. Adversary
         if (cfg.adversary) {
           const advPos = project(cfg.adversary.x, cfg.adversary.y, 0);
-          ctx.fillStyle = '#ff0055'; ctx.shadowColor = '#ff0055'; ctx.shadowBlur = 14;
-          ctx.beginPath(); ctx.arc(advPos.cx, advPos.cy, 9, 0, Math.PI * 2); ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = '#ff0055'; ctx.font = 'bold 10px "JetBrains Mono"';
-          ctx.fillText('INTERCEPTOR', advPos.cx + 12, advPos.cy + 3);
+          ctx.fillStyle = '#1e293b';
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(advPos.cx, advPos.cy, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#ef4444'; ctx.font = 'bold 9px "JetBrains Mono"';
+          ctx.fillText('PURSUER AGV', advPos.cx + 14, advPos.cy + 3);
         }
 
-        // 7. Goal Target
+        // ==========================================
+        // 6. TARGET DOCKING STATION / WAYPOINT
+        // ==========================================
         const goal = cfg.goal || { x: 3.2, y: 0.0 };
         const goalPos = project(goal.x, goal.y, 0);
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
+        // Docking Pad Base
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = '#10b981';
         ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.arc(goalPos.cx, goalPos.cy, 16, 0, Math.PI * 2); ctx.stroke();
-        ctx.fillStyle = '#10b981'; ctx.shadowColor = '#10b981'; ctx.shadowBlur = 16;
-        ctx.beginPath(); ctx.arc(goalPos.cx, goalPos.cy, 6, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.strokeRect(goalPos.cx - 16, goalPos.cy - 16, 32, 32);
+        ctx.fillRect(goalPos.cx - 15, goalPos.cy - 15, 30, 30);
+        // Alignment Crosshair & Beacon
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.7)';
+        ctx.beginPath();
+        ctx.arc(goalPos.cx, goalPos.cy, 10, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(goalPos.cx - 14, goalPos.cy); ctx.lineTo(goalPos.cx + 14, goalPos.cy); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(goalPos.cx, goalPos.cy - 14); ctx.lineTo(goalPos.cx, goalPos.cy + 14); ctx.stroke();
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath(); ctx.arc(goalPos.cx, goalPos.cy, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '8px "JetBrains Mono"';
+        ctx.fillText('DOCK-01', goalPos.cx - 18, goalPos.cy + 25);
 
-        // 8. Trail
+        // ==========================================
+        // 7. ODOMETRY TRAJECTORY RIBBON
+        // ==========================================
         if (ag.trail.length > 1) {
           for (let i = 0; i < ag.trail.length - 1; i++) {
             const t1 = project(ag.trail[i].x, ag.trail[i].y, 0);
             const t2 = project(ag.trail[i+1].x, ag.trail[i+1].y, 0);
-            ctx.strokeStyle = (isSplitLeft || ag.trail[i].isIntervening) ? 'rgba(255, 0, 85, 0.7)' : 'rgba(0, 240, 255, 0.55)';
-            ctx.lineWidth = 2.5;
+            const alpha = 0.15 + (i / ag.trail.length) * 0.7;
+            if (isSplitLeft) {
+              ctx.strokeStyle = `rgba(239, 68, 68, ${alpha})`;
+            } else if (ag.trail[i].isIntervening) {
+              ctx.strokeStyle = `rgba(245, 158, 11, ${alpha})`;
+            } else {
+              ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+            }
+            ctx.lineWidth = 2;
             ctx.beginPath(); ctx.moveTo(t1.cx, t1.cy); ctx.lineTo(t2.cx, t2.cy); ctx.stroke();
           }
         }
 
-        // 9. Robot Body & LIDAR
+        // ==========================================
+        // 8. AUTONOMOUS ROBOT AGV & SENSORS
+        // ==========================================
         const rPos = project(ag.x, ag.y, 0);
         const rRad = scaleLength(0.22, width);
 
+        // A. LIDAR Rangefinder Rays
         if (showLidar && !isSplitLeft) {
           const numRays = 16;
           for (let i = 0; i < numRays; i++) {
@@ -1948,69 +2063,142 @@
               }
             }
             const hit = project(ag.x + Math.cos(rayAngle)*rayDist, ag.y + Math.sin(rayAngle)*rayDist, 0);
-            ctx.strokeStyle = rayDist < 1.0 ? 'rgba(255, 0, 85, 0.35)' : 'rgba(0, 240, 255, 0.12)';
+            const isNear = rayDist < 1.0;
+            ctx.strokeStyle = isNear ? 'rgba(245, 158, 11, 0.45)' : 'rgba(56, 189, 248, 0.18)';
             ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(hit.cx, hit.cy); ctx.stroke();
+            // Hit point reflector
+            ctx.fillStyle = isNear ? '#f59e0b' : '#38bdf8';
+            ctx.beginPath(); ctx.arc(hit.cx, hit.cy, 1.8, 0, Math.PI * 2); ctx.fill();
           }
         }
 
-        // Holographic Forcefield
+        // B. Dynamic Safety Shield Envelope (Calibrated Physical Buffer)
         if (!isSplitLeft && currentShield !== 'unshielded') {
-          ctx.strokeStyle = ag.isIntervening ? '#ff0055' : '#00f0ff';
-          ctx.lineWidth = ag.isIntervening ? 2.5 : 1.2;
-          ctx.fillStyle = ag.isIntervening ? 'rgba(255, 0, 85, 0.15)' : 'rgba(0, 240, 255, 0.08)';
-          ctx.beginPath();
-          for (let a = 0; a < 6; a++) {
-            const ang = ag.heading + (a / 6) * Math.PI * 2;
-            const hx = rPos.cx + Math.cos(ang) * (rRad * 1.5);
-            const hy = rPos.cy - Math.sin(ang) * (rRad * 1.5);
-            if (a === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+          const cfgSafe = evaluateDubinsSafety(ag.x, ag.y, ag.heading);
+          const sigmaVal = cfgSafe.sigma || 0.03;
+          const envelopeRad = rRad * (1.35 + (currentShield === 'uncertainty' ? inflationK * sigmaVal * 0.9 : 0.35));
+
+          if (ag.isIntervening) {
+            // Active Shield Correction Engaged
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.14)';
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.arc(rPos.cx, rPos.cy, envelopeRad, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.setLineDash([]);
+          } else {
+            // Passive Monitoring Envelope
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.04)';
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([3, 4]);
+            ctx.beginPath(); ctx.arc(rPos.cx, rPos.cy, envelopeRad, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.setLineDash([]);
           }
-          ctx.closePath(); ctx.fill(); ctx.stroke();
         }
 
-        // Action Divergence Vectors
+        // C. Action Divergence Steering Vectors
         if (showVectors && ag.isIntervening && !isSplitLeft) {
+          // Commanded Unsafe Vector (Amber dashed)
           const cmdA = ag.heading + ag.uCmd * 0.4;
-          const cmdP = project(ag.x + Math.cos(cmdA)*0.8, ag.y + Math.sin(cmdA)*0.8, 0);
-          ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 2.5;
+          const cmdP = project(ag.x + Math.cos(cmdA)*0.85, ag.y + Math.sin(cmdA)*0.85, 0);
+          ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
           ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(cmdP.cx, cmdP.cy); ctx.stroke();
+          ctx.setLineDash([]);
 
+          // Executed Safe Vector (Blue solid)
           const safeA = ag.heading + ag.uExec * 0.4;
-          const safeP = project(ag.x + Math.cos(safeA)*0.8, ag.y + Math.sin(safeA)*0.8, 0);
-          ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 2.5;
+          const safeP = project(ag.x + Math.cos(safeA)*0.85, ag.y + Math.sin(safeA)*0.85, 0);
+          ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5;
           ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(safeP.cx, safeP.cy); ctx.stroke();
         }
 
-        // Chassis
+        // D. REALISTIC AGV ROBOT CHASSIS RENDERING
         ctx.save();
         ctx.translate(rPos.cx, rPos.cy);
         ctx.rotate(-ag.heading);
+
+        // 1. Left & Right Drive Wheels (with tire tread)
+        const wheelW = rRad * 0.45;
+        const wheelH = rRad * 0.22;
         ctx.fillStyle = '#0f172a';
-        ctx.strokeStyle = (isSplitLeft || ag.isIntervening) ? '#ff0055' : '#00f0ff';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(0, 0, rRad, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = (isSplitLeft || ag.isIntervening) ? '#ff0055' : '#00f0ff';
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1;
+        // Left Wheel
+        ctx.fillRect(-wheelW/2, -rRad * 0.95, wheelW, wheelH);
+        ctx.strokeRect(-wheelW/2, -rRad * 0.95, wheelW, wheelH);
+        // Right Wheel
+        ctx.fillRect(-wheelW/2, rRad * 0.73, wheelW, wheelH);
+        ctx.strokeRect(-wheelW/2, rRad * 0.73, wheelW, wheelH);
+
+        // 2. Main Circular Metal Alloy Chassis Base
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath(); ctx.arc(0, 0, rRad, 0, Math.PI * 2); ctx.fill();
+
+        // 3. Heavy-Duty Protective Bumper Trim Ring
+        ctx.strokeStyle = (isSplitLeft || ag.isIntervening) ? '#f59e0b' : '#334155';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // 4. Front Swivel Castor
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath(); ctx.arc(rRad * 0.7, 0, rRad * 0.16, 0, Math.PI * 2); ctx.fill();
+
+        // 5. Center LiDAR Turret (Black Puck + Sensor Rotor)
+        ctx.fillStyle = '#090d16';
+        ctx.beginPath(); ctx.arc(0, 0, rRad * 0.45, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1; ctx.stroke();
+        // Rotor beam inside lidar
+        const rotorAngle = (Date.now() * 0.006) % (Math.PI * 2);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(rotorAngle) * rRad * 0.4, Math.sin(rotorAngle) * rRad * 0.4); ctx.stroke();
+
+        // 6. Forward Heading Indicator Arrow
+        ctx.fillStyle = '#f1f5f9';
         ctx.beginPath();
-        ctx.moveTo(rRad * 0.9, 0); ctx.lineTo(-rRad * 0.4, rRad * 0.45);
-        ctx.lineTo(-rRad * 0.2, 0); ctx.lineTo(-rRad * 0.4, -rRad * 0.45);
+        ctx.moveTo(rRad * 0.82, 0);
+        ctx.lineTo(rRad * 0.35, rRad * 0.28);
+        ctx.lineTo(rRad * 0.45, 0);
+        ctx.lineTo(rRad * 0.35, -rRad * 0.28);
         ctx.closePath(); ctx.fill();
+
+        // 7. Active Status Beacon LED on Rear
+        const beaconColor = isSplitLeft ? '#ef4444' : (ag.isIntervening ? '#f59e0b' : '#10b981');
+        ctx.fillStyle = beaconColor;
+        ctx.beginPath(); ctx.arc(-rRad * 0.65, 0, rRad * 0.14, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.8; ctx.stroke();
+
         ctx.restore();
 
       } else if (cfg.robotType === 'di') {
-        // Double Integrator Phase Portrait (p vs v)
+        // ==========================================
+        // DOUBLE INTEGRATOR OSCILLOSCOPE PHASE PLANE (p vs v)
+        // ==========================================
+        ctx.fillStyle = '#0a0e17';
+        ctx.fillRect(0, 0, width, height);
+
         const origin = toCanvasCoord(0, 0, width, height);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'; ctx.lineWidth = 1;
+        
+        // Calibrated axes
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(0, origin.cy); ctx.lineTo(width, origin.cy); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(origin.cx, 0); ctx.lineTo(origin.cx, height); ctx.stroke();
 
+        // Labels
+        ctx.fillStyle = '#64748b'; ctx.font = '10px "JetBrains Mono"';
+        ctx.fillText('VELOCITY v (m/s)', origin.cx + 10, 20);
+        ctx.fillText('POSITION p (m)', width - 110, origin.cy - 8);
+
+        // Critical failure plane p = 0
         ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
         ctx.beginPath(); ctx.moveTo(origin.cx, 0); ctx.lineTo(origin.cx, height); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = '#ef4444'; ctx.font = '11px "JetBrains Mono"';
-        ctx.fillText('FAILURE BOUNDARY p = 0', origin.cx + 8, 24);
+        ctx.fillStyle = '#ef4444'; ctx.font = 'bold 10px "JetBrains Mono"';
+        ctx.fillText('CRITICAL BARRIER: p = 0', origin.cx + 8, 38);
 
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.5)'; ctx.lineWidth = 2;
+        // Analytic Hamilton-Jacobi Safe Set Boundary: p + 0.5 * v^2 = 0
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
         ctx.beginPath();
         for (let v = -2.0; v <= 0.0; v += 0.05) {
           const p = 0.5 * v * v;
@@ -2018,25 +2206,32 @@
           if (v === -2.0) ctx.moveTo(pt.cx, pt.cy); else ctx.lineTo(pt.cx, pt.cy);
         }
         ctx.stroke();
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('ANALYTIC BOUNDARY S*', origin.cx + 70, height - 20);
 
-        const aPt = toCanvasCoord(ag.p, ag.vel, width, height);
-        ctx.fillStyle = (isSplitLeft || ag.isIntervening) ? '#ff0055' : '#00f0ff';
-        ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 14;
-        ctx.beginPath(); ctx.arc(aPt.cx, aPt.cy, 8, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
+        // State point & Trajectory ribbon
+        const curPt = toCanvasCoord(ag.p, ag.vel, width, height);
+        const stateColor = (isSplitLeft || ag.isIntervening) ? '#f59e0b' : '#38bdf8';
+        ctx.fillStyle = stateColor;
+        ctx.beginPath(); ctx.arc(curPt.cx, curPt.cy, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
 
         if (ag.trail.length > 1) {
           for (let i = 0; i < ag.trail.length - 1; i++) {
             const p1 = toCanvasCoord(ag.trail[i].p, ag.trail[i].v, width, height);
             const p2 = toCanvasCoord(ag.trail[i+1].p, ag.trail[i+1].v, width, height);
-            ctx.strokeStyle = (isSplitLeft || ag.trail[i].isIntervening) ? 'rgba(255, 0, 85, 0.7)' : 'rgba(0, 240, 255, 0.5)';
+            ctx.strokeStyle = (isSplitLeft || ag.trail[i].isIntervening) ? 'rgba(245, 158, 11, 0.7)' : 'rgba(56, 189, 248, 0.6)';
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
           }
         }
 
       } else if (cfg.robotType === 'drone') {
-        // Drone Flight Envelope Corridor
+        // Drone corridor
+        ctx.fillStyle = '#0a0e17';
+        ctx.fillRect(0, 0, width, height);
+
+        // Ground floor & ceiling
         const fPt = toCanvasCoord(0, cfg.floor, width, height);
         const cPt = toCanvasCoord(0, cfg.ceiling, width, height);
         ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
@@ -2044,21 +2239,40 @@
         ctx.beginPath(); ctx.moveTo(0, cPt.cy); ctx.lineTo(width, cPt.cy); ctx.stroke();
         ctx.setLineDash([]);
 
-        ctx.fillStyle = '#ef4444'; ctx.font = '11px "JetBrains Mono"';
-        ctx.fillText('CRITICAL FLOOR z = 1.0m', 16, fPt.cy - 6);
-        ctx.fillText('MAX CEILING z = 7.5m', 16, cPt.cy + 16);
+        ctx.fillStyle = '#ef4444'; ctx.font = '10px "JetBrains Mono"';
+        ctx.fillText('SAFETY FLOOR BOUNDARY z = 1.0m', 16, fPt.cy - 6);
+        ctx.fillText('CEILING BOUNDARY z = 7.5m', 16, cPt.cy + 16);
 
+        // Drone Body (VTOL Quadrotor)
         const dPt = toCanvasCoord(ag.z, ag.w, width, height);
-        ctx.fillStyle = (isSplitLeft || ag.isIntervening) ? '#ff0055' : '#00f0ff';
-        ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 16;
-        ctx.beginPath(); ctx.arc(dPt.cx, dPt.cy, 9, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
+        const dColor = (isSplitLeft || ag.isIntervening) ? '#f59e0b' : '#38bdf8';
+        
+        // Drone airframe
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = dColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(dPt.cx - 10, dPt.cy - 5, 20, 10);
+        ctx.fillRect(dPt.cx - 9, dPt.cy - 4, 18, 8);
+        
+        // Rotors
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(dPt.cx - 16, dPt.cy - 7); ctx.lineTo(dPt.cx - 4, dPt.cy - 7); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(dPt.cx + 4, dPt.cy - 7); ctx.lineTo(dPt.cx + 16, dPt.cy - 7); ctx.stroke();
+        
+        // Downward Rangefinder Cone
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(dPt.cx, dPt.cy);
+        ctx.lineTo(dPt.cx - 20, fPt.cy);
+        ctx.lineTo(dPt.cx + 20, fPt.cy);
+        ctx.closePath();
+        ctx.fill();
 
         if (ag.trail.length > 1) {
           for (let i = 0; i < ag.trail.length - 1; i++) {
             const p1 = toCanvasCoord(ag.trail[i].z, ag.trail[i].w, width, height);
             const p2 = toCanvasCoord(ag.trail[i+1].z, ag.trail[i+1].w, width, height);
-            ctx.strokeStyle = (isSplitLeft || ag.trail[i].isIntervening) ? 'rgba(255, 0, 85, 0.7)' : 'rgba(0, 240, 255, 0.5)';
+            ctx.strokeStyle = (isSplitLeft || ag.trail[i].isIntervening) ? 'rgba(245, 158, 11, 0.7)' : 'rgba(56, 189, 248, 0.6)';
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
           }
@@ -2066,15 +2280,30 @@
       }
     }
 
-    // Render Telemetry
+    // Render Multi-Channel Laboratory Oscilloscope
     function renderTelemetryChart() {
       const tw = telemCanvas.parentElement.clientWidth;
       const th = telemCanvas.parentElement.clientHeight;
       telemCtx.clearRect(0, 0, tw, th);
 
-      const midY = th / 2;
-      telemCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      // Oscilloscope background grid
+      telemCtx.fillStyle = '#080c14';
+      telemCtx.fillRect(0, 0, tw, th);
+
+      // Minor grid
+      telemCtx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
       telemCtx.lineWidth = 1;
+      for (let x = 0; x < tw; x += 30) {
+        telemCtx.beginPath(); telemCtx.moveTo(x, 0); telemCtx.lineTo(x, th); telemCtx.stroke();
+      }
+      for (let y = 0; y < th; y += 20) {
+        telemCtx.beginPath(); telemCtx.moveTo(0, y); telemCtx.lineTo(tw, y); telemCtx.stroke();
+      }
+
+      // Zero-level center line
+      const midY = th / 2;
+      telemCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      telemCtx.lineWidth = 1.2;
       telemCtx.beginPath(); telemCtx.moveTo(0, midY); telemCtx.lineTo(tw, midY); telemCtx.stroke();
 
       if (history.v.length < 2) return;
@@ -2082,8 +2311,8 @@
       const n = history.v.length;
       const stepX = tw / (MAX_HIST - 1);
 
-      // Channel 1: V(t)
-      telemCtx.strokeStyle = '#00f0ff'; telemCtx.lineWidth = 2;
+      // Channel 1: Safety Margin V(t) [m] - Clean Technical Blue
+      telemCtx.strokeStyle = '#38bdf8'; telemCtx.lineWidth = 2;
       telemCtx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = i * stepX; const y = midY - (history.v[i] * 35);
@@ -2091,16 +2320,18 @@
       }
       telemCtx.stroke();
 
-      // Channel 2: u_cmd
-      telemCtx.strokeStyle = 'rgba(255, 0, 85, 0.6)'; telemCtx.lineWidth = 1.5;
+      // Channel 2: Commanded Steer u_cmd - Amber Dashed
+      telemCtx.strokeStyle = 'rgba(245, 158, 11, 0.7)'; telemCtx.lineWidth = 1.5;
+      telemCtx.setLineDash([3, 3]);
       telemCtx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = i * stepX; const y = midY - (history.uCmd[i] * 24);
         if (i === 0) telemCtx.moveTo(x, y); else telemCtx.lineTo(x, y);
       }
       telemCtx.stroke();
+      telemCtx.setLineDash([]);
 
-      // Channel 3: u_exec
+      // Channel 3: Filtered Safe Steer u_exec - Clean Lab Green
       telemCtx.strokeStyle = '#10b981'; telemCtx.lineWidth = 1.5;
       telemCtx.beginPath();
       for (let i = 0; i < n; i++) {
@@ -2109,34 +2340,16 @@
       }
       telemCtx.stroke();
 
-      // Channel 4: sigma
-      telemCtx.strokeStyle = 'rgba(245, 158, 11, 0.7)'; telemCtx.lineWidth = 1.2;
+      // Channel 4: Epistemic Uncertainty sigma - Violet/Indigo
+      telemCtx.strokeStyle = 'rgba(129, 140, 248, 0.8)'; telemCtx.lineWidth = 1.2;
       telemCtx.beginPath();
       for (let i = 0; i < n; i++) {
-        const x = i * stepX; const y = th - 10 - (history.sigma[i] * 70);
+        const x = i * stepX; const y = th - 8 - (history.sigma[i] * 70);
         if (i === 0) telemCtx.moveTo(x, y); else telemCtx.lineTo(x, y);
       }
       telemCtx.stroke();
     }
 
-    // Chart Hover Tooltip
-    telemCanvas.addEventListener('mousemove', (e) => {
-      const rect = telemCanvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const tw = rect.width;
-      const stepX = tw / (MAX_HIST - 1);
-      const idx = Math.min(history.v.length - 1, Math.max(0, Math.round(mx / stepX)));
-      if (idx >= 0 && idx < history.v.length) {
-        const tip = document.getElementById('chart-tooltip');
-        tip.style.display = 'block';
-        tip.innerHTML = `V(t): <strong>${history.v[idx].toFixed(2)}</strong> | u_cmd: ${history.uCmd[idx].toFixed(2)} | u_exec: ${history.uExec[idx].toFixed(2)} | &sigma;: ${history.sigma[idx].toFixed(2)}`;
-      }
-    });
-    telemCanvas.addEventListener('mouseleave', () => {
-      document.getElementById('chart-tooltip').style.display = 'none';
-    });
-
-    // Main Engine Loop
     function render() {
       if (displayMode === 'single') {
         renderSceneOnContext(arenaCtx, container.clientWidth, container.clientHeight, agent, false);
@@ -2150,7 +2363,7 @@
       // HUD text update
       const lastV = history.v.length > 0 ? history.v[history.v.length - 1] : 0.0;
       document.getElementById('hud-v').innerText = `${lastV >= 0 ? '+' : ''}${lastV.toFixed(2)}`;
-      document.getElementById('hud-v').style.color = lastV >= 0 ? '#00f0ff' : '#ff0055';
+      document.getElementById('hud-v').style.color = lastV >= 0 ? '#38bdf8' : '#ef4444';
       document.getElementById('hud-interventions').innerText = totalInterventions;
       document.getElementById('intervention-banner').style.display = agent.isIntervening ? 'flex' : 'none';
 

@@ -10,18 +10,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #05070d;
-      --bg-surface: rgba(13, 19, 33, 0.82);
-      --bg-card: rgba(22, 32, 54, 0.6);
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-active: rgba(0, 240, 255, 0.4);
+      --bg-dark: #0a0e17;
+      --bg-surface: #111726;
+      --bg-card: #162032;
+      --border-subtle: #1f293d;
+      --border-active: rgba(56, 189, 248, 0.4);
       
-      --cyan: #00f0ff;
-      --cyan-glow: rgba(0, 240, 255, 0.4);
+      --cyan: #38bdf8;
+      --cyan-glow: rgba(56, 189, 248, 0.4);
       --green: #10b981;
       --green-glow: rgba(16, 185, 129, 0.4);
-      --rose: #ff0055;
-      --rose-glow: rgba(255, 0, 85, 0.45);
+      --rose: #ef4444;
+      --rose-glow: rgba(239, 68, 68, 0.45);
       --amber: #f59e0b;
       --amber-glow: rgba(245, 158, 11, 0.4);
       --purple: #8b5cf6;
@@ -40,9 +40,7 @@
     body {
       background-color: var(--bg-dark);
       background-image: 
-        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.08) 0%, transparent 40%),
-        linear-gradient(180deg, #05070d 0%, #090e1a 100%);
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.03) 0%, transparent 60%), linear-gradient(180deg, #0a0e17 0%, #0f1523 100%);
       color: var(--text);
       font-family: 'Outfit', sans-serif;
       min-height: 100vh;
@@ -71,7 +69,7 @@
     }
 
     .badge-hero {
-      background: linear-gradient(135deg, #00f0ff 0%, #6366f1 100%);
+      background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
       color: #05070d;
       font-weight: 800;
       font-size: 11px;
@@ -79,7 +77,7 @@
       text-transform: uppercase;
       padding: 4px 10px;
       border-radius: 9999px;
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.5);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
     }
 
     h1 {
@@ -184,9 +182,9 @@
       font-weight: 700;
     }
 
-    .pill-unshielded { background: rgba(255, 0, 85, 0.15); color: var(--rose); border: 1px solid rgba(255, 0, 85, 0.3); }
+    .pill-unshielded { background: rgba(239, 68, 68, 0.15); color: var(--rose); border: 1px solid rgba(239, 68, 68, 0.3); }
     .pill-nominal { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
-    .pill-uncertainty { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.3); }
+    .pill-uncertainty { background: rgba(56, 189, 248, 0.15); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
     .pill-oracle { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
 
     .canvas-viewport {
@@ -250,7 +248,7 @@
       position: absolute;
       top: 20px;
       right: 20px;
-      background: rgba(255, 0, 85, 0.9);
+      background: rgba(239, 68, 68, 0.9);
       color: white;
       font-family: 'JetBrains Mono', monospace;
       font-size: 12px;
@@ -258,7 +256,7 @@
       padding: 8px 16px;
       border-radius: 8px;
       letter-spacing: 1px;
-      box-shadow: 0 0 24px rgba(255, 0, 85, 0.8);
+      box-shadow: 0 0 24px rgba(239, 68, 68, 0.8);
       display: none;
       align-items: center;
       gap: 8px;
@@ -308,11 +306,11 @@
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #00f0ff, #0284c7);
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
       color: #05070d;
       border: none;
       font-weight: 700;
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
     }
 
     .btn-primary:hover {
@@ -371,8 +369,8 @@
 
     .shield-card.active {
       border-color: var(--cyan);
-      background: rgba(0, 240, 255, 0.08);
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+      background: rgba(56, 189, 248, 0.08);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
     }
 
     .shield-head {
@@ -545,7 +543,7 @@
             </div>
             <div class="telem-item">
               <span class="telem-label">Safety Value V(x)</span>
-              <span class="telem-val" id="telem-v" style="color: #00f0ff;">+0.42</span>
+              <span class="telem-val" id="telem-v" style="color: #38bdf8;">+0.42</span>
             </div>
             <div class="telem-item">
               <span class="telem-label">Obstacle Clearance</span>
@@ -593,7 +591,7 @@
               <span class="pill-shield pill-unshielded">NO FILTER</span>
             </div>
             <p class="shield-desc">Raw PPO policy navigating purely toward goals. Blunders straight into obstacles.</p>
-            <div class="shield-stat" style="color: #ff0055;">Collisions Expected: HIGH</div>
+            <div class="shield-stat" style="color: #ef4444;">Collisions Expected: HIGH</div>
           </div>
 
           <!-- Mode 2: Nominal Learned Shield -->
@@ -613,7 +611,7 @@
               <span class="pill-shield pill-uncertainty">E2: k=1.5</span>
             </div>
             <p class="shield-desc">Inflates HJ disturbance by $k \cdot \sigma(x)$. Fully eliminates false-safe catastrophic entries.</p>
-            <div class="shield-stat" style="color: #00f0ff;">Certified Safe &bull; Robust Avoidance</div>
+            <div class="shield-stat" style="color: #38bdf8;">Certified Safe &bull; Robust Avoidance</div>
           </div>
 
           <!-- Mode 4: Oracle Shield -->
@@ -630,7 +628,7 @@
         <div class="stat-row">
           <div class="stat-box">
             <span class="stat-label">Total Collisions</span>
-            <span class="stat-val" id="stat-collisions" style="color: #ff0055;">0</span>
+            <span class="stat-val" id="stat-collisions" style="color: #ef4444;">0</span>
           </div>
           <div class="stat-box">
             <span class="stat-label">Safety Shield Efficacy</span>
@@ -715,7 +713,7 @@
       isIntervening: false,
       cmdAction: 0.0,
       safeAction: 0.0,
-      color: '#00f0ff'
+      color: '#38bdf8'
     }];
 
     // Canvas setup
@@ -1046,7 +1044,7 @@
       const r0 = robots[0];
       const safety = evaluateSafety(r0);
       document.getElementById('telem-v').innerText = `${safety.clearance >= 0 ? '+' : ''}${safety.clearance.toFixed(2)}`;
-      document.getElementById('telem-v').style.color = safety.clearance >= 0 ? '#00f0ff' : '#ff0055';
+      document.getElementById('telem-v').style.color = safety.clearance >= 0 ? '#38bdf8' : '#ef4444';
       document.getElementById('telem-dist').innerText = `${Math.max(0, safety.clearance).toFixed(2)} m`;
       document.getElementById('banner-intervention').style.display = r0.isIntervening ? 'flex' : 'none';
 
@@ -1079,7 +1077,7 @@
         if (showField) {
           const haloR = scaleDist(obs.r + 0.45);
           const grad = ctx.createRadialGradient(cx, cy, cr * 0.8, cx, cy, haloR);
-          grad.addColorStop(0, 'rgba(255, 0, 85, 0.25)');
+          grad.addColorStop(0, 'rgba(239, 68, 68, 0.25)');
           grad.addColorStop(0.6, 'rgba(245, 158, 11, 0.15)');
           grad.addColorStop(1, 'transparent');
           ctx.fillStyle = grad;
@@ -1100,12 +1098,12 @@
         ctx.fillStyle = obsGrad;
         ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fill();
 
-        ctx.strokeStyle = obs === draggedObstacle ? '#00f0ff' : 'rgba(255, 255, 255, 0.2)';
+        ctx.strokeStyle = obs === draggedObstacle ? '#38bdf8' : 'rgba(255, 255, 255, 0.2)';
         ctx.lineWidth = 2;
         ctx.stroke();
 
         // Pulsing core
-        ctx.fillStyle = 'rgba(255, 0, 85, 0.7)';
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
         ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
       }
 
@@ -1132,7 +1130,7 @@
         // Particles
         for (let p of robot.particles) {
           const pt = toCanvas(p.x, p.y);
-          ctx.fillStyle = `rgba(0, 240, 255, ${p.alpha * 0.6})`;
+          ctx.fillStyle = `rgba(56, 189, 248, ${p.alpha * 0.6})`;
           ctx.beginPath(); ctx.arc(pt.cx, pt.cy, p.size, 0, Math.PI * 2); ctx.fill();
         }
 
@@ -1145,7 +1143,7 @@
             ctx.beginPath();
             ctx.moveTo(t1.cx, t1.cy);
             ctx.lineTo(t2.cx, t2.cy);
-            ctx.strokeStyle = robot.trail[i].intervening ? 'rgba(255, 0, 85, 0.7)' : 'rgba(0, 240, 255, 0.5)';
+            ctx.strokeStyle = robot.trail[i].intervening ? 'rgba(239, 68, 68, 0.7)' : 'rgba(56, 189, 248, 0.5)';
             ctx.stroke();
           }
         }
@@ -1183,7 +1181,7 @@
             }
 
             const hitEnd = toCanvas(robot.x + Math.cos(rayAngle) * hitDist, robot.y + Math.sin(rayAngle) * hitDist);
-            ctx.strokeStyle = hitDist < 1.0 ? 'rgba(255, 0, 85, 0.4)' : 'rgba(0, 240, 255, 0.15)';
+            ctx.strokeStyle = hitDist < 1.0 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(56, 189, 248, 0.15)';
             ctx.beginPath();
             ctx.moveTo(rPos.cx, rPos.cy);
             ctx.lineTo(hitEnd.cx, hitEnd.cy);
@@ -1191,7 +1189,7 @@
 
             // Hit dot
             if (hitDist < maxLidarDist) {
-              ctx.fillStyle = hitDist < 0.6 ? '#ff0055' : '#00f0ff';
+              ctx.fillStyle = hitDist < 0.6 ? '#ef4444' : '#38bdf8';
               ctx.beginPath(); ctx.arc(hitEnd.cx, hitEnd.cy, 2.5, 0, Math.PI * 2); ctx.fill();
             }
           }
@@ -1199,7 +1197,7 @@
 
         // Shield Forcefield Barrier
         if (currentShieldMode !== 'unshielded') {
-          ctx.strokeStyle = robot.isIntervening ? 'rgba(255, 0, 85, 0.9)' : 'rgba(0, 240, 255, 0.4)';
+          ctx.strokeStyle = robot.isIntervening ? 'rgba(239, 68, 68, 0.9)' : 'rgba(56, 189, 248, 0.4)';
           ctx.lineWidth = robot.isIntervening ? 3 : 1.5;
           ctx.beginPath();
           const shieldRadius = rR * 1.6;
@@ -1212,7 +1210,7 @@
             else ctx.lineTo(hx, hy);
           }
           ctx.closePath();
-          ctx.fillStyle = robot.isIntervening ? 'rgba(255, 0, 85, 0.15)' : 'rgba(0, 240, 255, 0.08)';
+          ctx.fillStyle = robot.isIntervening ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.08)';
           ctx.fill();
           ctx.stroke();
         }
@@ -1222,14 +1220,14 @@
           // Commanded unsafe turn
           const cmdAngle = robot.heading + robot.cmdAction * 0.4;
           const cmdEnd = toCanvas(robot.x + Math.cos(cmdAngle) * 0.7, robot.y + Math.sin(cmdAngle) * 0.7);
-          ctx.strokeStyle = '#ff0055';
+          ctx.strokeStyle = '#ef4444';
           ctx.lineWidth = 2.5;
           ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(cmdEnd.cx, cmdEnd.cy); ctx.stroke();
 
           // Safe executed turn
           const safeAngle = robot.heading + robot.safeAction * 0.4;
           const safeEnd = toCanvas(robot.x + Math.cos(safeAngle) * 0.7, robot.y + Math.sin(safeAngle) * 0.7);
-          ctx.strokeStyle = '#00f0ff';
+          ctx.strokeStyle = '#38bdf8';
           ctx.lineWidth = 2.5;
           ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(safeEnd.cx, safeEnd.cy); ctx.stroke();
         }
@@ -1241,7 +1239,7 @@
 
         // Body
         ctx.fillStyle = '#0f172a';
-        ctx.strokeStyle = robot.isIntervening ? '#ff0055' : robot.color;
+        ctx.strokeStyle = robot.isIntervening ? '#ef4444' : robot.color;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(0, 0, rR, 0, Math.PI * 2);
@@ -1249,7 +1247,7 @@
         ctx.stroke();
 
         // Direction Arrow
-        ctx.fillStyle = robot.isIntervening ? '#ff0055' : robot.color;
+        ctx.fillStyle = robot.isIntervening ? '#ef4444' : robot.color;
         ctx.beginPath();
         ctx.moveTo(rR * 0.9, 0);
         ctx.lineTo(-rR * 0.5, rR * 0.5);

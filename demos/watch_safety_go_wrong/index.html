@@ -10,18 +10,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-space: #07090e;
-      --bg-panel: rgba(15, 23, 42, 0.75);
-      --bg-card: rgba(30, 41, 59, 0.5);
-      --border-subtle: rgba(255, 255, 255, 0.08);
+      --bg-space: #0a0e17;
+      --bg-panel: #111726;
+      --bg-card: #162032;
+      --border-subtle: #1f293d;
       --border-focus: rgba(99, 102, 241, 0.5);
       
-      --cyan-safe: #00f0ff;
-      --cyan-glow: rgba(0, 240, 255, 0.35);
+      --cyan-safe: #38bdf8;
+      --cyan-glow: rgba(56, 189, 248, 0.35);
       --green-learned: #10b981;
       --green-glow: rgba(16, 185, 129, 0.3);
-      --rose-falsesafe: #ff0055;
-      --rose-glow: rgba(255, 0, 85, 0.45);
+      --rose-falsesafe: #ef4444;
+      --rose-glow: rgba(239, 68, 68, 0.45);
       --amber-fuv: #f59e0b;
       --amber-glow: rgba(245, 158, 11, 0.35);
       --purple-accent: #8b5cf6;
@@ -44,9 +44,7 @@
     body {
       background-color: var(--bg-space);
       background-image: 
-        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(255, 0, 85, 0.08) 0%, transparent 40%),
-        linear-gradient(180deg, #07090e 0%, #0d121f 100%);
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.03) 0%, transparent 60%), linear-gradient(180deg, #0a0e17 0%, #0f1523 100%);
       color: var(--text-main);
       font-family: 'Outfit', sans-serif;
       min-height: 100vh;
@@ -161,9 +159,9 @@
       font-size: 11px;
       padding: 3px 8px;
       border-radius: 6px;
-      background: rgba(0, 240, 255, 0.1);
+      background: rgba(56, 189, 248, 0.1);
       color: var(--cyan-safe);
-      border: 1px solid rgba(0, 240, 255, 0.25);
+      border: 1px solid rgba(56, 189, 248, 0.25);
     }
 
     .canvas-wrapper {
@@ -326,9 +324,9 @@
       transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .fill-falsesafe { background: linear-gradient(90deg, #ff0055, #f43f5e); }
+    .fill-falsesafe { background: linear-gradient(90deg, #ef4444, #f43f5e); }
     .fill-falseunsafe { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-    .fill-iou { background: linear-gradient(90deg, #00f0ff, #38bdf8); }
+    .fill-iou { background: linear-gradient(90deg, #38bdf8, #38bdf8); }
     .fill-gap { background: linear-gradient(90deg, #8b5cf6, #c084fc); }
 
     .control-group {
@@ -543,7 +541,7 @@
         <div class="metric-grid">
           <div class="metric-box falsesafe">
             <span class="metric-label">False-Safe Vol (FSV)</span>
-            <span class="metric-val" id="metric-fsv" style="color: #ff0055;">12.4%</span>
+            <span class="metric-val" id="metric-fsv" style="color: #ef4444;">12.4%</span>
             <div class="metric-bar-bg">
               <div class="metric-bar-fill fill-falsesafe" id="bar-fsv" style="width: 12.4%;"></div>
             </div>
@@ -559,7 +557,7 @@
 
           <div class="metric-box iou">
             <span class="metric-label">Set Agreement (IoU)</span>
-            <span class="metric-val" id="metric-iou" style="color: #00f0ff;">92.5%</span>
+            <span class="metric-val" id="metric-iou" style="color: #38bdf8;">92.5%</span>
             <div class="metric-bar-bg">
               <div class="metric-bar-fill fill-iou" id="bar-iou" style="width: 92.5%;"></div>
             </div>
@@ -761,9 +759,9 @@
         tooltip.style.top = `${cy + 15}px`;
         tooltip.innerHTML = `
           <div style="color: #94a3b8;">State: <span style="color:white;">p=${p.toFixed(2)}, v=${v.toFixed(2)}</span></div>
-          <div>V*(True): <span style="color:${vT>=0?'#00f0ff':'#ef4444'};">${vT.toFixed(3)} (${vT>=0?'SAFE':'UNSAFE'})</span></div>
+          <div>V*(True): <span style="color:${vT>=0?'#38bdf8':'#ef4444'};">${vT.toFixed(3)} (${vT>=0?'SAFE':'UNSAFE'})</span></div>
           <div>V̂(Learned): <span style="color:${vL>=0?'#10b981':'#ef4444'};">${vL.toFixed(3)} (${vL>=0?'SAFE':'UNSAFE'})</span></div>
-          ${isFalseSafe ? '<div style="color:#ff0055; font-weight:700; margin-top:4px;">⚠️ FALSE-SAFE CELL</div>' : ''}
+          ${isFalseSafe ? '<div style="color:#ef4444; font-weight:700; margin-top:4px;">⚠️ FALSE-SAFE CELL</div>' : ''}
         `;
       } else {
         tooltip.style.display = 'none';
@@ -978,7 +976,7 @@
             falseSafeCount++;
             if (inGap) gapFalseSafeCount++;
 
-            ctx.fillStyle = 'rgba(255, 0, 85, 0.45)';
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.45)';
             ctx.fillRect(i * cellW, j * cellH, cellW + 0.5, cellH + 0.5);
           } else if (isTrueSafe && !isLearnedSafe) {
             // FALSE UNSAFE: Model is over-conservative
@@ -987,7 +985,7 @@
             ctx.fillRect(i * cellW, j * cellH, cellW + 0.5, cellH + 0.5);
           } else if (isTrueSafe && isLearnedSafe) {
             // TRUE SAFE
-            ctx.fillStyle = 'rgba(0, 240, 255, 0.07)';
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.07)';
             ctx.fillRect(i * cellW, j * cellH, cellW + 0.5, cellH + 0.5);
           }
         }
@@ -1049,7 +1047,7 @@
           for (let pt of r.trail) {
             ctx.lineTo(toCanvasX(pt.p), toCanvasY(pt.v));
           }
-          ctx.strokeStyle = r.crashed ? 'rgba(255, 0, 85, 0.8)' : 'rgba(0, 240, 255, 0.8)';
+          ctx.strokeStyle = r.crashed ? 'rgba(239, 68, 68, 0.8)' : 'rgba(56, 189, 248, 0.8)';
           ctx.lineWidth = 3;
           ctx.stroke();
         }
@@ -1059,14 +1057,14 @@
         const ry = toCanvasY(r.v);
         ctx.beginPath();
         ctx.arc(rx, ry, 6, 0, Math.PI * 2);
-        ctx.fillStyle = r.crashed ? '#ff0055' : '#00f0ff';
-        ctx.shadowColor = r.crashed ? '#ff0055' : '#00f0ff';
+        ctx.fillStyle = r.crashed ? '#ef4444' : '#38bdf8';
+        ctx.shadowColor = r.crashed ? '#ef4444' : '#38bdf8';
         ctx.shadowBlur = 12;
         ctx.fill();
         ctx.shadowBlur = 0;
 
         if (r.crashed) {
-          ctx.fillStyle = '#ff0055';
+          ctx.fillStyle = '#ef4444';
           ctx.font = 'bold 11px "JetBrains Mono"';
           ctx.fillText('CRASH: p < 0 (FALSE-SAFE TRAP)', rx + 10, ry);
         }

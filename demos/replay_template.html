@@ -5,21 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Learn-and-Shield Robot Lab | Logged replay</title>
 <style>
-:root { color-scheme: dark; --bg:#07111f; --panel:#101e32; --line:#23364f; --text:#e7f2ff; --muted:#91a7c4; --cyan:#57e0ea; }
-* { box-sizing:border-box; } body { margin:0; background:radial-gradient(ellipse at 25% 0%,#17304b,var(--bg) 62%); color:var(--text); font:14px/1.5 system-ui,sans-serif; }
+:root { color-scheme: dark; --bg:#0a0e17; --panel:#111726; --line:#1f293d; --text:#f3f4f6; --muted:#9ca3af; --cyan:#38bdf8; }
+* { box-sizing:border-box; } body { margin:0; background:#0a0e17; background-image:linear-gradient(180deg, #0a0e17 0%, #0f1523 100%); color:var(--text); font:14px/1.5 system-ui,sans-serif; }
 .shell { max-width:1480px; margin:auto; padding:28px; } header { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:24px; }
 .eyebrow { color:var(--cyan); text-transform:uppercase; letter-spacing:2px; font-size:11px; font-weight:700; } h1 { margin:5px 0; font-size:30px; letter-spacing:-1px; } .subtitle { margin:0; color:var(--muted); }
 .badge { display:inline-block; border:1px solid #715739; border-radius:20px; padding:8px 14px; color:#ffd397; background:#2b231b; font-size:12px; }
-.layout { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:20px; } .panel { background:linear-gradient(145deg,#101e32f0,#0b1728f0); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+.layout { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:20px; } .panel { background:#111726; border:1px solid var(--line); border-radius:16px; overflow:hidden; }
 .arena-top { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); } .arena-top strong { letter-spacing:.5px; } .pill { color:var(--cyan); font-size:12px; }
 canvas { display:block; width:100%; height:500px; } .controls { padding:18px 20px; border-top:1px solid var(--line); display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-button,select { color:var(--text); background:#15283f; border:1px solid #35506d; border-radius:9px; padding:9px 13px; font:inherit; cursor:pointer; } button:hover { background:#25415d; } button.primary { background:#16454e; border-color:#347d85; color:#99f6ff; }
+button,select { color:var(--text); background:#15283f; border:1px solid #35506d; border-radius:9px; padding:9px 13px; font:inherit; cursor:pointer; } button:hover { background:#25415d; } button.primary { background:#0284c7; border-color:#38bdf8; color:#ffffff; font-weight:600; }
 input[type=range] { flex:1; min-width:120px; accent-color:var(--cyan); } .time { min-width:105px; font-variant-numeric:tabular-nums; color:#b6cde7; }
 .legend { display:flex; gap:18px; flex-wrap:wrap; padding:0 20px 18px; color:var(--muted); font-size:12px; } .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
 .side { display:grid; gap:16px; align-content:start; } .side .panel { padding:18px; } h2 { font-size:12px; text-transform:uppercase; letter-spacing:1.3px; margin:0 0 14px; color:#a8c0df; }
 .agent { border:1px solid var(--line); padding:12px; border-radius:10px; margin-top:9px; } .agent-top { display:flex; align-items:center; justify-content:space-between; } .agent small { display:block; color:var(--muted); margin-top:5px; font-variant-numeric:tabular-nums; }
 .state { color:#92e8ed; font-size:11px; text-transform:uppercase; } .pipeline { display:grid; grid-template-columns:1fr 1fr; gap:8px; } .stage { border:1px solid var(--line); border-radius:9px; padding:11px; }
-.stage span { display:block; color:var(--muted); font-size:11px; } .stage strong { display:block; margin-top:4px; font-size:12px; font-weight:500; } .event { color:#ffbdc5; font-size:12px; padding:6px 0; border-bottom:1px solid #213047; }
+.stage span { display:block; color:var(--muted); font-size:11px; } .stage strong { display:block; margin-top:4px; font-size:12px; font-weight:500; } .event { color:#fca5a5; font-size:12px; padding:6px 0; border-bottom:1px solid #213047; }
 .provenance { overflow-wrap:anywhere; color:var(--muted); font-size:11px; } .provenance strong { color:#c9dcf4; font-weight:500; } footer { padding:18px 2px; color:var(--muted); font-size:12px; }
 @media(max-width:950px) { .layout { grid-template-columns:1fr; } .side { grid-template-columns:1fr 1fr; } canvas { height:440px; } header { align-items:flex-start; } }
 @media(max-width:600px) { .shell { padding:14px; } h1 { font-size:23px; } header { display:block; } .badge { margin-top:14px; } .side { grid-template-columns:1fr; } canvas { height:350px; } }
@@ -31,7 +31,7 @@ input[type=range] { flex:1; min-width:120px; accent-color:var(--cyan); } .time {
 <main class="layout">
 <section class="panel"><div class="arena-top"><strong>ROBOT ARENA</strong><span class="pill" id="scene-label"></span></div><canvas id="arena" aria-label="Recorded robot trajectories and obstacles"></canvas>
 <div class="controls"><button class="primary" id="play">Play</button><button id="restart">Restart</button><input id="timeline" type="range" min="0" value="0" aria-label="Replay timeline"><span class="time" id="clock"></span><select id="speed" aria-label="Playback speed"><option value="0.5">0.5&times;</option><option value="1" selected>1&times;</option><option value="2">2&times;</option><option value="4">4&times;</option></select></div>
-<div class="legend"><span><i class="dot" style="background:#57e0ea"></i>Recorded robot / trail</span><span><i class="dot" style="background:#c0d2e7"></i>Obstacle</span><span><i class="dot" style="background:#72ecbd"></i>Goal</span><span><i class="dot" style="background:#ff718b"></i>Failure event</span></div></section>
+<div class="legend"><span><i class="dot" style="background:#38bdf8"></i>Recorded robot / trail</span><span><i class="dot" style="background:#c0d2e7"></i>Obstacle</span><span><i class="dot" style="background:#10b981"></i>Goal</span><span><i class="dot" style="background:#ef4444"></i>Failure event</span></div></section>
 <aside class="side"><section class="panel"><h2>Live recorded state</h2><div id="agents"></div></section>
 <section class="panel"><h2>Pipeline status</h2><div class="pipeline"><div class="stage"><span>Dynamics</span><strong>Configured simulator</strong></div><div class="stage"><span>Policy</span><strong id="controller"></strong></div><div class="stage"><span>Learned model</span><strong>Not trained</strong></div><div class="stage"><span>Safety shield</span><strong>Not attached</strong></div></div></section>
 <section class="panel"><h2>Event stream</h2><div id="events"></div></section><section class="panel"><h2>Provenance</h2><div class="provenance" id="provenance"></div></section></aside>
@@ -46,7 +46,7 @@ const metadata = replay.metadata;
 const canvas = document.getElementById('arena');
 const context = canvas.getContext('2d');
 const timeline = document.getElementById('timeline');
-const palette = ['#57e0ea','#d29cff','#ffce73','#83efbd','#ff8eac','#8baaff'];
+const palette = ['#38bdf8','#d29cff','#ffce73','#83efbd','#ff8eac','#8baaff'];
 let frameIndex = 0;
 let playing = false;
 let clock = 0;
@@ -91,7 +91,7 @@ function render() {
   context.strokeStyle = '#3c5876';context.strokeRect(offsetX,offsetY,scale*(maximumX-minimumX),scale*(maximumY-minimumY));
   for (const obstacle of metadata.obstacles) {
     const location = point(obstacle[0],obstacle[1]);
-    context.fillStyle = '#ff718b0d';context.beginPath();context.arc(location.pixelX,location.pixelY,(obstacle[2]+metadata.robot_radius)*scale,0,Math.PI*2);context.fill();
+    context.fillStyle = '#ef44440d';context.beginPath();context.arc(location.pixelX,location.pixelY,(obstacle[2]+metadata.robot_radius)*scale,0,Math.PI*2);context.fill();
     context.fillStyle = '#94abc52a';context.strokeStyle = '#b5c9de';context.lineWidth=1.4;
     context.beginPath();context.arc(location.pixelX,location.pixelY,obstacle[2]*scale,0,Math.PI*2);context.fill();context.stroke();
   }
@@ -112,7 +112,7 @@ function render() {
     const location=point(agent.pose[0],agent.pose[1]);
     context.save();context.translate(location.pixelX,location.pixelY);context.rotate(-agent.pose[2]);
     const radius=Math.max(metadata.robot_radius*scale,7);
-    context.globalAlpha=agent.status==='goal'?0.6:1;context.fillStyle=agent.status==='collision'||agent.status==='domain_exit'?'#ff718b':colour;context.shadowColor=context.fillStyle;context.shadowBlur=16;
+    context.globalAlpha=agent.status==='goal'?0.6:1;context.fillStyle=agent.status==='collision'||agent.status==='domain_exit'?'#ef4444':colour;context.shadowColor=context.fillStyle;context.shadowBlur=16;
     context.beginPath();context.moveTo(radius*1.8,0);context.lineTo(-radius,radius*.85);context.lineTo(-radius*.5,0);context.lineTo(-radius,-radius*.85);context.closePath();context.fill();context.restore();
     context.fillStyle='#c4d8ef';context.font='11px system-ui';context.fillText(`R${agent.id+1}`,location.pixelX+11,location.pixelY-11);
   }
