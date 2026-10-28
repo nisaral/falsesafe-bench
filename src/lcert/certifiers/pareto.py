@@ -29,8 +29,9 @@ def compute_aupc_and_fuv_at_ratios(
     else:
         ratios = fsv_arr / fsv_nominal
 
-    if penalty_fuv is None:
-        penalty_fuv = float(np.max(fuv_arr)) if len(fuv_arr) > 0 else 1.0
+    if penalty_fuv is None or penalty_fuv <= 0.0:
+        max_obs = float(np.max(fuv_arr)) if len(fuv_arr) > 0 else 0.0
+        penalty_fuv = max_obs if max_obs > 0.0 else 1.0
 
     # Grid of rho from 0.0 to 1.0
     rho_grid = np.linspace(0.0, 1.0, num_grid_points)

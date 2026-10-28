@@ -40,3 +40,19 @@ def test_benign_drag_control_dynamics():
 def test_confirmatory_guard_dev_seeds_pass():
     # Development seeds 0-9 should pass without error
     check_confirmatory_guard([0, 1, 2, 3, 4])
+
+
+def test_confirmatory_guard_enforced_in_seed_scripts():
+    """Verify that all runner scripts that execute on seed lists wire check_confirmatory_guard."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    seed_scripts = [
+        root / "scripts" / "run_pipeline.py",
+        root / "scripts" / "run_s2_benchmark_201.py",
+        root / "scripts" / "evaluate_s2_s4_s6.py",
+        root / "scripts" / "run_certifiers_benchmark.py",
+    ]
+    for script_path in seed_scripts:
+        if script_path.exists():
+            code = script_path.read_text(encoding="utf-8")
+            assert "check_confirmatory_guard" in code, f"Script {script_path.name} must wire check_confirmatory_guard"

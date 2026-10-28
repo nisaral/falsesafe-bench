@@ -116,18 +116,19 @@ def evaluate_closed_loop_crash_rates(
     policy_types: tuple[str, ...] = ("random", "nominal_goal", "shortcut_seeking"),
     umax: float = 1.0,
     shield_margin: float = 0.02,
+    horizon: float = 0.5,
+    dt: float = 0.05,
     seed: int = 20261027,
     pc: float = 0.7,
     w: float = 0.6,
     eta: float = 0.5,
     b: float = 0.3,
     s: float = -1.0,
-) -> dict[str, float]:
-    """Sample initial states from true safe set S* and evaluate empirical crash rates."""
+) -> dict:
+    """Sample initial states strictly from true safe set S* and evaluate empirical crash rates."""
     rng = np.random.default_rng(seed)
 
     # Find valid initial states in true safe set S* (V_true >= 0.05)
-    # Also restrict to initial states that can potentially reach the gap (p in [0.8, 2.2], v in [-1.5, 0.5])
     safe_mask = (v_true_grid >= 0.05)
     P, Vv = np.meshgrid(p_lin, v_lin, indexing="ij")
     cand_p = P[safe_mask]
@@ -140,12 +141,23 @@ def evaluate_closed_loop_crash_rates(
     indices = rng.choice(len(cand_p), size=min(num_initial_states, len(cand_p)), replace=False)
     init_states = np.column_stack([cand_p[indices], cand_v[indices]])
 
-    # Build interpolator for learned value function
+    # Build interpolators for verification and shielding
     interpolator = RegularGridInterpolator((p_lin, v_lin), v_hat_grid, bounds_error=False, fill_value=None)
+    true_interpolator = RegularGridInterpolator((p_lin, v_lin), v_true_grid, bounds_error=False, fill_value=None)
+
+    # Explicit assertion: all initial states MUST belong to S* (crash is avoidable in principle)
+    for x0 in init_states:
+        val_true = float(true_interpolator((x0[0], x0[1])))
+        assert val_true >= 0.0, f"Initial state {x0} is not in S* (V_true={val_true})"
+
+    # Rollout steps strictly matched to HJ horizon
+    total_steps = max(1, int(round(horizon / dt)))
 
     crash_rates = {}
+    interventions_count = {}
     for p_type in policy_types:
         crashes = 0
+        total_interventions = 0
         for x0 in init_states:
             res = simulate_closed_loop_rollout(
                 x0=x0,
@@ -153,6 +165,8 @@ def evaluate_closed_loop_crash_rates(
                 policy_type=p_type,
                 umax=umax,
                 shield_margin=shield_margin,
+                dt=dt,
+                total_steps=total_steps,
                 pc=pc,
                 w=w,
                 eta=eta,
@@ -162,9 +176,12 @@ def evaluate_closed_loop_crash_rates(
             )
             if res["crashed"]:
                 crashes += 1
+            total_interventions += res["shield_interventions"]
         crash_rates[p_type] = float(crashes / len(init_states))
+        interventions_count[p_type] = int(total_interventions)
 
-    crash_rates["mean_crash_rate"] = float(np.mean(list(crash_rates.values())))
+    crash_rates["mean_crash_rate"] = float(np.mean([crash_rates[p] for p in policy_types]))
+    crash_rates["interventions"] = interventions_count
     return crash_rates
 
 

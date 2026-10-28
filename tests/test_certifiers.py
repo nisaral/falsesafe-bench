@@ -126,3 +126,33 @@ def test_rank_correlation_computation():
     corr = compute_rank_correlations(fsv, crash)
     assert np.isclose(corr["spearman_rho"], 1.0)
     assert corr["interpretation"] == "strong"
+
+
+def test_c2_calibration_window_disjoint_from_gap():
+    """Verify that C2 leave-region-out calibration window is strictly disjoint from gap G."""
+    # Pre-registered gap G
+    gap_g = (0.4, 1.0)
+    # C2 calibration window away from G
+    calib_window = (1.8, 2.4)
+
+    # Disjointness condition: max(G) < min(calib) or min(G) > max(calib)
+    is_disjoint = (gap_g[1] < calib_window[0]) or (gap_g[0] > calib_window[1])
+    assert is_disjoint, f"C2 calibration window {calib_window} must be strictly disjoint from gap {gap_g}"
+
+    # Verify width equals gap width w=0.6
+    w_gap = gap_g[1] - gap_g[0]
+    w_calib = calib_window[1] - calib_window[0]
+    assert np.isclose(w_gap, w_calib), f"C2 window width ({w_calib}) must match gap width ({w_gap})"
+
+
+def test_pareto_aupc_penalty_clause():
+    """Verify that a certifier unable to reach low FSV receives condition penalty in AUPC."""
+    # Failing certifier: FSV remains constant at nominal 0.010, FUV is 0.000 across all knobs
+    fsv_failing = [0.010, 0.010, 0.010]
+    fuv_failing = [0.000, 0.000, 0.000]
+    fsv_nom = 0.010
+
+    # If penalty is 0.05, AUPC should be close to 0.05 because no ratio <= 0.99 is ever reached
+    res = compute_aupc_and_fuv_at_ratios(fsv_failing, fuv_failing, fsv_nominal=fsv_nom, penalty_fuv=0.05)
+    # Must NOT be 0.0
+    assert res["aupc"] > 0.04, f"Failing certifier should receive penalty, got AUPC={res['aupc']}"

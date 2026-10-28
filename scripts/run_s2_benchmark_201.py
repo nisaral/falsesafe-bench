@@ -52,6 +52,9 @@ def run_s2_benchmark(num_seeds: int = 10, grid_size: int = 201):
     seed_dirs = sorted(list(SWEEP_DIR.glob("gap_N100_seed*")))[:num_seeds]
     seeds = [int(d.name.split("seed")[-1]) for d in seed_dirs]
 
+    from lcert.artifacts import check_confirmatory_guard
+    check_confirmatory_guard(seeds)
+
     all_seed_results = []
     
     for seed_idx, seed in enumerate(seeds):

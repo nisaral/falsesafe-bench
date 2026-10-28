@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 
+from lcert.artifacts import check_confirmatory_guard
 from lcert.certifiers import (
     DistanceAwareCertifier,
     ConformalCertifier,
@@ -157,6 +158,8 @@ def main():
     print("=== FALSERAFE-BENCH: THREE-CERTIFIER BENCHMARK (E, L, C0, C1a, C2) ===")
     print(f"Seeds: {args.seeds} | Grid: {grid_size}x{grid_size}")
     print("=" * 70)
+
+    check_confirmatory_guard(args.seeds)
 
     print("Solving ground-truth BRT under hidden physics...", flush=True)
     _, v_true = solve_di_hidden_physics_brt(umax=umax, T=horizon, n=grid_size, lo=lo, hi=hi, accuracy="medium")
