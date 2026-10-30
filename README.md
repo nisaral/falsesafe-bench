@@ -219,3 +219,8 @@ This project is licensed under the Apache License 2.0 — see [LICENSE](LICENSE)
 **⚠️ This is a research tool, not a safety certification system. A collision-free simulation replay is not a safety guarantee.**
 
 </div>
+
+
+## Framework + 3D viewer (exploratory)
+
+Build your own dynamics/hazard/policy/certifier and evaluate it against HJ ground truth with FSV/FUV/gap-FSV: see [docs/FRAMEWORK.md](docs/FRAMEWORK.md). View results in 3D: open `demos/viewer3d/index.html` (offline). Framework numbers are exploratory, not preregistered results.
