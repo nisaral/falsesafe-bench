@@ -712,6 +712,16 @@
     }
 
     // Exact Ground Truth Value Function (di_safe_analytic)
+    // Coverage gap (illustrative). Earlier versions centred it at (p=0.75, v=0), deep inside the true
+    // safe set, so the overconfident bias could never create a false-safe cell and every preset showed
+    // FSV 0.0% / "H1: N/A". It is now centred on the true failure boundary, where an overconfident
+    // model can actually be wrong, and the drawn box, the metric and the model all use this function.
+    const GAP_P = 0.6, GAP_V = -1.4;
+    function inCoverageGap(p, v, gapPct) {
+      if (!(gapPct > 0)) return false;
+      return Math.abs(p - GAP_P) < (gapPct / 100) * 0.75 && Math.abs(v - GAP_V) < (gapPct / 100) * 0.9;
+    }
+
     function trueValue(p, v) {
       const t_star = Math.max(0.0, Math.min(DOMAIN.horizon, -v / DOMAIN.umax));
       return p + v * t_star + 0.5 * DOMAIN.umax * t_star * t_star;
@@ -721,10 +731,8 @@
     function learnedValue(p, v, N, gapPct, k) {
       const v_true = trueValue(p, v);
       
-      // Coverage gap bounds: center [0.75, 0.0] with width proportional to gapPct
-      const gapWidth = (gapPct / 100) * 1.5;
-      const gapHeight = (gapPct / 100) * 1.8;
-      const inGap = (Math.abs(p - 0.75) < gapWidth / 2) && (Math.abs(v) < gapHeight / 2);
+      // Coverage gap: one shared definition (inCoverageGap), centred on the true safety boundary
+      const inGap = inCoverageGap(p, v, gapPct);
 
       // Epistemic uncertainty: high in gap, falls with sqrt(N)
       const baseSigma = inGap ? 0.35 : (0.04 * (100 / Math.max(10, N)));
@@ -915,10 +923,10 @@
       if (gapPct > 0) {
         const gapWidth = (gapPct / 100) * 1.5;
         const gapHeight = (gapPct / 100) * 1.8;
-        const gx1 = toCanvasX(0.75 - gapWidth / 2);
-        const gx2 = toCanvasX(0.75 + gapWidth / 2);
-        const gy1 = toCanvasY(gapHeight / 2);
-        const gy2 = toCanvasY(-gapHeight / 2);
+        const gx1 = toCanvasX(GAP_P - gapWidth / 2);
+        const gx2 = toCanvasX(GAP_P + gapWidth / 2);
+        const gy1 = toCanvasY(GAP_V + gapHeight / 2);
+        const gy2 = toCanvasY(GAP_V - gapHeight / 2);
 
         ctx.fillStyle = 'rgba(99, 102, 241, 0.08)';
         ctx.strokeStyle = 'rgba(129, 140, 248, 0.35)';
@@ -965,9 +973,7 @@
           if (isTrueSafe || isLearnedSafe) unionCount++;
 
           // Check if inside coverage gap
-          const inGap = (gapPct > 0) &&
-            (Math.abs(p - 0.75) < (gapPct / 100) * 0.75) &&
-            (Math.abs(v) < (gapPct / 100) * 0.9);
+          const inGap = inCoverageGap(p, v, gapPct);
 
           if (inGap) gapCellCount++;
 
@@ -1014,11 +1020,11 @@
       // Live Hypothesis checks
       const h1Passed = (auditState.k === 0.0 && fsvPct > 0.05);
       document.getElementById('badge-h1').className = `h-badge ${h1Passed ? 'h-pass' : 'h-warn'}`;
-      document.getElementById('badge-h1').innerText = h1Passed ? 'H1: PASS' : 'H1: N/A';
+      document.getElementById('badge-h1').innerText = h1Passed ? 'H1 (toy): false-safe present at k=0' : (auditState.k === 0.0 ? 'H1 (toy): no false-safe at this setting' : 'H1: set k=0 to check');
 
       const h2Passed = (auditState.k >= 1.0);
       document.getElementById('badge-h2').className = `h-badge ${h2Passed ? 'h-pass' : 'h-warn'}`;
-      document.getElementById('badge-h2').innerText = h2Passed ? 'H2: PASS (FSV DROPS)' : 'H2: AWAITING k>=1';
+      document.getElementById('badge-h2').innerText = h2Passed ? 'H2 (toy): inflation on, compare FSV to k=0' : 'H2: set k>=1 to check';
 
       // 5. Update and Draw Simulated Robots
       for (let r of auditState.simRobots) {
