@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>FalseSafe Gym — drive it yourself, watch the shield trust a wrong certifier</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--fg:#e6edf3;--mut:#8b949e;--acc:#58a6ff;--fs:#ff2bd6;--ok:#2ea043;--warn:#d29922;--bad:#f85149}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.4 system-ui,sans-serif;display:grid;grid-template-columns:320px 1fr;overflow:hidden}
+#side{background:var(--panel);padding:10px 12px;overflow:auto;border-right:1px solid #30363d}
+h1{font-size:16px;margin:0 0 2px}h2{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);margin:12px 0 5px}
+label{display:block;margin:5px 0 2px;color:var(--mut)}select,input{width:100%;background:#0d1117;color:var(--fg);border:1px solid #30363d;padding:4px;border-radius:4px}
+button{background:#21262d;color:var(--fg);border:1px solid #30363d;border-radius:5px;padding:5px 9px;cursor:pointer;margin:2px 2px 2px 0;font:inherit}button.on{border-color:var(--acc);color:var(--acc)}
+button.big{font-size:14px;padding:7px 12px}#shieldBtn.on{background:#1f6f43;border-color:#2ea043;color:#fff}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td{padding:1px 0}td:last-child{text-align:right}
+.src{font-size:11px;color:var(--mut);word-break:break-word}.tag{display:inline-block;padding:1px 6px;border-radius:9px;font-size:11px;margin:1px 3px 1px 0;background:#30363d}
+.tag.real{background:#1f6f43}.tag.user{background:#6e40c9}.tag.expl{background:#9e6a03}
+#main{position:relative;overflow:hidden}#c3d{position:absolute;inset:0;width:100%;height:100%;display:block}
+#hud{position:absolute;left:10px;top:10px;background:#0d1117d9;border:1px solid #30363d;border-radius:8px;padding:8px 10px;min-width:250px;font-variant-numeric:tabular-nums;pointer-events:none}
+#hud .row{display:flex;justify-content:space-between;gap:12px}#hud .k{color:var(--mut)}
+.bar{height:6px;background:#30363d;border-radius:3px;position:relative;margin:1px 0 4px}.bar i{position:absolute;top:0;bottom:0;left:50%;border-radius:3px}
+#banner{position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:6px 14px;border-radius:8px;font-weight:700;font-size:15px;display:none;pointer-events:none;text-align:center}
+#banner.fs{display:block;background:#ff2bd6e0;color:#fff}#banner.crash{display:block;background:#f85149f0;color:#fff;font-size:20px}#banner.shield{display:block;background:#d29922e0;color:#111}#banner.replay{display:block;background:#58a6ffd0;color:#111}
+#mapwrap{position:absolute;right:10px;top:10px;background:#0d1117d9;border:1px solid #30363d;border-radius:8px;padding:6px}
+#map{display:block;width:230px;height:230px;image-rendering:pixelated}
+.legend span{display:inline-block;width:9px;height:9px;margin:0 3px 0 6px;border-radius:2px;vertical-align:middle}
+#log{position:absolute;left:10px;bottom:10px;max-height:120px;overflow:hidden;font-size:12px;background:#0d1117c0;border-radius:6px;padding:4px 8px;max-width:45%;pointer-events:none}
+#log div.crash{color:var(--bad)}#log div.fs{color:var(--fs)}#log div.sh{color:var(--warn)}#log div.ok{color:var(--ok)}
+#touch{position:absolute;right:12px;bottom:12px;display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(2,56px);gap:6px}
+#touch button{width:56px;height:56px;font-size:22px;border-radius:12px;background:#21262dcc;touch-action:none;user-select:none}
+#help{position:absolute;inset:0;background:#0d1117ee;display:none;overflow:auto;padding:28px;z-index:5}#help.show{display:block}
+#help .card{max-width:760px;margin:0 auto}#help kbd{background:#30363d;border-radius:4px;padding:1px 6px;font-family:inherit}
+#batchres td{font-size:12px}progress{width:100%}
+@media (max-width:800px){body{grid-template-columns:1fr;grid-template-rows:58vh auto;overflow:auto}#main{grid-row:1}#side{grid-row:2;border-right:0}
+ #map{width:130px;height:130px}#hud{min-width:0;font-size:11px;padding:5px}#log{display:none}#touch{grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px)}#touch button{width:48px;height:48px}}
+</style></head><body>
+<div id="side">
+  <h1>FalseSafe Gym</h1>
+  <div class="src">Drive a system yourself with a certifier-driven safety shield. Every value is read from HJ grids exported by <code>lcert.framework.gym</code>; dynamics run in your browser (JS mirror of the Python envs). <a href="#" id="helpLink" style="color:var(--acc)">How to play (H)</a> · <a href="../viewer3d/index.html" style="color:var(--acc)">3D value viewer</a></div>
+  <h2>Scenario</h2><select id="scn"></select>
+  <div id="scnInfo" class="src" style="margin-top:4px"></div>
+  <label>Certifier (what the shield trusts)</label><select id="cert"></select>
+  <table id="met" style="margin-top:4px"></table>
+  <h2>Control</h2>
+  <label>Driver</label><select id="pol"></select>
+  <div style="margin-top:6px"><button id="shieldBtn" class="big on">Shield ON (space)</button><button id="resetBtn" class="big">Reset (R)</button></div>
+  <div><button id="pauseBtn">Pause (P)</button><button id="replayBtn">Replay last (L)</button><button id="randStart">Random start</button></div>
+  <label><input type="checkbox" id="autoReset" checked style="width:auto"> auto-restart after crash/timeout</label>
+  <h2>Score</h2><table id="score"></table>
+  <h2>Batch: run N episodes (in-browser)</h2>
+  <div style="display:flex;gap:6px"><input id="bN" type="number" value="50" min="5" max="1000" style="width:70px"><select id="bPol"></select></div>
+  <button id="batchBtn" style="margin-top:4px">Run batch (B)</button><progress id="bProg" value="0" max="1" style="display:none"></progress>
+  <table id="batchres"></table>
+  <div class="src" id="batchNote"></div>
+  <h2>Provenance</h2><div id="prov" class="src"></div>
+</div>
+<div id="main"><canvas id="c3d"></canvas>
+  <div id="hud"></div><div id="banner"></div>
+  <div id="mapwrap"><canvas id="map" width="160" height="160"></canvas>
+    <div class="src legend" id="mapcap" style="max-width:230px"></div>
+    <div class="src legend"><span style="background:#2ea043"></span>safe<span style="background:#ff2bd6"></span>false-safe<span style="background:#d29922"></span>false-unsafe<br><span style="background:#30363d"></span>truly unsafe<span style="background:#6e1b1b"></span>hazard<span style="border:1px dashed #58a6ff"></span>gap</div></div>
+  <div id="log"></div>
+  <div id="touch"><span></span><button data-k="up">▲</button><span></span><button data-k="left">◀</button><button data-k="down">▼</button><button data-k="right">▶</button></div>
+  <div id="help"><div class="card">
+    <h1>How to play</h1>
+    <p>Each <b>scenario</b> is a system with <b>hidden physics</b> (a region, the <i>gap</i>, where the true dynamics differ from the model the certifier was built on), a <b>hazard</b>, and a choice of <b>certifiers</b>. The <b>shield</b> lets your input through while the certifier's value <b>V̂(x) ≥ margin</b>; otherwise it overrides you with the candidate control that maximises V̂ one step ahead under the nominal model (exactly <code>lcert.framework.policies.SafetyFilter</code>).</p>
+    <p><b>V_true</b> is the HJ ground truth under the true dynamics. Where <b>V̂ ≥ 0 but V_true &lt; 0</b> the state is <b style="color:#ff2bd6">FALSE-SAFE</b>: the shield believes you are fine but a crash is unavoidable. Try it: switch to the naive certifier, drive into the gap, and watch the shield fail to save you; then pick a robust-margin certifier or the oracle.</p>
+    <p><kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> and <kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>S</kbd> drive (gamepad left stick and the on-screen pad work too) ·
+    <kbd>Space</kbd> shield on/off · <kbd>R</kbd> reset · <kbd>T</kbd> random start · <kbd>P</kbd> pause · <kbd>L</kbd> replay last episode · <kbd>N</kbd>/<kbd>Shift+N</kbd> next/prev scenario · <kbd>C</kbd> next certifier · <kbd>M</kbd> next driver (manual / go-to-goal / random / adversarial) · <kbd>B</kbd> batch · <kbd>H</kbd> this help.</p>
+    <p>Mini-map (top right): classification of V_true vs V̂ over the first two state axes (for 3D systems: at the current heading), your position and trail. Scoring: +10/s survived, +20/s near the goal, −100 per crash.</p>
+    <p class="src">Honesty notes: numbers in the Score and Batch panels are <b>in-browser simulations</b> (exploratory, not preregistered results). The JS dynamics mirror the Python envs and are cross-checked against Python RK4 rollouts in <code>tests/test_gym_js_parity.py</code>; user-defined envs use dynamics tabulated on the grid by the exporter (interpolated, so approximate near discontinuities). Value grids are int16-quantised (error shown in Provenance). FSV/FUV/gap-FSV are computed in Python on the full grid.</p>
+    <button class="big" id="helpClose">Start driving</button></div></div>
+</div>
+<script src="../viewer3d/vendor/three.min.js"></script>
+<script src="../viewer3d/vendor/OrbitControls.js"></script>
+<script src="gym_core.js"></script>
+<script src="data/index.js"></script>
+<script>
+// load scenario files listed in data/index.js (plain <script> tags so it works from file://)
+(function(){const fs=window.FSB_GYM_FILES||[];let n=0;window.FSB_GYM=window.FSB_GYM||[];
+ if(!fs.length){const s=document.createElement('script');s.src='gym.js';document.body.appendChild(s);return;}
+ fs.forEach(f=>{const s=document.createElement('script');s.src='data/'+f+'.js';s.onload=s.onerror=()=>{if(++n===fs.length){const g=document.createElement('script');g.src='gym.js';document.body.appendChild(g);}};document.body.appendChild(s);});})();
+</script>
+</body></html>

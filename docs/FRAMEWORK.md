@@ -60,7 +60,7 @@ Per sweep case: params, full metrics dict, `v_true`/`v_hat`/`hazard_l` (downsamp
 `display_n` per axis; per heading slice for 3D envs), gap box, and trajectories (each policy × start ×
 {`unfiltered`, `filtered_by_certifier`}) simulated with RK4 under the **true** dynamics, with V_true
 and V_hat interpolated along them. Provenance includes git commit and timestamp. The viewer reads
-`data/bundle.js` (rebuilt on every export from all `data/*.json`) or JSON files dropped onto it.
+`data/bundle.js` (rebuilt on every export from all `data/*.json`, keeping datasets already in the bundle that have no JSON on disk) or JSON files dropped onto it. Only `bundle.js` is tracked; the per-dataset JSONs are local, git-ignored copies.
 
 ## Known limitations
 
@@ -71,7 +71,7 @@ and V_hat interpolated along them. Provenance includes git commit and timestamp.
 * The ensemble / conformal / distance-aware adapters train on i.i.d. samples, not the preregistered
   trajectory generator, and support scalar controls + 2-hidden-layer ensembles only (`lcert.hj_learned`
   JAX evaluator). C1a (epistemic-std normalised conformal) is not adapted.
-* Exported data (`demos/viewer3d/data/`) is ~19 MB in total (JSONs + `bundle.js`, which duplicates them).
+* Exported viewer data (`demos/viewer3d/data/bundle.js`) is ~9.5 MB; the duplicate per-dataset JSONs (~9.3 MB) are no longer tracked.
 
 ## Conformal (C0 / C1b / C2) and distance-aware (L) certifiers
 
@@ -119,3 +119,45 @@ s2_full6_grid101_n10.json`: L < C1b < E < C0 = C2) is reproduced only **partiall
 C0/C2 and C0 ≈ C2, but in the framework E is best and L ≈ C1b. C0 and C2 are not identical here
 because C2 is calibrated on its own region. Likely causes: i.i.d. data (better coverage around the gap)
 and a finer E knob grid vs. different training data in the S2 pipeline. Not a confirmatory result.
+
+## Interactive gym (`demos/gym/`)
+
+`lcert/framework/gym.py` turns envs into playable **scenarios** (`Scenario`: env + params, a list of
+certifier choices, render kind, manual-control mapping, goal, start box, dt, shield margin, and an
+honest `reduction` note). `python -m lcert.framework.gym [names] [--plugin file.py]` solves the HJ ground
+truth and every certifier on the full grid, computes FSV/FUV/gap-FSV with `lcert.metrics`, and writes
+`demos/gym/data/<name>.js` (schema `falsesafe.gym/v1`; V_true, hazard l(x) and every V_hat as int16 with a
+per-array scale, max error recorded) plus `data/index.js`. The page works from `file://` and offline.
+
+Built-in scenarios (all low-dimensional reductions, stated in the UI):
+
+| Scenario | Env | State | Hidden physics (gap) | Hazard |
+|---|---|---|---|---|
+| `cart_wall` | `di_hidden_physics` | (p, v) | weak actuator + drift band | wall p<0 |
+| `drone_hover` | `drone_vertical` | (z, vz) — vertical channel of a quadrotor | rotor-wash band: thrust ×0.65, −0.45 downdraft | floor / ceiling |
+| `pendulum_balance` | `pendulum_payload` | (θ, ω) — inverted pendulum, *not* a 4D cart-pole | payload shift: torque gain ×0.55 for θ≥0.25 | \|θ\|>0.8 |
+| `boat_rocks` | `boat_current` | (x, y) holonomic | cross-current (0.2, −1.0) m/s near shore | rock, shore |
+| `car_slippery` | `dubins_slippery` | (x, y, θ) | slippery patch | obstacle |
+| `rover_cliff` | `rover_cliff3d` | (x, y, θ) | scree drift toward the cliff | cliff edge, pit |
+| `my_rover` | user plug-in (`examples/framework/my_rover.py`) | (p, v) | slope | cliff |
+
+Every scenario includes an `oracle` case (V_hat = V_true; a sanity check, not a certifier).
+
+In the browser (`gym_core.js`) the six built-in envs have hand-written JS mirrors of the Python
+dynamics and hazards; user-defined envs are driven by f_true / f_nom tabulated on the grid by the
+exporter (multilinear interpolation; approximate at discontinuities). Simulation is RK4 at dt=0.02 s
+under the true dynamics; the shield is `SafetyFilter` (keep the driver's control while V_hat(x) ≥ margin,
+else the candidate control maximising V_hat one step ahead under the nominal model) on the exported
+V_hat, interpolated exactly like `GridValue`. `tests/test_gym_js_parity.py` checks JS vs Python rollouts
+(shield off and on), interpolation and hazards, tabulated dynamics, and the export round-trip.
+
+Controls: arrows/WASD, gamepad left stick + A (shield), on-screen touch pad; Space shield, R reset, T random
+start, P pause, L replay, N/Shift+N scenario, C certifier, M driver (manual / go-to-goal / random /
+adversarial), B batch, H help. The HUD shows V_true, V_hat, shield state, in-gap and false-safe flags and the
+case's FSV; the mini-map shows the V_true-vs-V_hat classification over the first two axes (3D: at the
+current heading). **Batch** runs N seeded episodes from starts where V_hat ≥ margin, with the shield off
+and on from identical starts, and reports crash rates. Score, events and batch numbers are in-browser
+simulations — exploratory, not preregistered results. Screenshots: `python scripts/shots_gym.py`.
+
+Add your own: register an env (`@register_env`) and a `Scenario` with `user_defined=True` in a plug-in,
+then `python -m lcert.framework.gym my_scn --plugin my_plugin.py`; it appears in the same menu.
