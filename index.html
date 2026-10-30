@@ -1,50 +1,29 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<title>FalseSafe 3D viewer — HJ ground truth vs certifier</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-:root{--bg:#0d1117;--panel:#161b22;--fg:#e6edf3;--mut:#8b949e;--acc:#58a6ff}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.4 system-ui,sans-serif;display:grid;grid-template-columns:330px 1fr;height:100vh;overflow:hidden}
-#side{background:var(--panel);padding:12px 14px;overflow:auto;border-right:1px solid #30363d}
-h1{font-size:15px;margin:0 0 4px}h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:14px 0 6px}
-label{display:block;margin:6px 0 2px;color:var(--mut)}select,input[type=range]{width:100%}select{background:#0d1117;color:var(--fg);border:1px solid #30363d;padding:4px;border-radius:4px}
-button{background:#21262d;color:var(--fg);border:1px solid #30363d;border-radius:4px;padding:4px 8px;cursor:pointer;margin:2px 2px 2px 0}button.on{border-color:var(--acc);color:var(--acc)}
-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td{padding:2px 0}td:last-child{text-align:right}
-.src{font-size:11px;color:var(--mut);margin-top:6px;word-break:break-word}.badge{display:inline-block;padding:1px 6px;border-radius:9px;font-size:11px;margin-right:4px}
-.real{background:#1f6f43}.illu{background:#9e6a03}
-#main{position:relative;display:grid;grid-template-rows:1fr 230px}#c3d,#cw{width:100%;height:100%;display:block}
-#world{position:relative;border-top:1px solid #30363d}.ov{position:absolute;left:10px;top:8px;background:#0d1117cc;padding:6px 8px;border-radius:6px;font-size:12px;pointer-events:none;max-width:60%}
-.legend span{display:inline-block;width:10px;height:10px;margin:0 4px 0 8px;vertical-align:middle;border-radius:2px}
-#drop{border:1px dashed #30363d;padding:6px;border-radius:6px;color:var(--mut);font-size:11px;text-align:center;margin-top:6px}
-</style></head><body>
-<div id="side">
-  <h1>FalseSafe 3D viewer</h1>
-  <div id="badge"></div>
-  <label>Dataset (framework export)</label><select id="ds"></select>
-  <div id="drop">Drop / choose a framework JSON to add it<br><input type="file" id="file" accept=".json" multiple></div>
-  <div id="desc" class="src"></div>
-  <h2>Parameters (precomputed sweep)</h2><div id="sliders"></div>
-  <div id="slicebox"></div>
-  <h2>Layers</h2>
-  <div id="layers"></div>
-  <label>Value height scale <span id="zsv"></span></label><input type="range" id="zs" min="0.2" max="3" step="0.1" value="1">
-  <div id="views">camera: <button data-v="iso">3D</button><button data-v="top">top</button><button data-v="side">side</button></div>
-  <h2>Metrics (this case)</h2><table id="met"></table>
-  <div class="src" id="msrc"></div>
-  <h2>Trajectory</h2>
-  <label>Policy / start / mode</label><select id="tr"></select>
-  <div><button id="play" class="on">pause</button><button id="restart">restart</button></div>
-  <div id="trinfo" class="src"></div>
-  <h2>Provenance</h2><div id="prov" class="src"></div>
-</div>
-<div id="main">
-  <div style="position:relative"><canvas id="c3d"></canvas>
-    <div class="ov" id="ov3"></div>
-    <div class="ov legend" style="top:auto;bottom:8px">surface/floor:<span style="background:#2ea043"></span>both safe<span style="background:#ff2bd6"></span>FALSE-SAFE<span style="background:#d29922"></span>false-unsafe<span style="background:#30363d"></span>both unsafe (floor) <span style="background:#bf3333"></span>truly unsafe (surface)<span style="background:#58a6ff55;border:1px solid #58a6ff"></span>gap region</div></div>
-  <div id="world"><canvas id="cw"></canvas><div class="ov" id="ovw"></div></div>
-</div>
-<script src="vendor/three.min.js"></script>
-<script src="vendor/OrbitControls.js"></script>
-<script src="data/bundle.js"></script>
-<script src="viewer3d.js"></script>
-</body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FalseSafe-Bench: when learned safety certificates say "safe" and are wrong</title>
+<meta name="description" content="Open benchmark for false-safe errors of learned Hamilton-Jacobi reachability certificates under hidden physics gaps.">
+<meta property="og:title" content="FalseSafe-Bench"><meta property="og:description" content="How often does a learned HJ safety certificate call an unsafe state safe? Benchmark + 3D viewer + playable gym.">
+<meta property="og:image" content="https://nisaral.github.io/falsesafe-bench/og.png"><meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://nisaral.github.io/falsesafe-bench/og.png">
+<style>body{margin:0;background:#0d1117;color:#e6edf3;font:16px/1.55 system-ui,sans-serif}main{max-width:900px;margin:auto;padding:24px}a{color:#58a6ff}
+h1{font-size:30px;margin:.3em 0}.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{border:1px solid #30363d;border-radius:10px;padding:14px;background:#161b22}
+.card img{width:100%;border-radius:6px}table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid #30363d;padding:6px;text-align:left}
+.ill{background:#7a4b00;color:#fff;font-size:11px;padding:1px 6px;border-radius:4px}.src{color:#8b949e;font-size:13px}@media(max-width:700px){.cards{grid-template-columns:1fr}}</style></head>
+<body><main>
+<h1>FalseSafe-Bench</h1>
+<p>Learned Hamilton-Jacobi reachability certificates can label a state <b>safe</b> when, under the true dynamics, a crash is unavoidable &mdash; a <i>false-safe</i> error. FalseSafe-Bench measures this directly: it solves the true and the learned-model HJ problems on the same grid and reports the false-safe volume (FSV), its location (inside vs outside a hidden-physics "coverage gap"), and the conservatism it costs (false-unsafe volume, FUV). It ships a plug-in framework for environments and certifiers, a 3D viewer of solver-exported value functions, and a playable gym where you drive with the certifier as a shield. This is an exploratory research benchmark, not a safety guarantee.</p>
+<h2>Headline results (double integrator, hidden physics gap, 30 preregistered seeds, 201&times;201 grid)</h2>
+<table><tr><th>Claim</th><th>Result</th><th>Status</th></tr>
+<tr><td>P1: FSV reduction from epistemic inflation, k=2 vs k=0 (ratio of means, 95% BCa)</td><td><b>40.34%</b> [36.47%, 44.73%]; FSV 0.0096 &rarr; 0.0057</td><td>partially supported (preregistered bar was &ge;50%)</td></tr>
+<tr><td>S1: where false-safe volume sits</td><td><b>87.3%</b> of nominal FSV is inside the gap</td><td>post hoc</td></tr>
+<tr><td>S1: reduction outside vs inside the gap</td><td><b>89.1%</b> outside (0.00145&rarr;0.00016) vs <b>33.3%</b> inside (0.0534&rarr;0.0356)</td><td>post hoc</td></tr>
+<tr><td>Cost: FUV k=0 &rarr; k=2</td><td>0.0001 &rarr; 0.0018; break-even r* = 0.45</td><td>confirmatory auxiliary</td></tr></table>
+<p class="src">Source: <a href="https://github.com/nisaral/falsesafe-bench/blob/main/claims_ledger.md">claims_ledger.md</a>, sweep <code>results/sweeps/20261027_184119</code> (scripts/compute_p1_results.py). Takeaway: inflating uncertainty fixes most false-safe errors where the model saw data, but only a third inside the region it never saw.</p>
+<h2>Interactive demos (solver-exported data)</h2>
+<div class="cards">
+<div class="card"><a href="gym/index.html"><img src="og.png" alt="FalseSafe gym screenshot"></a><h3><a href="gym/index.html">Interactive gym</a></h3>Drive a cart, drone, pendulum, boat, car or rover; toggle the certifier shield and watch it fail inside the hidden gap. Batch mode runs N seeded episodes in your browser.</div>
+<div class="card"><a href="viewer3d/index.html"><img src="viewer3d.png" alt="3D viewer screenshot"></a><h3><a href="viewer3d/index.html">3D value-function viewer</a></h3>V_true vs V&#770; surfaces, false-safe floor map, gap region and rollouts for 7 exported datasets (di_certifier_comparison, di_conformal, di_distance_aware, di_ensemble, di_nominal_sweep, dubins_slippery, my_rover).</div></div>
+<h2 id="illustrative">Older illustrative demos</h2><p class="src">Hand-built geometry and toy in-browser maths, kept for intuition only. Not solver output.</p><ul><li><a href="scientific_viewer/index.html">Scientific viewer (k-sweep, illustrative contours)</a> <span class="ill">illustrative, not solver output</span></li><li><a href="watch_safety_go_wrong/index.html">Watch safety go wrong (toy)</a> <span class="ill">illustrative, not solver output</span></li><li><a href="studio/index.html">Studio (toy shield simulation)</a> <span class="ill">illustrative, not solver output</span></li><li><a href="one_robot_learns_to_be_safe/index.html">One robot learns to be safe (story)</a> <span class="ill">illustrative, not solver output</span></li></ul>
+<h2>Docs and notes</h2><ul><li><a href="https://github.com/nisaral/falsesafe-bench/blob/main/README.md">README.md</a></li><li><a href="https://github.com/nisaral/falsesafe-bench/blob/main/claims_ledger.md">claims_ledger.md</a></li><li><a href="https://github.com/nisaral/falsesafe-bench/blob/main/PREREGISTRATION.md">PREREGISTRATION.md</a></li><li><a href="https://github.com/nisaral/falsesafe-bench/blob/main/PREREGISTRATION_v2.md">PREREGISTRATION_v2.md</a></li><li><a href="https://github.com/nisaral/falsesafe-bench/blob/main/SCOPE.md">SCOPE.md</a></li><li><a href="https://github.com/nisaral/falsesafe-bench/blob/main/ALGORITHMS.md">ALGORITHMS.md</a></li><li><a href="https://github.com/nisaral/falsesafe-bench/blob/feat/framework-3d-demo/docs/FRAMEWORK.md">docs/FRAMEWORK.md</a></li><li><a href="https://github.com/nisaral/falsesafe-bench/blob/feat/framework-3d-demo/docs/COMPREHENSIVE_REPORT.md">docs/COMPREHENSIVE_REPORT.md</a></li></ul>
+<p><a href="https://github.com/nisaral/falsesafe-bench">GitHub repository</a> &middot; <a href="https://github.com/nisaral/falsesafe-bench/pull/1">PR #1 (framework + 3D viewer)</a></p>
+<p class="src">Built by scripts/build_site.py. Feedback and collaboration welcome via GitHub issues.</p>
+</main></body></html>

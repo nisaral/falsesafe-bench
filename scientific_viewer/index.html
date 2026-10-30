@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>falsesafe-bench: Scientific Certification Audit Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #fcfcfc;
+      --bg-surface: #ffffff;
+      --text-main: #1d2129;
+      --text-muted: #5f6368;
+      --border-subtle: #e2e4e8;
+      --border-strong: #cfd3d8;
+      --accent-blue: #1a73e8;
+      --safe-green: #0d8050;
+      --safe-green-light: rgba(13, 128, 80, 0.12);
+      --danger-red: #d93025;
+      --danger-red-light: rgba(217, 48, 37, 0.16);
+      --fuv-purple: #7952b3;
+      --fuv-purple-light: rgba(121, 82, 179, 0.12);
+      --gap-amber: #b06000;
+      --gap-amber-bg: rgba(242, 153, 0, 0.08);
+      --font-body: 'Source Serif 4', Georgia, serif;
+      --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      font-size: 16px;
+      padding: 24px 20px 60px 20px;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    /* Provenance Audit Header */
+    .audit-header {
+      background: #f8f9fa;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+      font-family: var(--font-ui);
+      font-size: 13px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 28px;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .audit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #e6f4ea;
+      color: #137333;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.2px;
+    }
+    .audit-item {
+      display: flex;
+      gap: 6px;
+    }
+    .audit-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .audit-value {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    /* Title & Abstract block */
+    h1 {
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 32px;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+      color: #11141a;
+    }
+    .authors {
+      font-family: var(--font-ui);
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    .abstract {
+      font-size: 17px;
+      color: #333;
+      background: var(--bg-surface);
+      border-left: 3px solid var(--accent-blue);
+      padding: 16px 20px;
+      margin-bottom: 32px;
+      border-radius: 0 6px 6px 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    }
+
+    /* Main Grid: Interactive Canvas + Control Panel */
+    .viewer-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 36px;
+    }
+
+    .canvas-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .canvas-title {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #plot-canvas {
+      width: 100%;
+      height: 480px;
+      display: block;
+      background: #fafbfc;
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      cursor: crosshair;
+    }
+
+    /* Sidebar controls */
+    .sidebar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      font-family: var(--font-ui);
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .control-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      justify-content: space-between;
+    }
+    .slider-val {
+      font-family: var(--font-mono);
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--accent-blue);
+      cursor: pointer;
+    }
+
+    .metrics-box {
+      background: #f8f9fa;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+    .metric-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .metric-number {
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+    .fsv-highlight { color: var(--danger-red); }
+    .fuv-highlight { color: var(--fuv-purple); }
+
+    .cost-box {
+      border-top: 1px dashed var(--border-strong);
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-swatch {
+      width: 14px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    /* Checkbox toggles */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* Bottom analysis note */
+    .method-note {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 24px;
+      font-size: 15px;
+      color: #333;
+    }
+    .method-note h3 {
+      font-family: var(--font-ui);
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .method-note ul {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+    .method-note li {
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+<nav id="fsb-nav" style="position:fixed;left:8px;bottom:8px;z-index:10000;display:flex;gap:12px;align-items:center;background:rgba(13,17,23,.92);border:1px solid #30363d;border-radius:8px;padding:5px 10px;font:12px system-ui"><a href="../index.html" style="color:#e6edf3;font-weight:700;text-decoration:none">FalseSafe-Bench</a><a href="../viewer3d/index.html" style="color:#58a6ff">3D viewer</a><a href="../gym/index.html" style="color:#58a6ff">Interactive gym</a><a href="../index.html#illustrative" style="color:#d29922">Illustrative demos</a><a href="https://github.com/nisaral/falsesafe-bench" style="color:#8b949e">GitHub</a></nav>
+<div style="position:sticky;top:0;z-index:9999;background:#7a4b00;color:#fff;font:600 13px system-ui;padding:6px 12px;text-align:center">ILLUSTRATIVE demo — hand-built geometry and in-browser toy maths, <u>not solver output</u>. For solver-exported results see the <a style="color:#ffd" href="../viewer3d/index.html">3D viewer</a> and <a style="color:#ffd" href="../gym/index.html">gym</a>; numbers of record are in claims_ledger.md.</div>
+
+<div class="container">
+  <!-- Audit Provenance Banner -->
+  <header class="audit-header">
+    <div class="audit-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      REGISTERED AUDIT
+    </div>
+    <div class="audit-item">
+      <span class="audit-label">Commit:</span>
+      <span class="audit-value" id="audit-commit">e0be6be</span>
+    </div>
+    <div class="audit-item">
+      <span class="audit-label">Tag:</span>
+      <span class="audit-value" id="audit-tag">prereg-v1</span>
+    </div>
+    <div class="audit-item">
+      <span class="audit-label">Grid:</span>
+      <span class="audit-value" id="audit-grid">201 &times; 201</span>
+    </div>
+    <div class="audit-item">
+      <span class="audit-label">Gap Physics:</span>
+      <span class="audit-value">&eta;=0.5, b=0.3, s=&minus;1</span>
+    </div>
+  </header>
+
+  <!-- Document Header -->
+  <h1>Epistemic Inflation & False-Safe Volumes under Structural Gaps</h1>
+  <div class="authors">
+    <strong>Nisar &amp; Keyush</strong> &bull; falsesafe-bench Pre-Registered Confirmatory Suite &bull; October 2026
+  </div>
+
+  <div class="abstract">
+    <strong>Interactive Phase-Space Inspection:</strong> A learned dynamics model trained outside the coverage gap 
+    <span style="font-family:var(--font-mono)">[0.4, 1.0]</span> assumes nominal double-integrator kinematics. In reality, the vehicle experiences 
+    reduced control authority (&eta;=0.5) and an adverse hazard push (b=0.3, s=&minus;1). 
+    Drag epistemic inflation knob <span style="font-family:var(--font-mono)">k</span> below to observe whether variance-based enlargement eliminates the False-Safe Volume (FSV) without incurring excessive False-Unsafe Volume (FUV).
+  </div>
+
+  <!-- Viewer & Controls Layout -->
+  <div class="viewer-layout">
+    <!-- Canvas Card -->
+    <div class="canvas-card">
+      <div class="canvas-title">
+        <span>State Space (p, v) &mdash; Reachability Tube at Horizon T=0.5s</span>
+        <span id="hover-coord" style="font-family:var(--font-mono); font-size:12px; font-weight:normal;">Hover for coordinates</span>
+      </div>
+      <canvas id="plot-canvas" width="620" height="480"></canvas>
+    </div>
+
+    <!-- Sidebar Controls -->
+    <aside class="sidebar">
+      <!-- Inflation Slider -->
+      <div class="control-group">
+        <label class="control-label" for="slider-k">
+          <span>Epistemic Inflation (k)</span>
+          <span class="slider-val" id="val-k">k = 2.0</span>
+        </label>
+        <input type="range" id="slider-k" min="0.0" max="3.0" step="0.5" value="2.0">
+      </div>
+
+      <!-- Live Metrics Card -->
+      <div class="metrics-box">
+        <div class="metric-row">
+          <span class="metric-title"><span class="dot" style="background:var(--danger-red);"></span> False-Safe Volume (FSV):</span>
+          <span class="metric-number fsv-highlight" id="metric-fsv">0.0057</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-title"><span class="dot" style="background:var(--fuv-purple);"></span> False-Unsafe Volume (FUV):</span>
+          <span class="metric-number fuv-highlight" id="metric-fuv">0.0018</span>
+        </div>
+        <div class="metric-row" style="font-size:12px; color:var(--text-muted);">
+          <span>FSV Reduction (vs k=0):</span>
+          <span class="metric-number" id="metric-fsv-red" style="color:#137333;">&minus;39.4%</span>
+        </div>
+
+        <!-- Asymmetric Safety Cost -->
+        <div class="cost-box">
+          <div class="control-label" style="font-size:12px; margin-bottom:4px;">
+            <span>Cost Weight r (C = r&middot;FSV + FUV)</span>
+            <span class="slider-val" id="val-r" style="font-size:12px;">r = 10</span>
+          </div>
+          <input type="range" id="slider-r" min="1" max="50" step="1" value="10">
+          <div class="metric-row" style="margin-top:8px;">
+            <span style="font-weight:600; font-size:13px;">Safety Cost C(r):</span>
+            <span class="metric-number" id="metric-cost" style="font-size:14px; color:#111;">0.0598</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Display Toggles -->
+      <div class="control-group" style="gap:10px;">
+        <label class="toggle-row">
+          <input type="checkbox" id="toggle-gap" checked>
+          <span>Highlight Coverage Gap G [0.4, 1.0]</span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="toggle-points" checked>
+          <span>Show Training Samples D<sub>train</sub></span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="toggle-regions" checked>
+          <span>Shade Discrepancy Volumes (FSV/FUV)</span>
+        </label>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:var(--safe-green-light); border:1.5px solid var(--safe-green);"></div>
+          <span>True Ground-Truth Safe Set &S;* (Hidden Physics)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="border:2px dashed var(--accent-blue);"></div>
+          <span>Certified Safe Set Boundary &part;&S;&#770;<sub>k</sub></span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:var(--danger-red-light); border:1px solid var(--danger-red);"></div>
+          <span>False-Safe Volume (FSV, Hazard Intrusion)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:var(--fuv-purple-light); border:1px solid var(--fuv-purple);"></div>
+          <span>False-Unsafe Volume (FUV, Spurious Conservatism)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:var(--gap-amber-bg); border:1px dashed var(--gap-amber);"></div>
+          <span>Withheld Training Gap G</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Methodological Notes -->
+  <section class="method-note">
+    <h3>Pre-Registered Verification Notes</h3>
+    <p>
+      In accordance with <code>PREREGISTRATION.md</code> (v1 frozen at tag <code>prereg-v1</code>), the benchmark adheres to strictly pre-declared decision rules:
+    </p>
+    <ul>
+      <li><strong>Asymmetric Danger:</strong> A false-safe verdict declares a point safe when true physics leads to a crash. Because control authority is halved inside the gap, linear extrapolation by the ensemble underestimates stopping distance.</li>
+      <li><strong>BCa Ratio-of-Means Estimand:</strong> Pointwise seed reduction ratios can blow up near zero; our primary statistical criterion evaluates the bootstrap ratio of means across all 30 confirmatory seeds.</li>
+      <li><strong>Ledger Synchronization:</strong> All numbers displayed on this canvas map directly to immutable records in <code>claims_ledger.md</code>.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+// FSV/FUV numbers: results/sweeps/20261027_184119 k_summary_table (n=30, 201x201). CONTOURS ARE HAND-DRAWN / ILLUSTRATIVE, not solver output.
+const AUDIT_DATA = {
+  bounds: { p_min: -1.0, p_max: 3.0, v_min: -2.0, v_max: 2.0 },
+  gap: { p_min: 0.4, p_max: 1.0 },
+  // Analytic / True Safe Set Boundary (v >= 0 is safe for p >= 0; v < 0 safe if p >= v^2/(2*u_eff))
+  // With hidden physics in [0.4, 1.0], effective braking authority is reduced, requiring larger initial position
+  true_contour: [
+    // (p, v) vertices representing the boundary of S*
+    [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
+    [0.08, -0.4], [0.24, -0.7], [0.45, -0.95],
+    [0.72, -1.20], [1.05, -1.45], [1.45, -1.70], [1.95, -1.95], [2.05, -2.0], [3.0, -2.0]
+  ],
+  // Evaluated certifier boundaries across k
+  k_evaluations: {
+    "0.0": {
+      fsv: 0.0096, fuv: 0.0001, /* confirmatory sweep mean, n=30 */
+      contour: [
+        [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
+        [0.08, -0.4], [0.20, -0.63], [0.35, -0.84],
+        [0.54, -1.04], [0.77, -1.24], [1.04, -1.44], [1.35, -1.64], [1.70, -1.84], [2.0, -2.0], [3.0, -2.0]
+      ]
+    },
+    "0.5": {
+      fsv: 0.0084, fuv: 0.0002, /* mean of k=0.4,0.6 rows (k=0.5 not swept) */
+      contour: [
+        [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
+        [0.08, -0.4], [0.21, -0.64], [0.37, -0.86],
+        [0.58, -1.07], [0.82, -1.28], [1.11, -1.49], [1.44, -1.70], [1.78, -1.89], [2.03, -2.0], [3.0, -2.0]
+      ]
+    },
+    "1.0": {
+      fsv: 0.0074, fuv: 0.0006, /* confirmatory sweep mean, n=30 */
+      contour: [
+        [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
+        [0.08, -0.4], [0.22, -0.66], [0.40, -0.89],
+        [0.63, -1.12], [0.89, -1.34], [1.19, -1.56], [1.53, -1.77], [1.88, -1.95], [2.05, -2.0], [3.0, -2.0]
+      ]
+    },
+    "1.5": {
+      fsv: 0.0065, fuv: 0.0012, /* mean of k=1.4,1.6 rows (k=1.5 not swept) */
+      contour: [
+        [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
+        [0.08, -0.4], [0.23, -0.68], [0.42, -0.92],
+        [0.68, -1.17], [0.96, -1.40], [1.28, -1.63], [1.63, -1.84], [1.96, -2.0], [3.0, -2.0]
+      ]
+    },
+    "2.0": {
+      fsv: 0.0057, fuv: 0.0018, /* confirmatory sweep mean, n=30 */
+      contour: [
+        [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
+        [0.08, -0.4], [0.24, -0.70], [0.45, -0.95],
+        [0.73, -1.22], [1.04, -1.46], [1.38, -1.70], [1.74, -1.91], [2.03, -2.0], [3.0, -2.0]
+      ]
+    },
+    "2.5": {
+      fsv: 0.0050, fuv: 0.0026, /* mean of k=2.4,2.6 rows (k=2.5 not swept) */
+      contour: [
+        [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
+        [0.09, -0.4], [0.26, -0.72], [0.48, -0.98],
+        [0.78, -1.27], [1.11, -1.52], [1.47, -1.77], [1.85, -1.98], [2.08, -2.0], [3.0, -2.0]
+      ]
+    },
+    "3.0": {
+      fsv: 0.0043, fuv: 0.0034, /* confirmatory sweep mean, n=30 */
+      contour: [
+        [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
+        [0.10, -0.4], [0.28, -0.75], [0.52, -1.02],
+        [0.84, -1.32], [1.19, -1.58], [1.57, -1.84], [1.95, -2.0], [3.0, -2.0]
+      ]
+    }
+  },
+  // Sample training points outside gap [0.4, 1.0]
+  training_points: (function() {
+    const pts = [];
+    const rng = function(s) { let x = Math.sin(s++) * 10000; return x - Math.floor(x); };
+    let seed = 1000;
+    for (let i = 0; i < 90; i++) {
+      let p;
+      if (rng(seed++) < 0.45) {
+        p = -0.5 + rng(seed++) * 0.85; // p in [-0.5, 0.35]
+      } else {
+        p = 1.05 + rng(seed++) * 1.85; // p in [1.05, 2.9]
+      }
+      let v = -1.8 + rng(seed++) * 3.6;
+      pts.push([p, v]);
+    }
+    return pts;
+  })()
+};
+
+// Canvas rendering engine
+const canvas = document.getElementById('plot-canvas');
+const ctx = canvas.getContext('2d');
+const sliderK = document.getElementById('slider-k');
+const sliderR = document.getElementById('slider-r');
+const valK = document.getElementById('val-k');
+const valR = document.getElementById('val-r');
+const metricFSV = document.getElementById('metric-fsv');
+const metricFUV = document.getElementById('metric-fuv');
+const metricRed = document.getElementById('metric-fsv-red');
+const metricCost = document.getElementById('metric-cost');
+const toggleGap = document.getElementById('toggle-gap');
+const togglePoints = document.getElementById('toggle-points');
+const toggleRegions = document.getElementById('toggle-regions');
+const hoverCoord = document.getElementById('hover-coord');
+
+function toScreen(p, v) {
+  const pad = 42;
+  const w = canvas.width - pad * 2;
+  const h = canvas.height - pad * 2;
+  const { p_min, p_max, v_min, v_max } = AUDIT_DATA.bounds;
+  const x = pad + ((p - p_min) / (p_max - p_min)) * w;
+  const y = pad + ((v_max - v) / (v_max - v_min)) * h;
+  return { x, y };
+}
+
+function toWorld(x, y) {
+  const pad = 42;
+  const w = canvas.width - pad * 2;
+  const h = canvas.height - pad * 2;
+  const { p_min, p_max, v_min, v_max } = AUDIT_DATA.bounds;
+  const p = p_min + ((x - pad) / w) * (p_max - p_min);
+  const v = v_max - ((y - pad) / h) * (v_max - v_min);
+  return { p, v };
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const pad = 42;
+  const w = canvas.width - pad * 2;
+  const h = canvas.height - pad * 2;
+
+  // 1. Coverage Gap Window [0.4, 1.0]
+  if (toggleGap.checked) {
+    const p1 = toScreen(AUDIT_DATA.gap.p_min, 0).x;
+    const p2 = toScreen(AUDIT_DATA.gap.p_max, 0).x;
+    ctx.fillStyle = 'rgba(242, 153, 0, 0.08)';
+    ctx.fillRect(p1, pad, p2 - p1, h);
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(176, 96, 0, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(p1, pad, p2 - p1, h);
+    ctx.setLineDash([]);
+
+    // Gap Label
+    ctx.fillStyle = 'rgba(176, 96, 0, 0.8)';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('Coverage Gap G', p1 + 6, pad + 18);
+    ctx.fillText('[0.4, 1.0]', p1 + 6, pad + 32);
+  }
+
+  // 2. Axes & Grid
+  ctx.strokeStyle = '#e2e4e8';
+  ctx.lineWidth = 1;
+  // Zero lines
+  const zeroPt = toScreen(0, 0);
+  ctx.beginPath();
+  ctx.moveTo(pad, zeroPt.y); ctx.lineTo(canvas.width - pad, zeroPt.y);
+  ctx.moveTo(zeroPt.x, pad); ctx.lineTo(zeroPt.x, canvas.height - pad);
+  ctx.stroke();
+
+  // Axis border
+  ctx.strokeStyle = '#cfd3d8';
+  ctx.strokeRect(pad, pad, w, h);
+
+  // Axis Labels
+  ctx.fillStyle = '#5f6368';
+  ctx.font = '11px JetBrains Mono, monospace';
+  // p labels
+  [-1, 0, 1, 2, 3].forEach(p => {
+    const pt = toScreen(p, -2);
+    ctx.fillText(p + 'm', pt.x - 8, canvas.height - pad + 18);
+  });
+  // v labels
+  [-2, -1, 0, 1, 2].forEach(v => {
+    const pt = toScreen(-1, v);
+    ctx.fillText(v + 'm/s', pad - 36, pt.y + 4);
+  });
+
+  // Current k data
+  const kKey = parseFloat(sliderK.value).toFixed(1);
+  const currentK = AUDIT_DATA.k_evaluations[kKey] || AUDIT_DATA.k_evaluations["2.0"];
+
+  // 3. True Safe Set S* (Fill)
+  ctx.beginPath();
+  const t0 = toScreen(AUDIT_DATA.true_contour[0][0], AUDIT_DATA.true_contour[0][1]);
+  ctx.moveTo(t0.x, t0.y);
+  for (let pt of AUDIT_DATA.true_contour) {
+    const s = toScreen(pt[0], pt[1]);
+    ctx.lineTo(s.x, s.y);
+  }
+  // close top-right
+  const tr = toScreen(3.0, 2.0);
+  ctx.lineTo(tr.x, tr.y);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(13, 128, 80, 0.08)';
+  ctx.fill();
+  ctx.strokeStyle = '#0d8050';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 4. Certified Safe Set Boundary (dashed blue)
+  ctx.beginPath();
+  const c0 = toScreen(currentK.contour[0][0], currentK.contour[0][1]);
+  ctx.moveTo(c0.x, c0.y);
+  for (let pt of currentK.contour) {
+    const s = toScreen(pt[0], pt[1]);
+    ctx.lineTo(s.x, s.y);
+  }
+  ctx.lineTo(tr.x, tr.y);
+  ctx.closePath();
+
+  if (toggleRegions.checked) {
+    // False-Safe Shading (where Certified extends beyond True Safe)
+    ctx.fillStyle = 'rgba(217, 48, 37, 0.16)';
+    ctx.fill();
+  }
+  ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = '#1a73e8';
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 5. Training data points
+  if (togglePoints.checked) {
+    ctx.fillStyle = 'rgba(60, 64, 67, 0.5)';
+    for (let pt of AUDIT_DATA.training_points) {
+      const s = toScreen(pt[0], pt[1]);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 6. Failure set label (p < 0)
+  ctx.fillStyle = 'rgba(217, 48, 37, 0.85)';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Failure Wall: p < 0', pad + 8, pad + 20);
+}
+
+function updateMetrics() {
+  const kKey = parseFloat(sliderK.value).toFixed(1);
+  valK.textContent = `k = ${kKey}`;
+  const data = AUDIT_DATA.k_evaluations[kKey] || AUDIT_DATA.k_evaluations["2.0"];
+  const nomData = AUDIT_DATA.k_evaluations["0.0"];
+
+  metricFSV.textContent = data.fsv.toFixed(4);
+  metricFUV.textContent = data.fuv.toFixed(4);
+
+  const redPct = ((nomData.fsv - data.fsv) / nomData.fsv) * 100;
+  metricRed.textContent = `${redPct >= 0 ? '-' : '+'}${Math.abs(redPct).toFixed(1)}%`;
+
+  // Asymmetric cost
+  const r = parseFloat(sliderR.value);
+  valR.textContent = `r = ${r}`;
+  const cost = r * data.fsv + data.fuv;
+  metricCost.textContent = cost.toFixed(4);
+
+  render();
+}
+
+sliderK.addEventListener('input', updateMetrics);
+sliderR.addEventListener('input', updateMetrics);
+toggleGap.addEventListener('change', render);
+togglePoints.addEventListener('change', render);
+toggleRegions.addEventListener('change', render);
+
+canvas.addEventListener('mousemove', function(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+  const world = toWorld(x, y);
+  if (world.p >= -1 && world.p <= 3 && world.v >= -2 && world.v <= 2) {
+    hoverCoord.textContent = `p: ${world.p.toFixed(2)}m | v: ${world.v.toFixed(2)}m/s`;
+  } else {
+    hoverCoord.textContent = `State outside domain`;
+  }
+});
+
+// Initial render
+updateMetrics();
+</script>
+</body>
+</html>

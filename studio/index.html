@@ -1,0 +1,2389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>falsesafe-bench — Autonomous Systems Safety Certification & Simulation Lab</title>
+  <meta name="description" content="State-of-the-art Hamilton-Jacobi reachability safety auditing cockpit with 7 multi-task robotic simulation environments, 2D/2.5D isometric view, side-by-side comparative split screen, interactive manual driving, and live millisecond telemetry.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0a0e17;
+      --bg-surface: #111726;
+      --bg-card: #162032;
+      --bg-card-hover: #1e293b;
+      --border-subtle: #1f293d;
+      --border-focus: #38bdf8;
+
+      --cyan: #38bdf8;
+      --cyan-dim: rgba(56, 189, 248, 0.12);
+      --cyan-glow: rgba(56, 189, 248, 0.25);
+      --rose: #ef4444;
+      --rose-dim: rgba(239, 68, 68, 0.12);
+      --rose-glow: rgba(239, 68, 68, 0.25);
+      --amber: #f59e0b;
+      --amber-dim: rgba(245, 158, 11, 0.12);
+      --green: #10b981;
+      --green-dim: rgba(16, 185, 129, 0.12);
+      --purple: #818cf8;
+      --indigo: #6366f1;
+
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+
+      --radius-xl: 10px;
+      --radius-lg: 8px;
+      --radius-md: 6px;
+      --radius-sm: 4px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-base);
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.03) 0%, transparent 60%),
+        linear-gradient(180deg, #0a0e17 0%, #0f1523 100%);
+      color: var(--text);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOP NAVIGATION */
+    header {
+      padding: 12px 28px;
+      background: #0d121f;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      background: #1e293b;
+      color: #38bdf8;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+    }
+
+    h1 {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .version-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--cyan);
+      background: var(--cyan-dim);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+
+    .task-nav {
+      display: flex;
+      background: rgba(255, 255, 255, 0.035);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      gap: 3px;
+      overflow-x: auto;
+      max-width: 900px;
+    }
+
+    .task-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 13px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .task-tab:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .task-tab.active {
+      background: #1e293b;
+      color: #38bdf8;
+      font-weight: 700;
+      border: 1px solid #38bdf8;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-header {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-header:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* MAIN COCKPIT LAYOUT */
+    main {
+      padding: 20px 28px;
+      max-width: 1820px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 410px;
+      gap: 20px;
+    }
+
+    @media (max-width: 1360px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    /* ARENA & VIEWPORT */
+    .arena-column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .viewport-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .viewport-topbar {
+      padding: 12px 20px;
+      background: rgba(10, 15, 30, 0.7);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .task-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .topbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .segmented-control {
+      display: flex;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+    }
+
+    .seg-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .seg-btn:hover { color: var(--text); }
+    .seg-btn.active {
+      background: var(--cyan);
+      color: #050811;
+      font-weight: 700;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .status-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-badge::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .status-nominal { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .status-safe { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .status-danger { background: var(--rose-dim); color: var(--rose); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      height: 520px;
+      background: #03050a;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    canvas#arena-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* DUAL SPLIT SCREEN CONTAINER */
+    .split-view-container {
+      display: none;
+      width: 100%;
+      height: 100%;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .split-pane {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #03050a;
+      overflow: hidden;
+    }
+
+    .split-banner {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 4px 9px;
+      border-radius: 4px;
+      letter-spacing: 0.8px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .banner-unshielded {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: var(--rose);
+    }
+
+    .banner-shielded {
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--cyan);
+    }
+
+    /* HUD OVERLAYS */
+    .hud-stats-overlay {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .glass-pill {
+      background: rgba(10, 15, 28, 0.9);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+    }
+
+    .stat-pair {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-k {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-v {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .intervention-alert {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: #7f1d1d;
+      border: 1px solid #ef4444;
+      color: #fee2e2;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: var(--radius-md);
+      letter-spacing: 0.5px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 30;
+    }
+
+    @keyframes alertPulse {
+      from { transform: scale(0.97); opacity: 0.9; }
+      to { transform: scale(1.03); opacity: 1; }
+    }
+
+    .manual-drive-hint {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      background: rgba(10, 15, 28, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    .key-badge {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-weight: 700;
+    }
+
+    /* LIVE TELEMETRY & CHART */
+    .chart-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 16px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.4);
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chart-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 14px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .chart-canvas-wrap {
+      width: 100%;
+      height: 130px;
+      background: rgba(5, 8, 17, 0.7);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    canvas#telemetry-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .chart-tooltip {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: rgba(10, 16, 30, 0.9);
+      border: 1px solid var(--border-focus);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--cyan);
+      pointer-events: none;
+      display: none;
+    }
+
+    /* SIDEBAR CONTROLS */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cockpit-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.4);
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* SHIELD OPTIONS */
+    .shield-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .shield-option {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .shield-option:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateX(3px);
+    }
+
+    .shield-option.active {
+      border-color: var(--cyan);
+      background: rgba(56, 189, 248, 0.08);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+    }
+
+    .shield-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .shield-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .shield-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    /* SLIDERS */
+    .slider-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .slider-header span:first-child { color: var(--text-muted); font-weight: 500; }
+    .slider-header span:last-child {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* TOGGLE SWITCHES */
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 5px 0;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 18px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider-switch {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.12);
+      transition: .2s;
+      border-radius: 20px;
+    }
+
+    .slider-switch:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider-switch { background-color: var(--cyan); }
+    input:checked + .slider-switch:before { transform: translateX(16px); }
+
+    /* ACTION BUTTONS */
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-studio {
+      padding: 9px 12px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-studio:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-studio.primary {
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 600;
+      border: 1px solid #38bdf8;
+    }
+
+    .btn-studio.primary:hover {
+      background: #0369a1;
+      transform: none;
+    }
+
+    /* INCIDENT LOG */
+    .log-container {
+      background: rgba(5, 8, 17, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      height: 120px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .log-entry {
+      line-height: 1.4;
+      color: var(--text-dim);
+    }
+
+    .log-entry strong { color: var(--cyan); }
+    .log-entry.warn strong { color: var(--rose); }
+
+    /* FORMAL MATH MODAL */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(16px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-box {
+      background: #090e1d;
+      border: 1px solid var(--border-focus);
+      border-radius: var(--radius-xl);
+      max-width: 780px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 28px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 14px;
+    }
+
+    .math-block {
+      background: rgba(0, 0, 0, 0.4);
+      border-left: 3px solid var(--cyan);
+      padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      border-radius: 4px;
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+<nav id="fsb-nav" style="position:fixed;left:8px;bottom:8px;z-index:10000;display:flex;gap:12px;align-items:center;background:rgba(13,17,23,.92);border:1px solid #30363d;border-radius:8px;padding:5px 10px;font:12px system-ui"><a href="../index.html" style="color:#e6edf3;font-weight:700;text-decoration:none">FalseSafe-Bench</a><a href="../viewer3d/index.html" style="color:#58a6ff">3D viewer</a><a href="../gym/index.html" style="color:#58a6ff">Interactive gym</a><a href="../index.html#illustrative" style="color:#d29922">Illustrative demos</a><a href="https://github.com/nisaral/falsesafe-bench" style="color:#8b949e">GitHub</a></nav>
+<div style="position:sticky;top:0;z-index:9999;background:#7a4b00;color:#fff;font:600 13px system-ui;padding:6px 12px;text-align:center">ILLUSTRATIVE demo — hand-built geometry and in-browser toy maths, <u>not solver output</u>. For solver-exported results see the <a style="color:#ffd" href="../viewer3d/index.html">3D viewer</a> and <a style="color:#ffd" href="../gym/index.html">gym</a>; numbers of record are in claims_ledger.md.</div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand-wrap">
+      <span class="brand-badge">SIMULATION LAB</span>
+      <h1>falsesafe-bench <span class="version-tag">Verification Lab</span></h1>
+    </div>
+
+    <!-- 7 Multi-Task Scenario Tabs -->
+    <nav class="task-nav">
+      <button class="task-tab active" id="tab-slalom" onclick="switchTask('slalom')">
+        <span>⚡ 1. Dynamic Slalom</span>
+      </button>
+      <button class="task-tab" id="tab-chasm" onclick="switchTask('chasm')">
+        <span>⚠️ 2. Deceptive Chasm</span>
+      </button>
+      <button class="task-tab" id="tab-braking" onclick="switchTask('braking')">
+        <span>🛑 3. High-Speed Braking</span>
+      </button>
+      <button class="task-tab" id="tab-drone" onclick="switchTask('drone')">
+        <span>🚁 4. Drone Corridor</span>
+      </button>
+      <button class="task-tab" id="tab-adversary" onclick="switchTask('adversary')">
+        <span>🎯 5. Evasion Game</span>
+      </button>
+      <button class="task-tab" id="tab-highway" onclick="switchTask('highway')">
+        <span>🚗 6. Highway Merge</span>
+      </button>
+      <button class="task-tab" id="tab-canyon" onclick="switchTask('canyon')">
+        <span>🏙️ 7. Urban Canyon</span>
+      </button>
+    </nav>
+
+    <div class="header-actions">
+      <button class="btn-header" onclick="openMathModal()">
+        <span>📐 Formal Specs</span>
+      </button>
+      <a href="https://github.com/nisaral/falsesafe-bench" target="_blank" style="text-decoration: none;">
+        <button class="btn-header">
+          <span>GitHub</span>
+        </button>
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN COCKPIT -->
+  <main>
+    
+    <!-- LEFT: ARENA & TELEMETRY -->
+    <div class="arena-column">
+      
+      <!-- Primary Viewport Card -->
+      <section class="viewport-card">
+        <div class="viewport-topbar">
+          <div class="task-heading">
+            <span id="current-task-title">Task 1: Dynamic Obstacle Slalom</span>
+            <span class="status-badge status-safe" id="safety-status-pill">SHIELD ACTIVE (k=1.5)</span>
+          </div>
+
+          <div class="topbar-controls">
+            <!-- 2D / 2.5D Isometric Selector -->
+            <div class="segmented-control">
+              <button class="seg-btn active" id="btn-view-2d" onclick="setViewMode('2d')">2D Orthographic Grid</button>
+              <button class="seg-btn" id="btn-view-3d" onclick="setViewMode('3d')">3D Isometric View</button>
+            </div>
+
+            <!-- Single vs Dual Comparative Split -->
+            <div class="segmented-control">
+              <button class="seg-btn active" id="btn-mode-single" onclick="setDisplayMode('single')">Single View</button>
+              <button class="seg-btn" id="btn-mode-split" onclick="setDisplayMode('split')">Dual Telemetry Compare</button>
+            </div>
+
+            <!-- Autonomous AI vs Manual Driving -->
+            <div class="segmented-control">
+              <button class="seg-btn active" id="btn-ctrl-auto" onclick="setControlMode('auto')">Auto AI</button>
+              <button class="seg-btn" id="btn-ctrl-manual" onclick="setControlMode('manual')">Manual Steering (WASD)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="canvas-container" id="canvas-container">
+          
+          <!-- Single Mode Canvas -->
+          <canvas id="arena-canvas"></canvas>
+
+          <!-- Split Mode Side-by-Side Dual Panes -->
+          <div class="split-view-container" id="split-view-container">
+            <div class="split-pane" id="pane-left">
+              <div class="split-banner banner-unshielded">BASELINE UNSHIELDED (CRASH PRONE)</div>
+              <canvas id="split-canvas-unshielded"></canvas>
+            </div>
+            <div class="split-pane" id="pane-right">
+              <div class="split-banner banner-shielded">UNCERTAINTY-AWARE SHIELD (illustrative)</div>
+              <canvas id="split-canvas-shielded"></canvas>
+            </div>
+          </div>
+
+          <!-- Real-Time Stats Overlay -->
+          <div class="hud-stats-overlay">
+            <div class="glass-pill">
+              <div class="stat-pair">
+                <span class="stat-k">Velocity / Speed</span>
+                <span class="stat-v" id="hud-speed">1.00 m/s</span>
+              </div>
+              <div class="stat-pair">
+                <span class="stat-k">Safety Margin V(x)</span>
+                <span class="stat-v" id="hud-v" style="color: #38bdf8;">+0.42</span>
+              </div>
+              <div class="stat-pair">
+                <span class="stat-k">Min Hazard Clearance</span>
+                <span class="stat-v" id="hud-dist">1.25 m</span>
+              </div>
+              <div class="stat-pair">
+                <span class="stat-k">Interventions</span>
+                <span class="stat-v" id="hud-interventions" style="color: #f59e0b;">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Flash Intervention Alert -->
+          <div class="intervention-alert" id="intervention-banner">
+            ⚡ SHIELD OVERRIDE ACTIVE
+          </div>
+
+          <!-- Manual Drive Instructions Overlay -->
+          <div class="manual-drive-hint" id="manual-drive-hint">
+            <span>DRIVE WITH:</span>
+            <span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span>
+            <span style="margin-left: 8px; color: var(--cyan);">Shield prevents collision even under aggressive steering!</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Multi-Channel Telemetry Chart -->
+      <section class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">
+            <span>Real-Time Safety & Steering Telemetry</span>
+            <span style="font-size: 10px; color: var(--text-dim); text-transform: none;">(HJI Value V(t) vs Action Divergence)</span>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item"><span class="legend-dot" style="background: #38bdf8;"></span> Safety Value V(t)</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #ef4444;"></span> Policy/Manual u_cmd</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #10b981;"></span> Executed u_exec</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #f59e0b;"></span> Epistemic Uncertainty σ</div>
+          </div>
+        </div>
+
+        <div class="chart-canvas-wrap">
+          <canvas id="telemetry-canvas"></canvas>
+          <div class="chart-tooltip" id="chart-tooltip">t: 0ms | V: +0.00</div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- RIGHT: COCKPIT CONTROLS & AUDIT -->
+    <aside class="sidebar">
+
+      <!-- Safety Shield Selector -->
+      <div class="cockpit-panel">
+        <div class="panel-title">
+          <span>Safety Shield Mode</span>
+          <span style="font-size: 10px; color: var(--cyan);">HJI-style barrier (illustrative)</span>
+        </div>
+
+        <div class="shield-list">
+          <!-- Unshielded -->
+          <div class="shield-option" id="shield-unshielded" onclick="setShield('unshielded')">
+            <div class="shield-top">
+              <span class="shield-title">1. Unshielded Baseline</span>
+              <span class="version-tag" style="color: #ef4444; background: rgba(255,0,85,0.15); border-color: rgba(255,0,85,0.3);">NO SHIELD</span>
+            </div>
+            <span class="shield-sub">Unchecked policy. Blindly crashes into boundaries, walls, and moving hazards.</span>
+          </div>
+
+          <!-- Nominal Learned E1 -->
+          <div class="shield-option" id="shield-nominal" onclick="setShield('nominal')">
+            <div class="shield-top">
+              <span class="shield-title">2. Nominal Learned Shield</span>
+              <span class="version-tag" style="color: #f59e0b; background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3);">E1: k=0</span>
+            </div>
+            <span class="shield-sub">Learned dynamics without uncertainty bound. Overconfident in coverage gaps.</span>
+          </div>
+
+          <!-- Epistemic Inflated E2 -->
+          <div class="shield-option active" id="shield-uncertainty" onclick="setShield('uncertainty')">
+            <div class="shield-top">
+              <span class="shield-title">3. Uncertainty-Aware Robust Shield</span>
+              <span class="version-tag">E2: k=1.5</span>
+            </div>
+            <span class="shield-sub">Virtual disturbance set inflated by k·σ(x). Illustrative clearance; real solver results show inflation only partially closes the gap (P1: 40.34%).</span>
+          </div>
+
+          <!-- Oracle -->
+          <div class="shield-option" id="shield-oracle" onclick="setShield('oracle')">
+            <div class="shield-top">
+              <span class="shield-title">4. Ground-Truth Oracle</span>
+              <span class="version-tag" style="color: #10b981; background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3);">TRUE ODE</span>
+            </div>
+            <span class="shield-sub">Theoretical safety boundary computed with perfect mathematical kinematics.</span>
+          </div>
+        </div>
+
+        <!-- Epistemic Uncertainty Multiplier k Slider -->
+        <div class="slider-box">
+          <div class="slider-header">
+            <span>Epistemic Inflation Multiplier (k)</span>
+            <span id="label-k">k = 1.5</span>
+          </div>
+          <input type="range" id="slider-k" min="0.0" max="3.0" step="0.1" value="1.5" oninput="updateK(this.value)">
+        </div>
+      </div>
+
+      <!-- Sensors & Simulation Controls -->
+      <div class="cockpit-panel">
+        <div class="panel-title">
+          <span>Sensors & Visual Telemetry</span>
+          <span style="font-size: 10px; color: var(--text-dim);">Overlays</span>
+        </div>
+
+        <div class="toggle-item">
+          <span>Active 16-Ray LIDAR Rangefinder</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-lidar" checked>
+            <span class="slider-switch"></span>
+          </label>
+        </div>
+
+        <div class="toggle-item">
+          <span>Hamilton-Jacobi Safety Contours</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-field" checked>
+            <span class="slider-switch"></span>
+          </label>
+        </div>
+
+        <div class="toggle-item">
+          <span>Holographic Forcefield & Steer Vectors</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-vectors" checked>
+            <span class="slider-switch"></span>
+          </label>
+        </div>
+
+        <div class="toggle-item">
+          <span>Coverage Gap Void Blueprint</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-gap" checked>
+            <span class="slider-switch"></span>
+          </label>
+        </div>
+
+        <div class="btn-row" style="margin-top: 6px;">
+          <button class="btn-studio primary" id="btn-play" onclick="togglePlay()">Pause</button>
+          <button class="btn-studio" onclick="resetTask()">Reset Scene</button>
+        </div>
+      </div>
+
+      <!-- Live Incident & Intervention Log -->
+      <div class="cockpit-panel">
+        <div class="panel-title">
+          <span>Live Intervention Audit Log</span>
+          <span style="font-size: 10px; color: var(--cyan);" id="log-count">0 Events</span>
+        </div>
+        <div class="log-container" id="incident-log">
+          <div class="log-entry"><strong>[00:00.00]</strong> System initialized. Ready for safety audit.</div>
+        </div>
+      </div>
+
+      <!-- Live Empirical Claims Verification -->
+      <div class="cockpit-panel">
+        <div class="panel-title">
+          <span>Verified Claims Ledger (5-Seed CI)</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+          <div style="background: rgba(255,255,255,0.03); padding: 7px 10px; border-radius: 6px; border-left: 3px solid #ef4444;">
+            <strong style="color: #ef4444;">C1 (H1 Validated):</strong> Nominal model yields FSV = <strong>0.0030</strong> in coverage void.
+          </div>
+          <div style="background: rgba(255,255,255,0.03); padding: 7px 10px; border-radius: 6px; border-left: 3px solid #38bdf8;">
+            <strong style="color: #38bdf8;">C2 (H2 Validated):</strong> Epistemic inflation k=2.0 cuts FSV by <strong>72.7%</strong> (&ge; 50% bar).
+          </div>
+          <div style="background: rgba(255,255,255,0.03); padding: 7px 10px; border-radius: 6px; border-left: 3px solid #f59e0b;">
+            <strong style="color: #f59e0b;">C3 (H3 Validated):</strong> Tradeoff: FUV rises 0.0005 &rarr; 0.0042 along Pareto frontier.
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- FORMAL MATH SPECIFICATION MODAL -->
+  <div class="modal-backdrop" id="math-modal" onclick="closeMathModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 style="font-size: 16px; font-weight: 700; color: white;">Hamilton-Jacobi-Isaacs formulation (background; this page does not run an HJ solver)</h2>
+        <button class="btn-studio" onclick="closeMathModal()" style="padding: 4px 10px;">&times;</button>
+      </div>
+      
+      <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+        Safety in <strong>falsesafe-bench</strong> is mathematically defined via viscosity solutions to the Hamilton-Jacobi-Isaacs PDE over state space 𝒳:
+      </p>
+
+      <div class="math-block">
+        &part;_t V(t, x) + min_{u &isin; 𝒰} max_{d &isin; 𝒟} &nabla;V(t, x) &middot; f(x, u, d) = 0, &emsp; V(0, x) = l(x)
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+        When dynamics f(x, u) are learned from data, unvisited coverage gaps induce epistemic variance σ<sub>ep</sub>(x). We expand the disturbance set dynamically:
+      </p>
+
+      <div class="math-block">
+        𝒟(x) = 𝒟_{al} &oplus; { d &isin; &Ropf;^n : ||d||_2 &le; k &middot; &sigma;_{ep}(x) }
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+        <strong>Separated vs Blended Uncertainty (Hypothesis H4):</strong> In higher dimensions (3D Dubins Car), separated uncertainty k<sub>ep</sub>σ<sub>ep</sub> + σ<sub>al</sub> provably avoids over-conservatism compared to vector-norm blending √((k·σ<sub>ep</sub>)² + σ<sub>al</sub>²).
+      </p>
+
+      <button class="btn-studio primary" style="align-self: flex-end; margin-top: 10px;" onclick="closeMathModal()">Close Reference</button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       falsesafe-bench Mission Control Engine (Studio v3.0)
+       Multi-Task, 2.5D Isometric, Comparative Split-Screen, Interactive Driving
+       ========================================================================== */
+
+    // Canvases
+    const arenaCanvas = document.getElementById('arena-canvas');
+    const arenaCtx = arenaCanvas.getContext('2d');
+    const telemCanvas = document.getElementById('telemetry-canvas');
+    const telemCtx = telemCanvas.getContext('2d');
+    const container = document.getElementById('canvas-container');
+
+    const splitUnshieldedCanvas = document.getElementById('split-canvas-unshielded');
+    const splitUnshieldedCtx = splitUnshieldedCanvas.getContext('2d');
+    const splitShieldedCanvas = document.getElementById('split-canvas-shielded');
+    const splitShieldedCtx = splitShieldedCanvas.getContext('2d');
+
+    function resizeCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+
+      arenaCanvas.width = w * dpr;
+      arenaCanvas.height = h * dpr;
+      arenaCtx.resetTransform();
+      arenaCtx.scale(dpr, dpr);
+
+      // Split canvases
+      const halfW = (w / 2) - 1;
+      splitUnshieldedCanvas.width = halfW * dpr;
+      splitUnshieldedCanvas.height = h * dpr;
+      splitUnshieldedCtx.resetTransform();
+      splitUnshieldedCtx.scale(dpr, dpr);
+
+      splitShieldedCanvas.width = halfW * dpr;
+      splitShieldedCanvas.height = h * dpr;
+      splitShieldedCtx.resetTransform();
+      splitShieldedCtx.scale(dpr, dpr);
+
+      const tw = telemCanvas.parentElement.clientWidth;
+      const th = telemCanvas.parentElement.clientHeight;
+      telemCanvas.width = tw * dpr;
+      telemCanvas.height = th * dpr;
+      telemCtx.resetTransform();
+      telemCtx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    // Global Modes & Settings
+    let currentTask = 'slalom';
+    let currentShield = 'uncertainty';
+    let viewMode = '2d';       // '2d' or '3d'
+    let displayMode = 'single'; // 'single' or 'split'
+    let controlMode = 'auto';   // 'auto' or 'manual'
+    let inflationK = 1.5;
+    let isPlaying = true;
+    let step = 0;
+    let totalInterventions = 0;
+
+    // Keyboard state for Manual Steering (WASD)
+    const keys = { w: false, a: false, s: false, d: false };
+    window.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if (k === 'w' || k === 'arrowup') keys.w = true;
+      if (k === 'a' || k === 'arrowleft') keys.a = true;
+      if (k === 's' || k === 'arrowdown') keys.s = true;
+      if (k === 'd' || k === 'arrowright') keys.d = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      const k = e.key.toLowerCase();
+      if (k === 'w' || k === 'arrowup') keys.w = false;
+      if (k === 'a' || k === 'arrowleft') keys.a = false;
+      if (k === 's' || k === 'arrowdown') keys.s = false;
+      if (k === 'd' || k === 'arrowright') keys.d = false;
+    });
+
+    // Telemetry Buffer
+    const MAX_HIST = 120;
+    const history = { v: [], uCmd: [], uExec: [], sigma: [] };
+
+    // 7 Rich Multi-Task Environments
+    const tasks = {
+      slalom: {
+        title: "Task 1: Dynamic Obstacle Slalom",
+        robotType: "dubins",
+        bounds: [-4.0, 4.0, -2.6, 2.6],
+        initRobot: { x: -3.2, y: 0.0, heading: 0.0, v: 1.0 },
+        goal: { x: 3.2, y: 0.0 },
+        obstacles: [
+          { x: -1.2, y: 0.4, r: 0.65, vy: 0.8, minY: -1.4, maxY: 1.4 },
+          { x: 0.8, y: -0.4, r: 0.70, vy: -0.9, minY: -1.4, maxY: 1.4 },
+          { x: -0.2, y: 1.1, r: 0.55, vy: 0.0 }
+        ],
+        gap: { x1: -0.5, y1: -1.2, x2: 1.2, y2: 1.2 }
+      },
+      chasm: {
+        title: "Task 2: The Deceptive Chasm / False-Safe Corridor",
+        robotType: "dubins",
+        bounds: [-4.0, 4.0, -2.6, 2.6],
+        initRobot: { x: -3.2, y: 0.0, heading: 0.0, v: 1.0 },
+        goal: { x: 3.2, y: 0.0 },
+        obstacles: [
+          { x: 0.0, y: 1.6, r: 1.05, vy: 0 },
+          { x: 0.0, y: -1.6, r: 1.05, vy: 0 }
+        ],
+        gap: { x1: -0.8, y1: -0.7, x2: 0.8, y2: 0.7 } // Narrow unvisited constriction
+      },
+      braking: {
+        title: "Task 3: High-Speed Double Integrator Braking (p, v)",
+        robotType: "di",
+        bounds: [-1.0, 3.5, -2.2, 2.2],
+        initRobot: { p: 2.8, v: -1.8 },
+        goal: { p: 0.5, v: 0.0 },
+        obstacles: [],
+        wall: 0.0
+      },
+      drone: {
+        title: "Task 4: Quadcopter Altitude & Velocity Corridor",
+        robotType: "drone",
+        bounds: [-1.0, 9.0, -4.0, 4.0],
+        initRobot: { z: 4.0, w: -2.5 },
+        goal: { z: 5.0, w: 0.0 },
+        ceiling: 7.5,
+        floor: 1.0,
+        obstacles: []
+      },
+      adversary: {
+        title: "Task 5: Pursuit-Evasion Game with Adversarial Chaser",
+        robotType: "dubins",
+        bounds: [-4.0, 4.0, -2.6, 2.6],
+        initRobot: { x: -3.2, y: -1.0, heading: 0.2, v: 1.0 },
+        goal: { x: 3.2, y: 1.0 },
+        adversary: { x: 0.0, y: 0.0, heading: Math.PI, speed: 0.85 },
+        obstacles: [
+          { x: -1.0, y: 1.0, r: 0.6, vy: 0 },
+          { x: 1.0, y: -1.0, r: 0.6, vy: 0 }
+        ],
+        gap: { x1: -1.5, y1: -1.5, x2: 1.5, y2: 1.5 }
+      },
+      highway: {
+        title: "Task 6: Multi-Agent Highway Merge Bottleneck",
+        robotType: "highway",
+        bounds: [-4.0, 4.0, -2.4, 2.4],
+        initRobot: { x: -3.2, y: -0.8, heading: 0.35, v: 1.1 },
+        traffic: [
+          { x: -1.8, y: 0.0, v: 1.3, len: 1.0, width: 0.45 },
+          { x: 1.0, y: 0.0, v: 0.95, len: 1.0, width: 0.45 }
+        ],
+        mergePoint: { x: 0.0, y: 0.0 },
+        obstacles: [
+          { x: -1.0, y: -1.8, r: 0.4, vy: 0 } // Guardrail
+        ],
+        gap: { x1: -1.0, y1: -0.6, x2: 1.0, y2: 0.6 }
+      },
+      canyon: {
+        title: "Task 7: Stochastic Windfield Urban Canyon",
+        robotType: "dubins",
+        bounds: [-4.0, 4.0, -2.6, 2.6],
+        initRobot: { x: -3.2, y: 0.0, heading: 0.0, v: 1.0 },
+        goal: { x: 3.2, y: 0.0 },
+        skyscrapers: [
+          { x1: -2.0, y1: 0.7, x2: -0.4, y2: 2.5 },
+          { x1: -2.0, y1: -2.5, x2: -0.4, y2: -0.7 },
+          { x1: 0.4, y1: 0.7, x2: 2.0, y2: 2.5 },
+          { x1: 0.4, y1: -2.5, x2: 2.0, y2: -0.7 }
+        ],
+        windGustZone: { x1: -0.4, y1: -0.7, x2: 0.4, y2: 0.7, vy: -1.6 },
+        gap: { x1: -0.4, y1: -0.7, x2: 0.4, y2: 0.7 }
+      }
+    };
+
+    // Agent States
+    let agent = {
+      x: -3.2, y: 0.0, heading: 0.0, v: 1.0,
+      p: 2.8, vel: -1.8,
+      z: 4.0, w: -2.5,
+      trail: [],
+      isIntervening: false,
+      uCmd: 0.0,
+      uExec: 0.0,
+      hasCrashed: false
+    };
+
+    // Parallel Agent for Split View (Unshielded)
+    let unshieldedAgent = {
+      x: -3.2, y: 0.0, heading: 0.0, v: 1.0,
+      p: 2.8, vel: -1.8,
+      z: 4.0, w: -2.5,
+      trail: [],
+      hasCrashed: false
+    };
+
+    // Coordinate Conversion for 2D View
+    function toCanvasCoord(x, y, targetWidth, targetHeight) {
+      const cfg = tasks[currentTask];
+      const w = targetWidth || container.clientWidth;
+      const h = targetHeight || container.clientHeight;
+      const cx = ((x - cfg.bounds[0]) / (cfg.bounds[1] - cfg.bounds[0])) * w;
+      const cy = h - ((y - cfg.bounds[2]) / (cfg.bounds[3] - cfg.bounds[2])) * h;
+      return { cx, cy };
+    }
+
+    // 2.5D Isometric Projection Matrix
+    function toIsoCoord(x, y, z, targetWidth, targetHeight) {
+      const cfg = tasks[currentTask];
+      const w = targetWidth || container.clientWidth;
+      const h = targetHeight || container.clientHeight;
+      
+      // Normalized to [-1, 1]
+      const nx = ((x - cfg.bounds[0]) / (cfg.bounds[1] - cfg.bounds[0])) * 2 - 1;
+      const ny = ((y - cfg.bounds[2]) / (cfg.bounds[3] - cfg.bounds[2])) * 2 - 1;
+      const nz = (z || 0) * 0.15;
+
+      const angle = Math.PI / 6; // 30-deg isometric
+      const isoX = (nx - ny) * Math.cos(angle) * (w * 0.38) + (w * 0.5);
+      const isoY = (nx + ny) * Math.sin(angle) * (h * 0.38) + (h * 0.52) - (nz * h);
+      return { cx: isoX, cy: isoY };
+    }
+
+    function scaleLength(len, targetWidth) {
+      const cfg = tasks[currentTask];
+      const w = targetWidth || container.clientWidth;
+      return (len / (cfg.bounds[1] - cfg.bounds[0])) * w;
+    }
+
+    // Mode Switchers
+    function switchTask(taskId) {
+      currentTask = taskId;
+      document.querySelectorAll('.task-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tab-${taskId}`).classList.add('active');
+      document.getElementById('current-task-title').innerText = tasks[taskId].title;
+      resetTask();
+      logEvent(`Switched task scenario to: <strong>${tasks[taskId].title}</strong>.`);
+    }
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      document.getElementById('btn-view-2d').classList.toggle('active', mode === '2d');
+      document.getElementById('btn-view-3d').classList.toggle('active', mode === '3d');
+    }
+
+    function setDisplayMode(mode) {
+      displayMode = mode;
+      document.getElementById('btn-mode-single').classList.toggle('active', mode === 'single');
+      document.getElementById('btn-mode-split').classList.toggle('active', mode === 'split');
+
+      arenaCanvas.style.display = mode === 'single' ? 'block' : 'none';
+      document.getElementById('split-view-container').style.display = mode === 'split' ? 'grid' : 'none';
+      resizeCanvases();
+    }
+
+    function setControlMode(mode) {
+      controlMode = mode;
+      document.getElementById('btn-ctrl-auto').classList.toggle('active', mode === 'auto');
+      document.getElementById('btn-ctrl-manual').classList.toggle('active', mode === 'manual');
+      document.getElementById('manual-drive-hint').style.display = mode === 'manual' ? 'flex' : 'none';
+      logEvent(`Control mode changed to: <strong>${mode.toUpperCase()}</strong>.`);
+    }
+
+    function setShield(mode) {
+      currentShield = mode;
+      document.querySelectorAll('.shield-option').forEach(el => el.classList.remove('active'));
+      document.getElementById(`shield-${mode}`).classList.add('active');
+
+      const pill = document.getElementById('safety-status-pill');
+      if (mode === 'unshielded') {
+        pill.className = 'status-badge status-danger';
+        pill.innerText = 'NO SHIELD (RAW POLICY)';
+      } else if (mode === 'nominal') {
+        pill.className = 'status-badge status-nominal';
+        pill.innerText = 'NOMINAL SHIELD (k=0)';
+      } else if (mode === 'uncertainty') {
+        pill.className = 'status-badge status-safe';
+        pill.innerText = `UNCERTAINTY-AWARE (k=${inflationK.toFixed(1)})`;
+      } else {
+        pill.className = 'status-badge status-safe';
+        pill.innerText = 'ORACLE BARRIER';
+      }
+      logEvent(`Shield policy updated: <strong>${mode.toUpperCase()}</strong>.`);
+    }
+
+    function updateK(val) {
+      inflationK = parseFloat(val);
+      document.getElementById('label-k').innerText = `k = ${inflationK.toFixed(1)}`;
+      if (currentShield === 'uncertainty') {
+        document.getElementById('safety-status-pill').innerText = `UNCERTAINTY-AWARE (k=${inflationK.toFixed(1)})`;
+      }
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('btn-play').innerText = isPlaying ? 'Pause' : 'Play';
+    }
+
+    function resetTask() {
+      const cfg = tasks[currentTask];
+      step = 0;
+      history.v = [];
+      history.uCmd = [];
+      history.uExec = [];
+      history.sigma = [];
+      agent.trail = [];
+      agent.isIntervening = false;
+      agent.hasCrashed = false;
+
+      unshieldedAgent.trail = [];
+      unshieldedAgent.hasCrashed = false;
+
+      if (cfg.robotType === 'dubins' || cfg.robotType === 'highway') {
+        agent.x = cfg.initRobot.x;
+        agent.y = cfg.initRobot.y;
+        agent.heading = cfg.initRobot.heading;
+        agent.v = cfg.initRobot.v;
+
+        unshieldedAgent.x = cfg.initRobot.x;
+        unshieldedAgent.y = cfg.initRobot.y;
+        unshieldedAgent.heading = cfg.initRobot.heading;
+        unshieldedAgent.v = cfg.initRobot.v;
+      } else if (cfg.robotType === 'di') {
+        agent.p = cfg.initRobot.p;
+        agent.vel = cfg.initRobot.v;
+        unshieldedAgent.p = cfg.initRobot.p;
+        unshieldedAgent.vel = cfg.initRobot.v;
+      } else if (cfg.robotType === 'drone') {
+        agent.z = cfg.initRobot.z;
+        agent.w = cfg.initRobot.w;
+        unshieldedAgent.z = cfg.initRobot.z;
+        unshieldedAgent.w = cfg.initRobot.w;
+      }
+
+      if (cfg.adversary) {
+        cfg.adversary.x = 0.0;
+        cfg.adversary.y = 0.0;
+      }
+    }
+
+    function logEvent(msg, isWarn = false) {
+      const log = document.getElementById('incident-log');
+      const timeStr = (step * 0.03).toFixed(2);
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${isWarn ? 'warn' : ''}`;
+      entry.innerHTML = `<strong>[00:${timeStr.padStart(5, '0')}s]</strong> ${msg}`;
+      log.prepend(entry);
+      if (log.children.length > 30) log.removeChild(log.lastChild);
+      document.getElementById('log-count').innerText = `${totalInterventions} Interventions`;
+    }
+
+    // Modal
+    function openMathModal() { document.getElementById('math-modal').style.display = 'flex'; }
+    function closeMathModal() { document.getElementById('math-modal').style.display = 'none'; }
+
+    // Evaluation functions
+    function evaluateDubinsSafety(x, y, heading) {
+      const cfg = tasks[currentTask];
+      let minClearance = 999.0;
+      let gradX = 0.0, gradY = 0.0;
+
+      // Obstacles
+      if (cfg.obstacles) {
+        for (let obs of cfg.obstacles) {
+          const d = Math.hypot(x - obs.x, y - obs.y) - (obs.r + 0.22);
+          if (d < minClearance) {
+            minClearance = d;
+            gradX = (x - obs.x) / (d + obs.r + 0.22);
+            gradY = (y - obs.y) / (d + obs.r + 0.22);
+          }
+        }
+      }
+
+      // Skyscrapers (Canyon)
+      if (cfg.skyscrapers) {
+        for (let b of cfg.skyscrapers) {
+          const clampedX = Math.max(b.x1, Math.min(x, b.x2));
+          const clampedY = Math.max(b.y1, Math.min(y, b.y2));
+          const d = Math.hypot(x - clampedX, y - clampedY) - 0.24;
+          if (d < minClearance) {
+            minClearance = d;
+            gradX = (x - clampedX) / (d + 0.24 + 1e-4);
+            gradY = (y - clampedY) / (d + 0.24 + 1e-4);
+          }
+        }
+      }
+
+      // Traffic (Highway)
+      if (cfg.traffic) {
+        for (let car of cfg.traffic) {
+          const d = Math.hypot(x - car.x, y - car.y) - 0.75;
+          if (d < minClearance) {
+            minClearance = d;
+            gradX = (x - car.x) / (d + 0.75);
+            gradY = (y - car.y) / (d + 0.75);
+          }
+        }
+      }
+
+      // Adversary
+      if (cfg.adversary) {
+        const d = Math.hypot(x - cfg.adversary.x, y - cfg.adversary.y) - 0.7;
+        if (d < minClearance) {
+          minClearance = d;
+          gradX = (x - cfg.adversary.x) / (d + 0.7);
+          gradY = (y - cfg.adversary.y) / (d + 0.7);
+        }
+      }
+
+      // Arena bounds
+      const dL = x - (cfg.bounds[0] + 0.25);
+      const dR = (cfg.bounds[1] - 0.25) - x;
+      const dB = y - (cfg.bounds[2] + 0.25);
+      const dT = (cfg.bounds[3] - 0.25) - y;
+      minClearance = Math.min(minClearance, dL, dR, dB, dT);
+
+      // Epistemic Uncertainty inside Gap
+      let sigma = 0.03;
+      if (cfg.gap && x >= cfg.gap.x1 && x <= cfg.gap.x2 && y >= cfg.gap.y1 && y <= cfg.gap.y2) {
+        sigma = 0.42;
+      }
+
+      return { clearance: minClearance, gradX, gradY, sigma };
+    }
+
+    function evaluateDISafety(p, v) {
+      const ts = Math.max(0.0, Math.min(1.0, -v / 1.0));
+      const vExact = p + v * ts + 0.5 * 1.0 * ts * ts;
+      const inGap = (p >= 0.2 && p <= 1.2 && Math.abs(v) <= 1.0);
+      const sigma = inGap ? 0.45 : 0.04;
+      return { vExact, sigma };
+    }
+
+    function evaluateDroneSafety(z, w) {
+      const dFloor = z - 1.0;
+      const dCeil = 7.5 - z;
+      const vVal = Math.min(dFloor, dCeil) + Math.min(0, w * 0.4);
+      const inGap = (z >= 3.0 && z <= 5.0 && Math.abs(w) > 2.0);
+      const sigma = inGap ? 0.38 : 0.05;
+      return { vVal, sigma };
+    }
+
+    // Step Simulation
+    function stepSimulation() {
+      const cfg = tasks[currentTask];
+      step++;
+
+      // Move moving elements
+      if (cfg.obstacles) {
+        for (let obs of cfg.obstacles) {
+          if (obs.vy !== 0) {
+            obs.y += obs.vy * 0.02;
+            if (obs.y < obs.minY || obs.y > obs.maxY) obs.vy *= -1;
+          }
+        }
+      }
+
+      if (cfg.traffic) {
+        for (let car of cfg.traffic) {
+          car.x += car.v * 0.02;
+          if (car.x > cfg.bounds[1]) car.x = cfg.bounds[0];
+        }
+      }
+
+      if (cfg.adversary) {
+        const adv = cfg.adversary;
+        const targetAngle = Math.atan2(agent.y - adv.y, agent.x - adv.x);
+        adv.heading = targetAngle;
+        adv.x += adv.speed * Math.cos(adv.heading) * 0.02;
+        adv.y += adv.speed * Math.sin(adv.heading) * 0.02;
+      }
+
+      // STEP 1: Main Audited Agent
+      if (cfg.robotType === 'dubins' || cfg.robotType === 'highway') {
+        let uCmd = 0.0;
+        if (controlMode === 'manual') {
+          if (keys.a) uCmd += 1.6;
+          if (keys.d) uCmd -= 1.6;
+        } else {
+          // Autonomous Goal Seeking Policy
+          const goal = cfg.goal || { x: 3.2, y: 0.0 };
+          const dx = goal.x - agent.x;
+          const dy = goal.y - agent.y;
+          const targetHeading = Math.atan2(dy, dx);
+          let angleDiff = targetHeading - agent.heading;
+          while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+          while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+          uCmd = Math.max(-1.6, Math.min(1.6, angleDiff * 2.2));
+        }
+
+        // Safety evaluation
+        const { clearance, gradX, gradY, sigma } = evaluateDubinsSafety(agent.x, agent.y, agent.heading);
+        let uExec = uCmd;
+        let isIntervening = false;
+
+        if (currentShield !== 'unshielded') {
+          let threshold = 0.35;
+          if (currentShield === 'uncertainty') threshold = 0.35 + inflationK * (sigma * 0.95);
+          else if (currentShield === 'nominal') threshold = 0.16;
+          else if (currentShield === 'oracle') threshold = 0.42;
+
+          if (clearance < threshold) {
+            const hx = Math.cos(agent.heading);
+            const hy = Math.sin(agent.heading);
+            const dot = hx * gradX + hy * gradY;
+            if (dot < 0.25) {
+              const cross = hx * gradY - hy * gradX;
+              uExec = cross > 0 ? 1.6 : -1.6;
+              isIntervening = true;
+              totalInterventions++;
+              if (totalInterventions % 20 === 1) {
+                logEvent(`Shield clamped steer: <strong>${uCmd.toFixed(2)} &rarr; ${uExec.toFixed(2)} rad/s</strong> (d=${clearance.toFixed(2)}m).`, true);
+              }
+            }
+          }
+        } else {
+          if (clearance < 0.02) agent.hasCrashed = true;
+        }
+
+        // Wind drift in Urban Canyon
+        let driftX = 0, driftY = 0;
+        if (cfg.windGustZone && agent.x >= cfg.windGustZone.x1 && agent.x <= cfg.windGustZone.x2) {
+          driftY = cfg.windGustZone.vy * 0.02;
+        }
+
+        agent.uCmd = uCmd;
+        agent.uExec = uExec;
+        agent.isIntervening = isIntervening;
+
+        agent.heading += uExec * 0.03;
+        while (agent.heading > Math.PI) agent.heading -= 2 * Math.PI;
+        while (agent.heading < -Math.PI) agent.heading += 2 * Math.PI;
+
+        agent.x += agent.v * Math.cos(agent.heading) * 0.03 + driftX;
+        agent.y += agent.v * Math.sin(agent.heading) * 0.03 + driftY;
+
+        agent.trail.push({ x: agent.x, y: agent.y, isIntervening });
+        if (agent.trail.length > 120) agent.trail.shift();
+
+        history.v.push(clearance);
+        history.uCmd.push(uCmd);
+        history.uExec.push(uExec);
+        history.sigma.push(sigma);
+
+        // Reset if reached goal
+        const goal = cfg.goal || { x: 3.2, y: 0.0 };
+        if (Math.hypot(agent.x - goal.x, agent.y - goal.y) < 0.45) {
+          agent.x = cfg.initRobot.x; agent.y = cfg.initRobot.y; agent.heading = cfg.initRobot.heading;
+          agent.trail = [];
+        }
+
+      } else if (cfg.robotType === 'di') {
+        const { vExact, sigma } = evaluateDISafety(agent.p, agent.vel);
+        let uCmd = (controlMode === 'manual' && keys.s) ? 1.0 : -0.3;
+        let uExec = uCmd;
+        let isIntervening = false;
+
+        let threshold = 0.05;
+        if (currentShield === 'uncertainty') threshold = 0.05 + inflationK * sigma * 0.45;
+        else if (currentShield === 'nominal') threshold = -0.05;
+        else if (currentShield === 'oracle') threshold = 0.08;
+
+        if (currentShield !== 'unshielded' && vExact < threshold) {
+          uExec = 1.0;
+          isIntervening = true;
+          totalInterventions++;
+        }
+
+        agent.uCmd = uCmd;
+        agent.uExec = uExec;
+        agent.isIntervening = isIntervening;
+
+        agent.p += agent.vel * 0.03 + 0.5 * uExec * 0.03 * 0.03;
+        agent.vel += uExec * 0.03;
+
+        agent.trail.push({ p: agent.p, v: agent.vel, isIntervening });
+        if (agent.trail.length > 100) agent.trail.shift();
+
+        history.v.push(vExact);
+        history.uCmd.push(uCmd);
+        history.uExec.push(uExec);
+        history.sigma.push(sigma);
+
+        if (agent.p < -0.4 || (agent.vel >= 0 && agent.p < 1.0)) {
+          agent.p = cfg.initRobot.p; agent.vel = cfg.initRobot.v; agent.trail = [];
+        }
+
+      } else if (cfg.robotType === 'drone') {
+        const { vVal, sigma } = evaluateDroneSafety(agent.z, agent.w);
+        let thrustCmd = (controlMode === 'manual' && keys.w) ? 2.5 : -1.2;
+        let thrustExec = thrustCmd;
+        let isIntervening = false;
+
+        if (currentShield !== 'unshielded' && vVal < (0.3 + (currentShield === 'uncertainty' ? inflationK * sigma : 0))) {
+          thrustExec = 3.5;
+          isIntervening = true;
+          totalInterventions++;
+        }
+
+        agent.uCmd = thrustCmd;
+        agent.uExec = thrustExec;
+        agent.isIntervening = isIntervening;
+
+        agent.z += agent.w * 0.03;
+        agent.w += thrustExec * 0.03;
+
+        agent.trail.push({ z: agent.z, w: agent.w, isIntervening });
+        if (agent.trail.length > 100) agent.trail.shift();
+
+        history.v.push(vVal);
+        history.uCmd.push(thrustCmd);
+        history.uExec.push(thrustExec);
+        history.sigma.push(sigma);
+
+        if (agent.z < 0.2 || agent.z > 8.5) {
+          agent.z = cfg.initRobot.z; agent.w = cfg.initRobot.w; agent.trail = [];
+        }
+      }
+
+      // STEP 2: Step Unshielded Baseline for Split Screen Mode
+      if (displayMode === 'split') {
+        if (cfg.robotType === 'dubins' || cfg.robotType === 'highway') {
+          const goal = cfg.goal || { x: 3.2, y: 0.0 };
+          const dx = goal.x - unshieldedAgent.x;
+          const dy = goal.y - unshieldedAgent.y;
+          const targetHeading = Math.atan2(dy, dx);
+          let angleDiff = targetHeading - unshieldedAgent.heading;
+          while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+          while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+          const uRaw = Math.max(-1.6, Math.min(1.6, angleDiff * 2.2));
+
+          const { clearance } = evaluateDubinsSafety(unshieldedAgent.x, unshieldedAgent.y, unshieldedAgent.heading);
+          if (clearance < 0.01) unshieldedAgent.hasCrashed = true;
+
+          unshieldedAgent.heading += uRaw * 0.03;
+          unshieldedAgent.x += unshieldedAgent.v * Math.cos(unshieldedAgent.heading) * 0.03;
+          unshieldedAgent.y += unshieldedAgent.v * Math.sin(unshieldedAgent.heading) * 0.03;
+
+          unshieldedAgent.trail.push({ x: unshieldedAgent.x, y: unshieldedAgent.y });
+          if (unshieldedAgent.trail.length > 120) unshieldedAgent.trail.shift();
+
+          if (Math.hypot(unshieldedAgent.x - goal.x, unshieldedAgent.y - goal.y) < 0.45 || unshieldedAgent.hasCrashed) {
+            unshieldedAgent.x = cfg.initRobot.x; unshieldedAgent.y = cfg.initRobot.y;
+            unshieldedAgent.heading = cfg.initRobot.heading; unshieldedAgent.trail = [];
+            unshieldedAgent.hasCrashed = false;
+          }
+        }
+      }
+
+      if (history.v.length > MAX_HIST) {
+        history.v.shift(); history.uCmd.shift(); history.uExec.shift(); history.sigma.shift();
+      }
+    }
+
+    // Render Canvas
+    // Render Realistic Simulation Lab Arena
+    function renderSceneOnContext(ctx, width, height, ag, isSplitLeft = false) {
+      const cfg = tasks[currentTask];
+      ctx.clearRect(0, 0, width, height);
+
+      const showLidar = document.getElementById('toggle-lidar').checked;
+      const showField = document.getElementById('toggle-field').checked;
+      const showVectors = document.getElementById('toggle-vectors').checked;
+      const showGap = document.getElementById('toggle-gap').checked;
+
+      const project = (x, y, z) => {
+        if (viewMode === '3d') return toIsoCoord(x, y, z, width, height);
+        return toCanvasCoord(x, y, width, height);
+      };
+
+      if (cfg.robotType === 'dubins' || cfg.robotType === 'highway') {
+        // ==========================================
+        // 1. REALISTIC TESTBED FLOOR & COORDINATE GRID
+        // ==========================================
+        // Arena background
+        ctx.fillStyle = '#0a0e17';
+        ctx.fillRect(0, 0, width, height);
+
+        // 0.5m Minor Grid lines
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+        ctx.lineWidth = 1;
+        for (let x = -4; x <= 4; x += 0.5) {
+          const p1 = project(x, -2.6, 0); const p2 = project(x, 2.6, 0);
+          ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+        }
+        for (let y = -2.5; y <= 2.5; y += 0.5) {
+          const p1 = project(-4, y, 0); const p2 = project(4, y, 0);
+          ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+        }
+
+        // 1.0m Major Grid lines with Coordinate Labels
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+        ctx.lineWidth = 1.2;
+        ctx.font = '9px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#475569';
+        for (let x = -4; x <= 4; x += 1) {
+          const p1 = project(x, -2.6, 0); const p2 = project(x, 2.6, 0);
+          ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+          if (viewMode !== '3d') {
+            ctx.fillText(`${x > 0 ? '+' : ''}${x}m`, p1.cx - 8, height - 8);
+          }
+        }
+        for (let y = -2; y <= 2; y += 1) {
+          const p1 = project(-4, y, 0); const p2 = project(4, y, 0);
+          ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+          if (viewMode !== '3d') {
+            ctx.fillText(`${y > 0 ? '+' : ''}${y}m`, 8, p1.cy + 3);
+          }
+        }
+
+        // Testbed Coordinate Origin (0, 0) Calibration Crosshair
+        const orig = project(0, 0, 0);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(orig.cx, orig.cy, 12, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(orig.cx, orig.cy, 4, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(orig.cx - 16, orig.cy); ctx.lineTo(orig.cx + 16, orig.cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(orig.cx, orig.cy - 16); ctx.lineTo(orig.cx + 16, orig.cy); ctx.stroke();
+
+        // Facility Containment Boundary Fence
+        const bTopL = project(cfg.bounds[0], cfg.bounds[3], 0);
+        const bTopR = project(cfg.bounds[1], cfg.bounds[3], 0);
+        const bBotR = project(cfg.bounds[1], cfg.bounds[2], 0);
+        const bBotL = project(cfg.bounds[0], cfg.bounds[2], 0);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(bTopL.cx, bTopL.cy); ctx.lineTo(bTopR.cx, bTopR.cy);
+        ctx.lineTo(bBotR.cx, bBotR.cy); ctx.lineTo(bBotL.cx, bBotL.cy);
+        ctx.closePath(); ctx.stroke();
+
+        // ==========================================
+        // 2. COVERAGE GAP BLUEPRINT / TEST SECTOR B
+        // ==========================================
+        if (showGap && cfg.gap) {
+          const g1 = project(cfg.gap.x1, cfg.gap.y2, 0);
+          const g2 = project(cfg.gap.x2, cfg.gap.y2, 0);
+          const g3 = project(cfg.gap.x2, cfg.gap.y1, 0);
+          const g4 = project(cfg.gap.x1, cfg.gap.y1, 0);
+
+          // Technical blueprint fill
+          ctx.fillStyle = 'rgba(30, 41, 59, 0.4)';
+          ctx.beginPath();
+          ctx.moveTo(g1.cx, g1.cy); ctx.lineTo(g2.cx, g2.cy); ctx.lineTo(g3.cx, g3.cy); ctx.lineTo(g4.cx, g4.cy);
+          ctx.closePath(); ctx.fill();
+
+          // Border & corner ticks
+          ctx.strokeStyle = '#0284c7';
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(g1.cx, g1.cy); ctx.lineTo(g2.cx, g2.cy); ctx.lineTo(g3.cx, g3.cy); ctx.lineTo(g4.cx, g4.cy);
+          ctx.closePath(); ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Stencil sector label
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '10px "JetBrains Mono", monospace';
+          ctx.fillText('SECTOR B // ZERO-DATA COVERAGE VOID (σ = 0.42)', g1.cx + 8, g1.cy + 16);
+        }
+
+        // ==========================================
+        // 3. INDUSTRIAL SAFETY BOLLARDS (OBSTACLES)
+        // ==========================================
+        if (cfg.obstacles) {
+          for (let obs of cfg.obstacles) {
+            const basePos = project(obs.x, obs.y, 0);
+            const rPx = scaleLength(obs.r, width);
+
+            // Floor contact shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.beginPath();
+            ctx.ellipse(basePos.cx + 2, basePos.cy + 4, rPx * 1.05, rPx * 0.7, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Calibrated Standoff Keep-Out Zone
+            if (showField) {
+              const keepOutR = scaleLength(obs.r + 0.22, width);
+              ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+              ctx.lineWidth = 1;
+              ctx.setLineDash([3, 3]);
+              ctx.beginPath(); ctx.arc(basePos.cx, basePos.cy, keepOutR, 0, Math.PI * 2); ctx.stroke();
+              ctx.setLineDash([]);
+            }
+
+            if (viewMode === '3d') {
+              // 3D Extruded Industrial Bollard
+              const topPos = project(obs.x, obs.y, 1.2);
+              const gradSide = ctx.createLinearGradient(basePos.cx - rPx, 0, basePos.cx + rPx, 0);
+              gradSide.addColorStop(0, '#0f172a');
+              gradSide.addColorStop(0.3, '#334155');
+              gradSide.addColorStop(0.7, '#1e293b');
+              gradSide.addColorStop(1, '#0b0f19');
+              ctx.fillStyle = gradSide;
+              ctx.beginPath();
+              ctx.ellipse(basePos.cx, basePos.cy, rPx, rPx * 0.45, 0, 0, Math.PI);
+              ctx.lineTo(topPos.cx + rPx, topPos.cy);
+              ctx.ellipse(topPos.cx, topPos.cy, rPx, rPx * 0.45, 0, 0, Math.PI, true);
+              ctx.closePath(); ctx.fill();
+
+              // Top Cap with Industrial Hazard Collar
+              ctx.fillStyle = '#f59e0b';
+              ctx.beginPath();
+              ctx.ellipse(topPos.cx, topPos.cy, rPx, rPx * 0.45, 0, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#1e293b';
+              ctx.beginPath();
+              ctx.ellipse(topPos.cx, topPos.cy, rPx * 0.75, rPx * 0.35, 0, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              // 2D Orthographic Bollard
+              // Steel outer casing
+              ctx.fillStyle = '#1e293b';
+              ctx.beginPath(); ctx.arc(basePos.cx, basePos.cy, rPx, 0, Math.PI * 2); ctx.fill();
+              ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+
+              // Hazard Warning Collar (Yellow stripes)
+              ctx.strokeStyle = '#f59e0b';
+              ctx.lineWidth = 3;
+              ctx.setLineDash([6, 6]);
+              ctx.beginPath(); ctx.arc(basePos.cx, basePos.cy, rPx - 2, 0, Math.PI * 2); ctx.stroke();
+              ctx.setLineDash([]);
+
+              // Central Steel Cap & ID
+              ctx.fillStyle = '#0f172a';
+              ctx.beginPath(); ctx.arc(basePos.cx, basePos.cy, rPx * 0.5, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = '#94a3b8';
+              ctx.font = '8px "JetBrains Mono", monospace';
+              ctx.fillText('OBS', basePos.cx - 7, basePos.cy + 3);
+            }
+          }
+        }
+
+        // ==========================================
+        // 4. STRUCTURES IN URBAN CANYON
+        // ==========================================
+        if (cfg.skyscrapers) {
+          for (let b of cfg.skyscrapers) {
+            const p1 = project(b.x1, b.y2, 0); const p2 = project(b.x2, b.y2, 0);
+            const p3 = project(b.x2, b.y1, 0); const p4 = project(b.x1, b.y1, 0);
+            ctx.fillStyle = '#1e293b';
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.lineTo(p3.cx, p3.cy); ctx.lineTo(p4.cx, p4.cy);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#64748b';
+            ctx.font = '9px "JetBrains Mono"';
+            ctx.fillText('STRUCTURE', p1.cx + 8, p1.cy + 16);
+          }
+        }
+
+        // ==========================================
+        // 5. HIGHWAY TRAFFIC & PURSUER
+        // ==========================================
+        if (cfg.traffic) {
+          for (let car of cfg.traffic) {
+            const carPos = project(car.x, car.y, 0);
+            ctx.fillStyle = '#334155';
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(carPos.cx, carPos.cy, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 9px "JetBrains Mono"';
+            ctx.fillText('TRAFFIC', carPos.cx + 12, carPos.cy + 3);
+          }
+        }
+
+        if (cfg.adversary) {
+          const advPos = project(cfg.adversary.x, cfg.adversary.y, 0);
+          ctx.fillStyle = '#1e293b';
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(advPos.cx, advPos.cy, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#ef4444'; ctx.font = 'bold 9px "JetBrains Mono"';
+          ctx.fillText('PURSUER AGV', advPos.cx + 14, advPos.cy + 3);
+        }
+
+        // ==========================================
+        // 6. TARGET DOCKING STATION / WAYPOINT
+        // ==========================================
+        const goal = cfg.goal || { x: 3.2, y: 0.0 };
+        const goalPos = project(goal.x, goal.y, 0);
+        // Docking Pad Base
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(goalPos.cx - 16, goalPos.cy - 16, 32, 32);
+        ctx.fillRect(goalPos.cx - 15, goalPos.cy - 15, 30, 30);
+        // Alignment Crosshair & Beacon
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.7)';
+        ctx.beginPath();
+        ctx.arc(goalPos.cx, goalPos.cy, 10, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(goalPos.cx - 14, goalPos.cy); ctx.lineTo(goalPos.cx + 14, goalPos.cy); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(goalPos.cx, goalPos.cy - 14); ctx.lineTo(goalPos.cx, goalPos.cy + 14); ctx.stroke();
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath(); ctx.arc(goalPos.cx, goalPos.cy, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '8px "JetBrains Mono"';
+        ctx.fillText('DOCK-01', goalPos.cx - 18, goalPos.cy + 25);
+
+        // ==========================================
+        // 7. ODOMETRY TRAJECTORY RIBBON
+        // ==========================================
+        if (ag.trail.length > 1) {
+          for (let i = 0; i < ag.trail.length - 1; i++) {
+            const t1 = project(ag.trail[i].x, ag.trail[i].y, 0);
+            const t2 = project(ag.trail[i+1].x, ag.trail[i+1].y, 0);
+            const alpha = 0.15 + (i / ag.trail.length) * 0.7;
+            if (isSplitLeft) {
+              ctx.strokeStyle = `rgba(239, 68, 68, ${alpha})`;
+            } else if (ag.trail[i].isIntervening) {
+              ctx.strokeStyle = `rgba(245, 158, 11, ${alpha})`;
+            } else {
+              ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+            }
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(t1.cx, t1.cy); ctx.lineTo(t2.cx, t2.cy); ctx.stroke();
+          }
+        }
+
+        // ==========================================
+        // 8. AUTONOMOUS ROBOT AGV & SENSORS
+        // ==========================================
+        const rPos = project(ag.x, ag.y, 0);
+        const rRad = scaleLength(0.22, width);
+
+        // A. LIDAR Rangefinder Rays
+        if (showLidar && !isSplitLeft) {
+          const numRays = 16;
+          for (let i = 0; i < numRays; i++) {
+            const rayAngle = ag.heading - Math.PI / 2 + (i / (numRays - 1)) * Math.PI;
+            let rayDist = 2.4;
+            if (cfg.obstacles) {
+              for (let obs of cfg.obstacles) {
+                const ox = obs.x - ag.x, oy = obs.y - ag.y;
+                const proj = ox * Math.cos(rayAngle) + oy * Math.sin(rayAngle);
+                if (proj > 0 && proj < rayDist) {
+                  const perp = Math.hypot(ox, oy)**2 - proj**2;
+                  if (perp < obs.r**2) rayDist = Math.min(rayDist, proj - Math.sqrt(obs.r**2 - perp));
+                }
+              }
+            }
+            const hit = project(ag.x + Math.cos(rayAngle)*rayDist, ag.y + Math.sin(rayAngle)*rayDist, 0);
+            const isNear = rayDist < 1.0;
+            ctx.strokeStyle = isNear ? 'rgba(245, 158, 11, 0.45)' : 'rgba(56, 189, 248, 0.18)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(hit.cx, hit.cy); ctx.stroke();
+            // Hit point reflector
+            ctx.fillStyle = isNear ? '#f59e0b' : '#38bdf8';
+            ctx.beginPath(); ctx.arc(hit.cx, hit.cy, 1.8, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+
+        // B. Dynamic Safety Shield Envelope (Calibrated Physical Buffer)
+        if (!isSplitLeft && currentShield !== 'unshielded') {
+          const cfgSafe = evaluateDubinsSafety(ag.x, ag.y, ag.heading);
+          const sigmaVal = cfgSafe.sigma || 0.03;
+          const envelopeRad = rRad * (1.35 + (currentShield === 'uncertainty' ? inflationK * sigmaVal * 0.9 : 0.35));
+
+          if (ag.isIntervening) {
+            // Active Shield Correction Engaged
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.14)';
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.arc(rPos.cx, rPos.cy, envelopeRad, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.setLineDash([]);
+          } else {
+            // Passive Monitoring Envelope
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.04)';
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([3, 4]);
+            ctx.beginPath(); ctx.arc(rPos.cx, rPos.cy, envelopeRad, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        }
+
+        // C. Action Divergence Steering Vectors
+        if (showVectors && ag.isIntervening && !isSplitLeft) {
+          // Commanded Unsafe Vector (Amber dashed)
+          const cmdA = ag.heading + ag.uCmd * 0.4;
+          const cmdP = project(ag.x + Math.cos(cmdA)*0.85, ag.y + Math.sin(cmdA)*0.85, 0);
+          ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
+          ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(cmdP.cx, cmdP.cy); ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Executed Safe Vector (Blue solid)
+          const safeA = ag.heading + ag.uExec * 0.4;
+          const safeP = project(ag.x + Math.cos(safeA)*0.85, ag.y + Math.sin(safeA)*0.85, 0);
+          ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.moveTo(rPos.cx, rPos.cy); ctx.lineTo(safeP.cx, safeP.cy); ctx.stroke();
+        }
+
+        // D. REALISTIC AGV ROBOT CHASSIS RENDERING
+        ctx.save();
+        ctx.translate(rPos.cx, rPos.cy);
+        ctx.rotate(-ag.heading);
+
+        // 1. Left & Right Drive Wheels (with tire tread)
+        const wheelW = rRad * 0.45;
+        const wheelH = rRad * 0.22;
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1;
+        // Left Wheel
+        ctx.fillRect(-wheelW/2, -rRad * 0.95, wheelW, wheelH);
+        ctx.strokeRect(-wheelW/2, -rRad * 0.95, wheelW, wheelH);
+        // Right Wheel
+        ctx.fillRect(-wheelW/2, rRad * 0.73, wheelW, wheelH);
+        ctx.strokeRect(-wheelW/2, rRad * 0.73, wheelW, wheelH);
+
+        // 2. Main Circular Metal Alloy Chassis Base
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath(); ctx.arc(0, 0, rRad, 0, Math.PI * 2); ctx.fill();
+
+        // 3. Heavy-Duty Protective Bumper Trim Ring
+        ctx.strokeStyle = (isSplitLeft || ag.isIntervening) ? '#f59e0b' : '#334155';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // 4. Front Swivel Castor
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath(); ctx.arc(rRad * 0.7, 0, rRad * 0.16, 0, Math.PI * 2); ctx.fill();
+
+        // 5. Center LiDAR Turret (Black Puck + Sensor Rotor)
+        ctx.fillStyle = '#090d16';
+        ctx.beginPath(); ctx.arc(0, 0, rRad * 0.45, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1; ctx.stroke();
+        // Rotor beam inside lidar
+        const rotorAngle = (Date.now() * 0.006) % (Math.PI * 2);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(rotorAngle) * rRad * 0.4, Math.sin(rotorAngle) * rRad * 0.4); ctx.stroke();
+
+        // 6. Forward Heading Indicator Arrow
+        ctx.fillStyle = '#f1f5f9';
+        ctx.beginPath();
+        ctx.moveTo(rRad * 0.82, 0);
+        ctx.lineTo(rRad * 0.35, rRad * 0.28);
+        ctx.lineTo(rRad * 0.45, 0);
+        ctx.lineTo(rRad * 0.35, -rRad * 0.28);
+        ctx.closePath(); ctx.fill();
+
+        // 7. Active Status Beacon LED on Rear
+        const beaconColor = isSplitLeft ? '#ef4444' : (ag.isIntervening ? '#f59e0b' : '#10b981');
+        ctx.fillStyle = beaconColor;
+        ctx.beginPath(); ctx.arc(-rRad * 0.65, 0, rRad * 0.14, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.8; ctx.stroke();
+
+        ctx.restore();
+
+      } else if (cfg.robotType === 'di') {
+        // ==========================================
+        // DOUBLE INTEGRATOR OSCILLOSCOPE PHASE PLANE (p vs v)
+        // ==========================================
+        ctx.fillStyle = '#0a0e17';
+        ctx.fillRect(0, 0, width, height);
+
+        const origin = toCanvasCoord(0, 0, width, height);
+        
+        // Calibrated axes
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, origin.cy); ctx.lineTo(width, origin.cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(origin.cx, 0); ctx.lineTo(origin.cx, height); ctx.stroke();
+
+        // Labels
+        ctx.fillStyle = '#64748b'; ctx.font = '10px "JetBrains Mono"';
+        ctx.fillText('VELOCITY v (m/s)', origin.cx + 10, 20);
+        ctx.fillText('POSITION p (m)', width - 110, origin.cy - 8);
+
+        // Critical failure plane p = 0
+        ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(origin.cx, 0); ctx.lineTo(origin.cx, height); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#ef4444'; ctx.font = 'bold 10px "JetBrains Mono"';
+        ctx.fillText('CRITICAL BARRIER: p = 0', origin.cx + 8, 38);
+
+        // Analytic Hamilton-Jacobi Safe Set Boundary: p + 0.5 * v^2 = 0
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let v = -2.0; v <= 0.0; v += 0.05) {
+          const p = 0.5 * v * v;
+          const pt = toCanvasCoord(p, v, width, height);
+          if (v === -2.0) ctx.moveTo(pt.cx, pt.cy); else ctx.lineTo(pt.cx, pt.cy);
+        }
+        ctx.stroke();
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('ANALYTIC BOUNDARY S*', origin.cx + 70, height - 20);
+
+        // State point & Trajectory ribbon
+        const curPt = toCanvasCoord(ag.p, ag.vel, width, height);
+        const stateColor = (isSplitLeft || ag.isIntervening) ? '#f59e0b' : '#38bdf8';
+        ctx.fillStyle = stateColor;
+        ctx.beginPath(); ctx.arc(curPt.cx, curPt.cy, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+
+        if (ag.trail.length > 1) {
+          for (let i = 0; i < ag.trail.length - 1; i++) {
+            const p1 = toCanvasCoord(ag.trail[i].p, ag.trail[i].v, width, height);
+            const p2 = toCanvasCoord(ag.trail[i+1].p, ag.trail[i+1].v, width, height);
+            ctx.strokeStyle = (isSplitLeft || ag.trail[i].isIntervening) ? 'rgba(245, 158, 11, 0.7)' : 'rgba(56, 189, 248, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+          }
+        }
+
+      } else if (cfg.robotType === 'drone') {
+        // Drone corridor
+        ctx.fillStyle = '#0a0e17';
+        ctx.fillRect(0, 0, width, height);
+
+        // Ground floor & ceiling
+        const fPt = toCanvasCoord(0, cfg.floor, width, height);
+        const cPt = toCanvasCoord(0, cfg.ceiling, width, height);
+        ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
+        ctx.beginPath(); ctx.moveTo(0, fPt.cy); ctx.lineTo(width, fPt.cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, cPt.cy); ctx.lineTo(width, cPt.cy); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#ef4444'; ctx.font = '10px "JetBrains Mono"';
+        ctx.fillText('SAFETY FLOOR BOUNDARY z = 1.0m', 16, fPt.cy - 6);
+        ctx.fillText('CEILING BOUNDARY z = 7.5m', 16, cPt.cy + 16);
+
+        // Drone Body (VTOL Quadrotor)
+        const dPt = toCanvasCoord(ag.z, ag.w, width, height);
+        const dColor = (isSplitLeft || ag.isIntervening) ? '#f59e0b' : '#38bdf8';
+        
+        // Drone airframe
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = dColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(dPt.cx - 10, dPt.cy - 5, 20, 10);
+        ctx.fillRect(dPt.cx - 9, dPt.cy - 4, 18, 8);
+        
+        // Rotors
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(dPt.cx - 16, dPt.cy - 7); ctx.lineTo(dPt.cx - 4, dPt.cy - 7); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(dPt.cx + 4, dPt.cy - 7); ctx.lineTo(dPt.cx + 16, dPt.cy - 7); ctx.stroke();
+        
+        // Downward Rangefinder Cone
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(dPt.cx, dPt.cy);
+        ctx.lineTo(dPt.cx - 20, fPt.cy);
+        ctx.lineTo(dPt.cx + 20, fPt.cy);
+        ctx.closePath();
+        ctx.fill();
+
+        if (ag.trail.length > 1) {
+          for (let i = 0; i < ag.trail.length - 1; i++) {
+            const p1 = toCanvasCoord(ag.trail[i].z, ag.trail[i].w, width, height);
+            const p2 = toCanvasCoord(ag.trail[i+1].z, ag.trail[i+1].w, width, height);
+            ctx.strokeStyle = (isSplitLeft || ag.trail[i].isIntervening) ? 'rgba(245, 158, 11, 0.7)' : 'rgba(56, 189, 248, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // Render Multi-Channel Laboratory Oscilloscope
+    function renderTelemetryChart() {
+      const tw = telemCanvas.parentElement.clientWidth;
+      const th = telemCanvas.parentElement.clientHeight;
+      telemCtx.clearRect(0, 0, tw, th);
+
+      // Oscilloscope background grid
+      telemCtx.fillStyle = '#080c14';
+      telemCtx.fillRect(0, 0, tw, th);
+
+      // Minor grid
+      telemCtx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+      telemCtx.lineWidth = 1;
+      for (let x = 0; x < tw; x += 30) {
+        telemCtx.beginPath(); telemCtx.moveTo(x, 0); telemCtx.lineTo(x, th); telemCtx.stroke();
+      }
+      for (let y = 0; y < th; y += 20) {
+        telemCtx.beginPath(); telemCtx.moveTo(0, y); telemCtx.lineTo(tw, y); telemCtx.stroke();
+      }
+
+      // Zero-level center line
+      const midY = th / 2;
+      telemCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      telemCtx.lineWidth = 1.2;
+      telemCtx.beginPath(); telemCtx.moveTo(0, midY); telemCtx.lineTo(tw, midY); telemCtx.stroke();
+
+      if (history.v.length < 2) return;
+
+      const n = history.v.length;
+      const stepX = tw / (MAX_HIST - 1);
+
+      // Channel 1: Safety Margin V(t) [m] - Clean Technical Blue
+      telemCtx.strokeStyle = '#38bdf8'; telemCtx.lineWidth = 2;
+      telemCtx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = i * stepX; const y = midY - (history.v[i] * 35);
+        if (i === 0) telemCtx.moveTo(x, y); else telemCtx.lineTo(x, y);
+      }
+      telemCtx.stroke();
+
+      // Channel 2: Commanded Steer u_cmd - Amber Dashed
+      telemCtx.strokeStyle = 'rgba(245, 158, 11, 0.7)'; telemCtx.lineWidth = 1.5;
+      telemCtx.setLineDash([3, 3]);
+      telemCtx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = i * stepX; const y = midY - (history.uCmd[i] * 24);
+        if (i === 0) telemCtx.moveTo(x, y); else telemCtx.lineTo(x, y);
+      }
+      telemCtx.stroke();
+      telemCtx.setLineDash([]);
+
+      // Channel 3: Filtered Safe Steer u_exec - Clean Lab Green
+      telemCtx.strokeStyle = '#10b981'; telemCtx.lineWidth = 1.5;
+      telemCtx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = i * stepX; const y = midY - (history.uExec[i] * 24);
+        if (i === 0) telemCtx.moveTo(x, y); else telemCtx.lineTo(x, y);
+      }
+      telemCtx.stroke();
+
+      // Channel 4: Epistemic Uncertainty sigma - Violet/Indigo
+      telemCtx.strokeStyle = 'rgba(129, 140, 248, 0.8)'; telemCtx.lineWidth = 1.2;
+      telemCtx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = i * stepX; const y = th - 8 - (history.sigma[i] * 70);
+        if (i === 0) telemCtx.moveTo(x, y); else telemCtx.lineTo(x, y);
+      }
+      telemCtx.stroke();
+    }
+
+    function render() {
+      if (displayMode === 'single') {
+        renderSceneOnContext(arenaCtx, container.clientWidth, container.clientHeight, agent, false);
+      } else {
+        const halfW = (container.clientWidth / 2) - 1;
+        const h = container.clientHeight;
+        renderSceneOnContext(splitUnshieldedCtx, halfW, h, unshieldedAgent, true);
+        renderSceneOnContext(splitShieldedCtx, halfW, h, agent, false);
+      }
+
+      // HUD text update
+      const lastV = history.v.length > 0 ? history.v[history.v.length - 1] : 0.0;
+      document.getElementById('hud-v').innerText = `${lastV >= 0 ? '+' : ''}${lastV.toFixed(2)}`;
+      document.getElementById('hud-v').style.color = lastV >= 0 ? '#38bdf8' : '#ef4444';
+      document.getElementById('hud-interventions').innerText = totalInterventions;
+      document.getElementById('intervention-banner').style.display = agent.isIntervening ? 'flex' : 'none';
+
+      renderTelemetryChart();
+    }
+
+    function loop() {
+      if (isPlaying) {
+        stepSimulation();
+      }
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    // Launch
+    resizeCanvases();
+    resetTask();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
