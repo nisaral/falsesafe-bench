@@ -55,7 +55,7 @@ def split_bundle(vdir: Path):
 
 def landing(names):
     og = "og.png"
-    cards = "".join(f'<li><a href="{n}/index.html">{html.escape(t)}</a> <span class="ill">illustrative, not solver output</span></li>' for n, t in OLD)
+    cards = "".join(f'<div class="card"><a href="{n}/index.html"><img src="shot_{n}.png" alt="{html.escape(t)} screenshot"></a><h3><a href="{n}/index.html">{html.escape(t)}</a></h3><span class="ill">illustrative, not solver output</span></div>' for n, t in OLD)
     docs = "".join(f'<li><a href="{REPO}/blob/{"feat/framework-3d-demo" if f.startswith("docs/") else "main"}/{f}">{f}</a></li>' for f in
                    ["README.md", "claims_ledger.md", "PREREGISTRATION.md", "PREREGISTRATION_v2.md", "SCOPE.md",
                     "ALGORITHMS.md", "docs/FRAMEWORK.md", "docs/COMPREHENSIVE_REPORT.md"])
@@ -68,32 +68,46 @@ def landing(names):
 <style>body{{margin:0;background:#0d1117;color:#e6edf3;font:16px/1.55 system-ui,sans-serif}}main{{max-width:900px;margin:auto;padding:24px}}a{{color:#58a6ff}}
 h1{{font-size:30px;margin:.3em 0}}.cards{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}.card{{border:1px solid #30363d;border-radius:10px;padding:14px;background:#161b22}}
 .card img{{width:100%;border-radius:6px}}table{{border-collapse:collapse;width:100%;font-size:14px}}td,th{{border-bottom:1px solid #30363d;padding:6px;text-align:left}}
-.ill{{background:#7a4b00;color:#fff;font-size:11px;padding:1px 6px;border-radius:4px}}.src{{color:#8b949e;font-size:13px}}@media(max-width:700px){{.cards{{grid-template-columns:1fr}}}}</style></head>
+.ill{{background:#7a4b00;color:#fff;font-size:11px;padding:1px 6px;border-radius:4px}}.src{{color:#8b949e;font-size:13px}}.hero{{padding:20px 0 8px}}.hero h1{{font-size:40px}}.lead{{font-size:21px;line-height:1.4}}.cta{{display:inline-block;background:#238636;color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;font-weight:600;margin:4px 6px 4px 0}}.cta.sec{{background:#30363d}}.take{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}}.take div{{border:1px solid #30363d;border-left:4px solid #f0b72f;border-radius:8px;padding:12px;background:#161b22;font-size:15px}}@media(max-width:700px){{.take{{grid-template-columns:1fr}}}}@media(max-width:700px){{.cards{{grid-template-columns:1fr}}}}</style></head>
 <body><main>
-<h1>FalseSafe-Bench</h1>
-<p>Learned Hamilton-Jacobi reachability certificates can label a state <b>safe</b> when, under the true dynamics, a crash is unavoidable &mdash; a <i>false-safe</i> error. FalseSafe-Bench measures this directly: it solves the true and the learned-model HJ problems on the same grid and reports the false-safe volume (FSV), its location (inside vs outside a hidden-physics "coverage gap"), and the conservatism it costs (false-unsafe volume, FUV). It ships a plug-in framework for environments and certifiers, a 3D viewer of solver-exported value functions, and a playable gym where you drive with the certifier as a shield. This is an exploratory research benchmark, not a safety guarantee.</p>
-<h2>Headline results (double integrator, hidden physics gap, 30 preregistered seeds, 201&times;201 grid)</h2>
+<section class="hero"><h1>FalseSafe-Bench</h1>
+<p class="lead">When a robot <b>learns</b> its own safety check, how often does it say <b>&ldquo;safe&rdquo;</b> when a crash is actually unavoidable?</p>
+<p>Robots and AI systems increasingly learn their own physics, and their own safety checks, from data. In places they never saw, a learned check can be confidently wrong. FalseSafe-Bench <b>measures how often and how badly</b>: it computes the exact true answer (Hamilton-Jacobi reachability on a grid) and compares it with what each learned certifier claims. New to the terms? See the <a href="glossary.html">plain-language glossary</a>.</p>
+<p><a class="cta" href="gym/index.html">&#9654; Drive the gym</a> <a class="cta sec" href="viewer3d/index.html">Explore the 3D viewer</a> <a class="cta sec" href="{REPO}">GitHub</a></p></section>
+<h2>Three takeaways</h2><div class="take">
+<div><b>1. Padding helps, but less than hoped.</b> Inflating uncertainty (k=2) cut false-safe volume by <b>40.34%</b> [95% CI 36.47&ndash;44.73%], below the preregistered 50% bar. P1 is <b>partially supported</b>.</div>
+<div><b>2. The errors hide where the data was not.</b> <b>87.3%</b> of the false-safe volume sits inside the hidden-physics gap, the region the model never saw.</div>
+<div><b>3. Fixes work only where the model has seen data.</b> k=2 removes <b>89.1%</b> of the error outside the gap but only <b>33.3%</b> inside it, and false-unsafe (over-caution) rises from 0.0001 to 0.0018.</div></div>
+<p class="src">All numbers: double integrator, 30 preregistered seeds, 201&times;201 grid. Source: <a href="{REPO}/blob/main/claims_ledger.md">claims_ledger.md</a>, sweep <code>results/sweeps/20261027_184119</code>.</p>
+<h2>Interactive demos (real solver output)</h2>
+<div class="cards">
+<div class="card"><a href="gym/index.html"><img src="{og}" alt="FalseSafe gym screenshot"></a><h3><a href="gym/index.html">Interactive gym</a></h3><b>What it is:</b> drive a cart, drone, pendulum, boat, car or rover yourself, with a learned safety shield. <b>What to look for:</b> the magenta &ldquo;false-safe&rdquo; cells on the minimap, where the shield trusts a wrong answer. Includes a guided tour and a &ldquo;Try this&rdquo; list.</div>
+<div class="card"><a href="viewer3d/index.html"><img src="viewer3d.png" alt="3D viewer screenshot"></a><h3><a href="viewer3d/index.html">3D value-function viewer</a></h3><b>What it is:</b> the true and the learned safety surfaces from the solver, in 3D, for {len(names)} exported datasets. <b>What to look for:</b> where the learned surface is above zero and the true one is below it.</div></div>
+<h2>Detailed results</h2>
 <table><tr><th>Claim</th><th>Result</th><th>Status</th></tr>
 <tr><td>P1: FSV reduction from epistemic inflation, k=2 vs k=0 (ratio of means, 95% BCa)</td><td><b>40.34%</b> [36.47%, 44.73%]; FSV 0.0096 &rarr; 0.0057</td><td>partially supported (preregistered bar was &ge;50%)</td></tr>
 <tr><td>S1: where false-safe volume sits</td><td><b>87.3%</b> of nominal FSV is inside the gap</td><td>post hoc</td></tr>
 <tr><td>S1: reduction outside vs inside the gap</td><td><b>89.1%</b> outside (0.00145&rarr;0.00016) vs <b>33.3%</b> inside (0.0534&rarr;0.0356)</td><td>post hoc</td></tr>
 <tr><td>Cost: FUV k=0 &rarr; k=2</td><td>0.0001 &rarr; 0.0018; break-even r* = 0.45</td><td>confirmatory auxiliary</td></tr></table>
-<p class="src">Source: <a href="{REPO}/blob/main/claims_ledger.md">claims_ledger.md</a>, sweep <code>results/sweeps/20261027_184119</code> (scripts/compute_p1_results.py). Takeaway: inflating uncertainty fixes most false-safe errors where the model saw data, but only a third inside the region it never saw.</p>
-<h2>Interactive demos (solver-exported data)</h2>
-<div class="cards">
-<div class="card"><a href="gym/index.html"><img src="{og}" alt="FalseSafe gym screenshot"></a><h3><a href="gym/index.html">Interactive gym</a></h3>Drive a cart, drone, pendulum, boat, car or rover; toggle the certifier shield and watch it fail inside the hidden gap. Batch mode runs N seeded episodes in your browser.</div>
-<div class="card"><a href="viewer3d/index.html"><img src="viewer3d.png" alt="3D viewer screenshot"></a><h3><a href="viewer3d/index.html">3D value-function viewer</a></h3>V_true vs V&#770; surfaces, false-safe floor map, gap region and rollouts for {len(names)} exported datasets ({", ".join(names)}).</div></div>
-<h2 id="illustrative">Older illustrative demos</h2><p class="src">Hand-built geometry and toy in-browser maths, kept for intuition only. Not solver output.</p><ul>{cards}</ul>
+<h2 id="illustrative">Older illustrative demos</h2><p class="src">Hand-built geometry and toy in-browser maths, kept for intuition only. <b>Not solver output.</b></p><div class="cards">{cards}</div>
 <h2>Docs and notes</h2><ul>{docs}</ul>
 <p><a href="{REPO}">GitHub repository</a> &middot; <a href="{PR}">PR #1 (framework + 3D viewer)</a></p>
 <p class="src">Built by scripts/build_site.py. Feedback and collaboration welcome via GitHub issues.</p>
-</main></body></html>"""
+</main><script src="common/explain.js" data-page="landing" data-up=""></script></body></html>"""
+
+
+GLOSSARY = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Glossary - FalseSafe-Bench</title><style>body{margin:0;background:#0d1117;color:#e6edf3;font:16px/1.6 system-ui,sans-serif}main{max-width:820px;margin:auto;padding:24px}a{color:#58a6ff}dt{margin-top:14px;color:#79c0ff}dd{margin:2px 0 0 0}</style></head>
+<body><main><p><a href="index.html">&larr; FalseSafe-Bench home</a></p><h1>Glossary, in plain words</h1>
+<p>Every term used across the demos, explained with everyday analogies. The same explanations appear when you hover a term inside a demo.</p>
+<div id="gloss">Loading...</div></main><script src="common/explain.js" data-page="glossary" data-up=""></script></body></html>"""
 
 
 def main():
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir()
+    shutil.copytree(DEMOS / "common", OUT / "common")
     for n in ["viewer3d", "gym"] + [n for n, _ in OLD]:
         shutil.copytree(DEMOS / n, OUT / n, ignore=shutil.ignore_patterns("*.json", "README.md") if n == "viewer3d" else shutil.ignore_patterns("README.md"))
     if (DEMOS / "scientific_viewer" / "data.json").exists():
@@ -101,7 +115,8 @@ def main():
     names = split_bundle(OUT / "viewer3d")
     for n in ["viewer3d", "gym"] + [n for n, _ in OLD]:
         inject_nav(OUT / n / "index.html")
-    for img in ["og.png", "viewer3d.png"]:
+    (OUT / "glossary.html").write_text(GLOSSARY, encoding="utf-8")
+    for img in ["og.png", "viewer3d.png"] + [f"shot_{n}.png" for n, _ in OLD]:
         src = ROOT / "docs" / "img" / img
         if src.exists():
             shutil.copy(src, OUT / img)

@@ -4,6 +4,8 @@
 
 [![Live demo](https://img.shields.io/badge/live%20demo-nisaral.github.io%2Ffalsesafe--bench-2ea44f)](https://nisaral.github.io/falsesafe-bench/) [![3D viewer](https://img.shields.io/badge/3D-viewer-blue)](https://nisaral.github.io/falsesafe-bench/viewer3d/) [![Gym](https://img.shields.io/badge/interactive-gym-orange)](https://nisaral.github.io/falsesafe-bench/gym/)
 
+**New here?** Robots that *learn* their own safety checks can wrongly say "safe" in places they never saw. FalseSafe-Bench measures how often and how badly. Start with the [interactive gym](https://nisaral.github.io/falsesafe-bench/gym/) (guided tour included) or the [plain-language glossary](https://nisaral.github.io/falsesafe-bench/glossary.html).
+
 
 ### Measuring How Wrong "Safe" Can Be — When Robots Learn Their Own Physics
 
