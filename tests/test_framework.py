@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -90,6 +91,6 @@ def test_cli_with_user_plugin(tmp_path):
                    "policies: [{name: rover_cruise}]\ninitial_states: [[0.0, 0.5]]\nsteps: 20\n")
     r = subprocess.run([sys.executable, "-m", "lcert.framework", "run", str(cfg), "--out", str(tmp_path),
                         "--plugin", str(ROOT / "examples/framework/my_rover.py")],
-                       capture_output=True, text=True, cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src"), "PATH": ""})
+                       capture_output=True, text=True, cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT / "src")})  # full env: Windows needs SYSTEMROOT etc.
     assert r.returncode == 0, r.stderr[-2000:]
     assert json.loads((tmp_path / "rover_t.json").read_text())["env"]["name"] == "rover_cliff"
