@@ -46,6 +46,9 @@ class ExperimentSpec:
     display_n: int = 61
     slice_values: list | None = None   # for 3D envs: values of the last dim to export
     illustrative: bool = False
+    # Named certifier presets for comparisons: {"C0": {"certifier": "conformal", "params": {...}}, ...}.
+    # Sweep key "certifier" (no dot) then iterates over preset (or registered) names.
+    certifier_presets: dict = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, d: dict) -> "ExperimentSpec":
@@ -131,11 +134,21 @@ def run_experiment(spec: ExperimentSpec, out_dir: str | Path | None = None, verb
     for combo in combos:
         ep, cp = dict(spec.env_params), dict(spec.certifier_params)
         params = dict(zip(keys, combo))
+        cert_ref = spec.certifier
+        if "certifier" in params:
+            preset = spec.certifier_presets.get(params["certifier"])
+            if preset is None:
+                cert_ref = params["certifier"]
+            else:
+                cert_ref = preset["certifier"]
+                cp.update(preset.get("params", {}))
         for k, v in params.items():
+            if k == "certifier":
+                continue
             scope, name = k.split(".", 1)
             {"env": ep, "certifier": cp}[scope][name] = v
         env = _build(registry.ENVS, "env", spec.env, ep)
-        cert = _build(registry.CERTIFIERS, "certifier", spec.certifier, cp)
+        cert = _build(registry.CERTIFIERS, "certifier", cert_ref, cp)
         res = run_case(env, cert, spec, gt_cache, policies)
         grid = res["grid"]
         if slice_idx is None:

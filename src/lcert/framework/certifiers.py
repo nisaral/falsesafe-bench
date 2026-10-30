@@ -64,7 +64,7 @@ class EnsembleCertifier:
         key = (env.name, tuple(sorted((k, str(v)) for k, v in env.params.items())), self.members,
                tuple(self.hidden_sizes), self.epochs, self.n_samples, self.noise_std, self.seed)
         if key in _MODEL_CACHE:
-            return _MODEL_CACHE[key]
+            return _MODEL_CACHE[key][:2]
         from lcert.train import train_dynamics_model
         rng = np.random.default_rng(self.seed)
         lo, hi = np.asarray(env.lo), np.asarray(env.hi)
@@ -84,8 +84,14 @@ class EnsembleCertifier:
                                            learning_rate=self.learning_rate, members=self.members,
                                            hidden_sizes=tuple(self.hidden_sizes))
         diag["wall_seconds"] = time.monotonic() - t0
-        _MODEL_CACHE[key] = (model, diag)
+        _MODEL_CACHE[key] = (model, diag, (X, U, Y))
         return model, diag
+
+    def _train_with_data(self, env: Environment):
+        """Like ``_train`` but also returns the (X, U, Y) training data."""
+        model, diag = self._train(env)
+        key = next(k for k, v in _MODEL_CACHE.items() if v[0] is model)
+        return model, diag, _MODEL_CACHE[key][2]
 
     def certify(self, env: Environment, grid):
         if len(self.hidden_sizes) != 2:
