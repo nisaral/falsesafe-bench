@@ -2,19 +2,23 @@
    from data/bundle.js, or JSON files loaded by the user). No values are synthesised here. */
 (function(){
 const $=id=>document.getElementById(id);
-const DS=(window.FSB_DATASETS||[]).slice();
+// Lazy mode (site build): data/index.js lists datasets; each lives in data/ds_<name>.js and is fetched on demand.
+const LAZY=!window.FSB_DATASETS&&window.FSB_DATASET_INDEX;
+const DS=LAZY?window.FSB_DATASET_INDEX.map(e=>Object.assign({_stub:true},e)):(window.FSB_DATASETS||[]).slice();
+function loadDS(i){const d=DS[i];if(!d||!d._stub)return Promise.resolve(d);if(d._p)return d._p;
+ d._p=new Promise((ok,bad)=>{const sc=document.createElement('script');sc.src='data/ds_'+d.name+'.js';sc.onload=()=>{DS[i]=window.FSB_DS_LOADED[d.name];ok(DS[i]);};sc.onerror=bad;document.head.appendChild(sc);});return d._p;}
 const S={ds:0,sel:{},slice:0,tr:0,t:0,playing:true,layers:{true:true,hat:true,floor:true,gap:true,zero:true,traj:true}};
 const COL={safe:[0x2e,0xa0,0x43],fs:[0xff,0x2b,0xd6],fu:[0xd2,0x99,0x22],uns:[0x30,0x36,0x3d]};
 const W=10; // world half-size of the plot box
 // ---------- three setup
 const cv=$('c3d'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true,preserveDrawingBuffer:true});
-R.setPixelRatio(Math.min(2,devicePixelRatio));
+R.setPixelRatio(Math.min(1.5,devicePixelRatio||1));
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x0d1117);
 const cam=new THREE.PerspectiveCamera(45,1,0.1,200);cam.position.set(14,13,17);
 const ctl=new THREE.OrbitControls(cam,cv);ctl.target.set(0,0,0);ctl.enableDamping=true;
 scene.add(new THREE.AmbientLight(0xffffff,0.55));const dl=new THREE.DirectionalLight(0xffffff,0.8);dl.position.set(5,20,10);scene.add(dl);
 let G=new THREE.Group();scene.add(G);
-const cw=$('cw'),RW=new THREE.WebGLRenderer({canvas:cw,antialias:true,preserveDrawingBuffer:true});RW.setPixelRatio(Math.min(2,devicePixelRatio));
+const cw=$('cw'),RW=new THREE.WebGLRenderer({canvas:cw,antialias:true,preserveDrawingBuffer:true});RW.setPixelRatio(Math.min(1.5,devicePixelRatio||1));
 const sw=new THREE.Scene();sw.background=new THREE.Color(0x0b0f14);const camW=new THREE.PerspectiveCamera(40,3,0.1,200);
 sw.add(new THREE.AmbientLight(0xffffff,0.6));const dl2=new THREE.DirectionalLight(0xffffff,0.8);dl2.position.set(3,10,6);sw.add(dl2);
 let GW=new THREE.Group();sw.add(GW);let robot=null,ghost=null,marker=null;
@@ -122,22 +126,23 @@ function fillTraj(){const c=curCase();$('tr').innerHTML='';c.trajectories.forEac
 $('tr').onchange=()=>{S.tr=+$('tr').value;S.t=0;build();};$('zs').oninput=build;
 $('play').onclick=()=>{S.playing=!S.playing;$('play').textContent=S.playing?'pause':'play';$('play').className=S.playing?'on':'';};$('restart').onclick=()=>{S.t=0;};
 function refreshDS(){$('ds').innerHTML='';DS.forEach((d,i)=>{const o=document.createElement('option');o.value=i;o.textContent=d.name+(d.illustrative?' (illustrative)':'');$('ds').appendChild(o);});$('ds').value=S.ds;}
-$('ds').onchange=()=>{S.ds=+$('ds').value;initDataset();};
+function selectDS(i){S.ds=i;$('ov3').textContent='loading '+DS[i].name+' …';return loadDS(i).then(()=>{if(S.ds===i)initDataset();});}
+$('ds').onchange=()=>selectDS(+$('ds').value);
 function addFiles(files){for(const f of files)f.text().then(t=>{const d=JSON.parse(t);if(d.schema!=='falsesafe.framework/v1'){alert(f.name+': not a falsesafe.framework/v1 export');return;}DS.push(d);S.ds=DS.length-1;refreshDS();initDataset();});}
 $('file').onchange=e=>addFiles(e.target.files);document.body.ondragover=e=>e.preventDefault();document.body.ondrop=e=>{e.preventDefault();addFiles(e.dataTransfer.files);};
 // ---------- animate
-let last=performance.now();
-function tick(now){const dt=Math.max(0,Math.min(0.1,(now-last)/1000));last=now;ctl.update();const c=DS.length?curCase():null,tr=c&&c.trajectories[S.tr];
+let last=performance.now(),hudT=0;
+function tick(now){if(document.hidden){last=now;requestAnimationFrame(tick);return;}const dt=Math.max(0,Math.min(0.1,(now-last)/1000));last=now;ctl.update();const c=DS.length&&!ds()._stub?curCase():null,tr=c&&c.trajectories[S.tr];
  if(tr){if(S.playing)S.t+=dt/tr.dt*0.5;const n=tr.states.length;if(S.t>n+20)S.t=0;S.t=Math.max(0,S.t);const k=Math.min(n-1,Math.floor(S.t)),s=tr.states[k],d=ds();
   if(marker&&marker.userData.P[k])marker.position.copy(marker.userData.P[k]);
   if(robot){if(d.env.slice_dim==null){robot.position.set(mapX(d,s[0]),0,0);}else{robot.position.set(mapX(d,s[0]),0,mapY(d,s[1]));robot.rotation.y=s[2];}}
-  $('trinfo').innerHTML=`step ${k}/${n-1} · t=${(k*tr.dt).toFixed(2)}s · state=${JSON.stringify(s)}<br>V_true=${tr.v_true[k].toFixed(3)} · V_hat=${tr.v_hat[k].toFixed(3)}`+
-   (k>0&&tr.filter_active[k-1]?' · <b style="color:#58a6ff">filter active</b>':'')+(tr.v_hat[k]>=0&&tr.v_true[k]<0?' · <b style="color:#ff2bd6">in FALSE-SAFE region</b>':'')+'<br><span>values interpolated from the exported solver grids</span>';}
+  if(now-hudT>100){hudT=now;$('trinfo').innerHTML=`step ${k}/${n-1} · t=${(k*tr.dt).toFixed(2)}s · state=${JSON.stringify(s)}<br>V_true=${tr.v_true[k].toFixed(3)} · V_hat=${tr.v_hat[k].toFixed(3)}`+
+   (k>0&&tr.filter_active[k-1]?' · <b style="color:#58a6ff">filter active</b>':'')+(tr.v_hat[k]>=0&&tr.v_true[k]<0?' · <b style="color:#ff2bd6">in FALSE-SAFE region</b>':'')+'<br><span>values interpolated from the exported solver grids</span>';}}
  R.render(scene,cam);RW.render(sw,camW);requestAnimationFrame(tick);}
 layerButtons();resize();
 $('views').onclick=e=>{const v=e.target.dataset.v;if(!v)return;const P={iso:[14,13,17],top:[0,36,0.01],side:[0,2,26]}[v];cam.position.set(...P);ctl.target.set(0,0,0);};
 if(!DS.length){$('ov3').innerHTML='No datasets found. Run <code>PYTHONPATH=src python -m lcert.framework run configs/framework/di_nominal_sweep.yaml</code> or load a JSON.';}
-else{refreshDS();initDataset();}
-window.__fsb={S,DS,curCase,build,initDataset,ready:true};
+else{refreshDS();selectDS(0).then(()=>{window.__fsb.ready=true;});}
+window.__fsb={S,DS,curCase,build,initDataset,selectDS,loadDS,ready:!DS.length};
 requestAnimationFrame(tick);
 })();

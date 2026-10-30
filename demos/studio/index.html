@@ -798,6 +798,7 @@
   </style>
 </head>
 <body>
+<div style="position:sticky;top:0;z-index:9999;background:#7a4b00;color:#fff;font:600 13px system-ui;padding:6px 12px;text-align:center">ILLUSTRATIVE demo — hand-built geometry and in-browser toy maths, <u>not solver output</u>. For solver-exported results see the <a style="color:#ffd" href="../viewer3d/index.html">3D viewer</a> and <a style="color:#ffd" href="../gym/index.html">gym</a>; numbers of record are in claims_ledger.md.</div>
 
   <!-- HEADER -->
   <header>
@@ -890,7 +891,7 @@
               <canvas id="split-canvas-unshielded"></canvas>
             </div>
             <div class="split-pane" id="pane-right">
-              <div class="split-banner banner-shielded">UNCERTAINTY-AWARE SHIELD (CERTIFIED)</div>
+              <div class="split-banner banner-shielded">UNCERTAINTY-AWARE SHIELD (illustrative)</div>
               <canvas id="split-canvas-shielded"></canvas>
             </div>
           </div>
@@ -961,7 +962,7 @@
       <div class="cockpit-panel">
         <div class="panel-title">
           <span>Safety Shield Mode</span>
-          <span style="font-size: 10px; color: var(--cyan);">Formal HJI Barrier</span>
+          <span style="font-size: 10px; color: var(--cyan);">HJI-style barrier (illustrative)</span>
         </div>
 
         <div class="shield-list">
@@ -989,7 +990,7 @@
               <span class="shield-title">3. Uncertainty-Aware Robust Shield</span>
               <span class="version-tag">E2: k=1.5</span>
             </div>
-            <span class="shield-sub">Virtual disturbance set inflated by k·σ(x). Certified clearance in all gaps.</span>
+            <span class="shield-sub">Virtual disturbance set inflated by k·σ(x). Illustrative clearance; real solver results show inflation only partially closes the gap (P1: 40.34%).</span>
           </div>
 
           <!-- Oracle -->
@@ -1005,7 +1006,7 @@
         <!-- Epistemic Uncertainty Multiplier k Slider -->
         <div class="slider-box">
           <div class="slider-header">
-            <span>Epistemic Inflation Multiplier ($k$)</span>
+            <span>Epistemic Inflation Multiplier (k)</span>
             <span id="label-k">k = 1.5</span>
           </div>
           <input type="range" id="slider-k" min="0.0" max="3.0" step="0.1" value="1.5" oninput="updateK(this.value)">
@@ -1093,28 +1094,28 @@
   <div class="modal-backdrop" id="math-modal" onclick="closeMathModal(event)">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <h2 style="font-size: 16px; font-weight: 700; color: white;">Formal Hamilton-Jacobi-Isaacs Certification Specs</h2>
+        <h2 style="font-size: 16px; font-weight: 700; color: white;">Hamilton-Jacobi-Isaacs formulation (background; this page does not run an HJ solver)</h2>
         <button class="btn-studio" onclick="closeMathModal()" style="padding: 4px 10px;">&times;</button>
       </div>
       
       <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
-        Safety in <strong>falsesafe-bench</strong> is mathematically defined via viscosity solutions to the Hamilton-Jacobi-Isaacs PDE over state space $\mathcal{X}$:
+        Safety in <strong>falsesafe-bench</strong> is mathematically defined via viscosity solutions to the Hamilton-Jacobi-Isaacs PDE over state space 𝒳:
       </p>
 
       <div class="math-block">
-        &part;_t V(t, x) + min_{u &isin; &Ucy;} max_{d &isin; &Dcy;} &nabla;V(t, x) &middot; f(x, u, d) = 0, &emsp; V(0, x) = l(x)
+        &part;_t V(t, x) + min_{u &isin; 𝒰} max_{d &isin; 𝒟} &nabla;V(t, x) &middot; f(x, u, d) = 0, &emsp; V(0, x) = l(x)
       </div>
 
       <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
-        When dynamics $f(x, u)$ are learned from data, unvisited coverage gaps induce epistemic variance $\sigma_{\text{ep}}(x)$. We expand the disturbance set dynamically:
+        When dynamics f(x, u) are learned from data, unvisited coverage gaps induce epistemic variance σ<sub>ep</sub>(x). We expand the disturbance set dynamically:
       </p>
 
       <div class="math-block">
-        &Dcy;(x) = &Dcy;_{al} &oplus; { d &isin; &Ropf;^n : ||d||_2 &le; k &middot; &sigma;_{ep}(x) }
+        𝒟(x) = 𝒟_{al} &oplus; { d &isin; &Ropf;^n : ||d||_2 &le; k &middot; &sigma;_{ep}(x) }
       </div>
 
       <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
-        <strong>Separated vs Blended Uncertainty (Hypothesis H4):</strong> In higher dimensions (3D Dubins Car), separated uncertainty $k_{\text{ep}}\sigma_{\text{ep}} + \sigma_{\text{al}}$ provably avoids over-conservatism compared to vector-norm blending $\sqrt{(k\sigma_{\text{ep}})^2 + \sigma_{\text{al}}^2}$.
+        <strong>Separated vs Blended Uncertainty (Hypothesis H4):</strong> In higher dimensions (3D Dubins Car), separated uncertainty k<sub>ep</sub>σ<sub>ep</sub> + σ<sub>al</sub> provably avoids over-conservatism compared to vector-norm blending √((k·σ<sub>ep</sub>)² + σ<sub>al</sub>²).
       </p>
 
       <button class="btn-studio primary" style="align-self: flex-end; margin-top: 10px;" onclick="closeMathModal()">Close Reference</button>

@@ -278,6 +278,7 @@
   </style>
 </head>
 <body>
+<div style="position:sticky;top:0;z-index:9999;background:#7a4b00;color:#fff;font:600 13px system-ui;padding:6px 12px;text-align:center">ILLUSTRATIVE demo — hand-built geometry and in-browser toy maths, <u>not solver output</u>. For solver-exported results see the <a style="color:#ffd" href="../viewer3d/index.html">3D viewer</a> and <a style="color:#ffd" href="../gym/index.html">gym</a>; numbers of record are in claims_ledger.md.</div>
 
 <div class="container">
   <!-- Audit Provenance Banner -->
@@ -347,7 +348,7 @@
         </div>
         <div class="metric-row">
           <span class="metric-title"><span class="dot" style="background:var(--fuv-purple);"></span> False-Unsafe Volume (FUV):</span>
-          <span class="metric-number fuv-highlight" id="metric-fuv">0.0028</span>
+          <span class="metric-number fuv-highlight" id="metric-fuv">0.0018</span>
         </div>
         <div class="metric-row" style="font-size:12px; color:var(--text-muted);">
           <span>FSV Reduction (vs k=0):</span>
@@ -425,7 +426,7 @@
 </div>
 
 <script>
-// --- Embedded Simulation Data (Pre-computed on 201x201 Grid under Hidden Physics) ---
+// FSV/FUV numbers: results/sweeps/20261027_184119 k_summary_table (n=30, 201x201). CONTOURS ARE HAND-DRAWN / ILLUSTRATIVE, not solver output.
 const AUDIT_DATA = {
   bounds: { p_min: -1.0, p_max: 3.0, v_min: -2.0, v_max: 2.0 },
   gap: { p_min: 0.4, p_max: 1.0 },
@@ -440,7 +441,7 @@ const AUDIT_DATA = {
   // Evaluated certifier boundaries across k
   k_evaluations: {
     "0.0": {
-      fsv: 0.0095, fuv: 0.0000,
+      fsv: 0.0096, fuv: 0.0001, /* confirmatory sweep mean, n=30 */
       contour: [
         [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
         [0.08, -0.4], [0.20, -0.63], [0.35, -0.84],
@@ -448,7 +449,7 @@ const AUDIT_DATA = {
       ]
     },
     "0.5": {
-      fsv: 0.0081, fuv: 0.0002,
+      fsv: 0.0084, fuv: 0.0002, /* mean of k=0.4,0.6 rows (k=0.5 not swept) */
       contour: [
         [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
         [0.08, -0.4], [0.21, -0.64], [0.37, -0.86],
@@ -456,7 +457,7 @@ const AUDIT_DATA = {
       ]
     },
     "1.0": {
-      fsv: 0.0072, fuv: 0.0009,
+      fsv: 0.0074, fuv: 0.0006, /* confirmatory sweep mean, n=30 */
       contour: [
         [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
         [0.08, -0.4], [0.22, -0.66], [0.40, -0.89],
@@ -464,7 +465,7 @@ const AUDIT_DATA = {
       ]
     },
     "1.5": {
-      fsv: 0.0064, fuv: 0.0019,
+      fsv: 0.0065, fuv: 0.0012, /* mean of k=1.4,1.6 rows (k=1.5 not swept) */
       contour: [
         [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
         [0.08, -0.4], [0.23, -0.68], [0.42, -0.92],
@@ -472,7 +473,7 @@ const AUDIT_DATA = {
       ]
     },
     "2.0": {
-      fsv: 0.0057, fuv: 0.0028,
+      fsv: 0.0057, fuv: 0.0018, /* confirmatory sweep mean, n=30 */
       contour: [
         [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
         [0.08, -0.4], [0.24, -0.70], [0.45, -0.95],
@@ -480,7 +481,7 @@ const AUDIT_DATA = {
       ]
     },
     "2.5": {
-      fsv: 0.0051, fuv: 0.0040,
+      fsv: 0.0050, fuv: 0.0026, /* mean of k=2.4,2.6 rows (k=2.5 not swept) */
       contour: [
         [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
         [0.09, -0.4], [0.26, -0.72], [0.48, -0.98],
@@ -488,7 +489,7 @@ const AUDIT_DATA = {
       ]
     },
     "3.0": {
-      fsv: 0.0045, fuv: 0.0052,
+      fsv: 0.0043, fuv: 0.0034, /* confirmatory sweep mean, n=30 */
       contour: [
         [-1.0, 2.0], [0.0, 2.0], [0.0, 0.0],
         [0.10, -0.4], [0.28, -0.75], [0.52, -1.02],

@@ -34,3 +34,4 @@ STARTER_REPORT.md
 
 # viewer3d per-dataset JSONs are merged into bundle.js (shipped); keep local copies untracked
 demos/viewer3d/data/*.json
+site/

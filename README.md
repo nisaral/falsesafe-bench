@@ -2,6 +2,9 @@
 
 # 🛡️ falsesafe-bench
 
+[![Live demo](https://img.shields.io/badge/live%20demo-nisaral.github.io%2Ffalsesafe--bench-2ea44f)](https://nisaral.github.io/falsesafe-bench/) [![3D viewer](https://img.shields.io/badge/3D-viewer-blue)](https://nisaral.github.io/falsesafe-bench/viewer3d/) [![Gym](https://img.shields.io/badge/interactive-gym-orange)](https://nisaral.github.io/falsesafe-bench/gym/)
+
+
 ### Measuring How Wrong "Safe" Can Be — When Robots Learn Their Own Physics
 
 [![CI](https://github.com/nisaral/falsesafe-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/nisaral/falsesafe-bench/actions/workflows/ci.yml)

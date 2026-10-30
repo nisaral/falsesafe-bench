@@ -504,6 +504,7 @@
   </style>
 </head>
 <body>
+<div style="position:sticky;top:0;z-index:9999;background:#7a4b00;color:#fff;font:600 13px system-ui;padding:6px 12px;text-align:center">ILLUSTRATIVE demo — hand-built geometry and in-browser toy maths, <u>not solver output</u>. For solver-exported results see the <a style="color:#ffd" href="../viewer3d/index.html">3D viewer</a> and <a style="color:#ffd" href="../gym/index.html">gym</a>; numbers of record are in claims_ledger.md.</div>
 
   <header>
     <div class="brand">
@@ -610,7 +611,7 @@
               <span class="shield-name">3. Uncertainty-Aware Shield</span>
               <span class="pill-shield pill-uncertainty">E2: k=1.5</span>
             </div>
-            <p class="shield-desc">Inflates HJ disturbance by $k \cdot \sigma(x)$. Fully eliminates false-safe catastrophic entries.</p>
+            <p class="shield-desc">Inflates HJ disturbance by k·σ(x). Fully eliminates false-safe catastrophic entries.</p>
             <div class="shield-stat" style="color: #38bdf8;">Certified Safe &bull; Robust Avoidance</div>
           </div>
 
@@ -667,7 +668,7 @@
 
         <div class="slider-block">
           <div class="slider-head">
-            <span>Epistemic Inflation ($k$)</span>
+            <span>Epistemic Inflation (k)</span>
             <span id="label-k" style="font-family: 'JetBrains Mono', monospace; color: var(--cyan);">k = 1.5</span>
           </div>
           <input type="range" id="input-k" min="0.0" max="3.0" step="0.1" value="1.5">

@@ -13,7 +13,7 @@ const pct=v=>v==null?'n/a':(100*v).toFixed(2)+'%';
 
 // ------------------------------------------------------------------ three.js scene
 const cv=$('c3d'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true,preserveDrawingBuffer:true});
-R.setPixelRatio(Math.min(2,devicePixelRatio||1));
+R.setPixelRatio(Math.min(1.5,devicePixelRatio||1));
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b1018);scene.fog=new THREE.Fog(0x0b1018,40,90);
 const cam=new THREE.PerspectiveCamera(45,1,0.1,300);const ctl=new THREE.OrbitControls(cam,cv);ctl.enableDamping=true;
 scene.add(new THREE.HemisphereLight(0xbcd7ff,0x202a33,0.75));const sun=new THREE.DirectionalLight(0xffffff,0.8);sun.position.set(8,20,10);scene.add(sun);
@@ -134,14 +134,18 @@ function loadScenario(i){ST.si=i;S=G.buildScenario(DOCS[i]);ST.ci=0;$('scn').val
   opt($('cert'),S.cases.map((c,k)=>[k,c.label]));const d=S.doc,e=S.env;
   $('scnInfo').innerHTML=`${d.blurb}<br><span class="tag ${d.user_defined?'user':'real'}">${d.user_defined?'user-defined env':'built-in env'}</span><span class="tag">${e.name}</span><span class="tag">${S.D}D · grid ${e.shape.join('×')}</span><span class="tag">${S.dyn==='js-mirror'?'JS dynamics mirror':'tabulated dynamics'}</span><br><b>Hazard:</b> ${e.hazard}<br><b>Hidden physics (gap):</b> ${e.gap?e.gap.description:'none'}<br><b>Reduction:</b> ${d.reduction||'—'}`;
   $('prov').innerHTML=`${d.provenance.source}. created ${d.provenance.created}, git ${String(d.provenance.git_commit).slice(0,10)}. HJ horizon ${e.horizon}s; shield margin ${d.filter_margin}; dt ${d.dt}s. Quantisation: int16, max error ${S.quantErr.toExponential(2)} in V.`;
-  buildScene();resize();ST.x=null;setCase(0);reset(d.start);ST.score=0;ST.crashes=0;ST.episodes=0;$('batchres').innerHTML='';$('batchNote').textContent='';log(`Scenario: ${d.title}`,'ok');}
-function setCase(k){ST.ci=k;$('cert').value=k;const m=S.cases[k].metrics;
+  buildScene();resize();ST.x=null;setShield(true,true);setCase(0,true);reset(d.start);resetCounts();$('batchres').innerHTML='';$('batchNote').textContent='';log(`Scenario: ${d.title}`,'ok');}
+function resetCounts(){ST.score=0;ST.crashes=0;ST.episodes=0;}
+// Counters are per (scenario, certifier, shield) setting: switching certifier or shield restarts the
+// episode and the counters, so a crash is never attributed to a certifier it did not happen under.
+function tallyKey(){return `${S.doc.name}|${ST.ci}|${ST.shield?'on':'off'}`;}
+function setCase(k,quiet){const ch=k!==ST.ci;ST.ci=k;$('cert').value=k;if(ch&&!quiet&&ST.x){reset();resetCounts();}const m=S.cases[k].metrics;
   $('met').innerHTML=`<tr><td>FSV (false-safe volume)</td><td><b style="color:#ff2bd6">${pct(m.fsv)}</b></td></tr><tr><td>FUV (false-unsafe)</td><td>${pct(m.fuv)}</td></tr><tr><td>gap-FSV</td><td>${pct(m.gap_fsv)}</td></tr><tr><td colspan=2 class="src">Full-grid metrics computed in Python (lcert.metrics), not in the browser.</td></tr>`;
   mapKey=null;if(ST.x)drawMap(true);}
 function reset(x0){ST.replay=null;ST.x=(x0||S.doc.start||S.env.lo.map((a,i)=>(a+S.env.hi[i])/2)).slice();ST.t=0;ST.step=0;ST.trace=[ST.x.slice()];ST.flags=[];ST.interv=0;ST.fsTime=0;ST.crashT=0;
   polFn=ST.pol==='manual'?null:G.POLICIES[ST.pol].make(S,(Math.random()*1e9)|0);mapKey=null;drawMap(true);}
 function randomStart(){const r=G.mulberry32((Math.random()*1e9)|0);const x=G.sampleStart(S,r,S.cases[ST.ci].V,S.doc.filter_margin);if(x){reset(x);log('Random start where the certifier claims safe','ok');}}
-function setShield(on){ST.shield=on;const b=$('shieldBtn');b.classList.toggle('on',on);b.textContent=`Shield ${on?'ON':'OFF'} (space)`;log(`Shield ${on?'ON':'OFF'}`,'sh');}
+function setShield(on,quiet){const ch=on!==ST.shield;ST.shield=on;if(ch&&!quiet&&ST.x&&!ST.replay){reset();resetCounts();}const b=$('shieldBtn');b.classList.toggle('on',on);b.textContent=`Shield ${on?'ON':'OFF'} (space)`;if(!quiet)log(`Shield ${on?'ON':'OFF'} — episode and counters restarted`,'sh');}
 function setPol(p){ST.pol=p;$('pol').value=p;polFn=p==='manual'?null:G.POLICIES[p].make(S,(Math.random()*1e9)|0);log(`Driver: ${p}`,'ok');}
 $('scn').onchange=e=>loadScenario(+e.target.value);$('cert').onchange=e=>{setCase(+e.target.value);log('Certifier: '+S.cases[ST.ci].label,'ok');};
 $('pol').onchange=e=>setPol(e.target.value);$('shieldBtn').onclick=()=>setShield(!ST.shield);$('resetBtn').onclick=()=>reset();$('randStart').onclick=randomStart;
@@ -170,6 +174,7 @@ function manualU(){const a=axes(),u=S.umin.map(()=>0);for(const[axn,spec]of Obje
 // ------------------------------------------------------------------ sim loop
 function endEpisode(crashed){ST.episodes++;ST.last={tr:ST.trace.slice(),flags:ST.flags.slice(),crashed,case:ST.ci,shield:ST.shield};
   if(crashed){ST.crashes++;ST.score-=100;}
+  const tk=tallyKey(),T=(ST.tally=ST.tally||{});T[tk]=T[tk]||{episodes:0,crashes:0};T[tk].episodes++;if(crashed)T[tk].crashes++;
   if($('autoReset').checked)setTimeout(()=>{if(!ST.replay)reset();},crashed?1300:300);else ST.paused=true;}
 function simStep(){const dt=S.doc.dt,V=S.cases[ST.ci].V,x=ST.x;
   let u=ST.pol==='manual'?manualU():polFn(x,ST.t,dt),active=false;
@@ -195,14 +200,15 @@ function hud(){const V=S.cases[ST.ci].V,x=ST.x,vt=S.Vtrue(x),vh=V(x),inGap=S.gap
    <div class="row"><span class="k">false-safe here</span><b style="color:${fs?'#ff2bd6':'#8b949e'}">${fs?'YES':'no'}</b></div>
    <div class="row"><span class="k">case FSV / gap-FSV</span><span>${pct(m.fsv)} / ${pct(m.gap_fsv)}</span></div>
    <div class="row"><span class="k">driver · t</span><span>${ST.replay?'REPLAY':ST.pol} · ${ST.t.toFixed(1)}s</span></div>`;
-  $('score').innerHTML=`<tr><td>score (in-browser)</td><td><b>${ST.score.toFixed(0)}</b></td></tr><tr><td>episodes / crashes</td><td>${ST.episodes} / ${ST.crashes}</td></tr><tr><td>shield overrides (this ep.)</td><td>${ST.interv}</td></tr><tr><td>time in false-safe (this ep.)</td><td>${ST.fsTime.toFixed(2)} s</td></tr>`;
+  $('score').innerHTML=`<tr><td>score (in-browser)</td><td><b>${ST.score.toFixed(0)}</b></td></tr><tr><td>episodes / crashes (this certifier, shield ${ST.shield?'ON':'OFF'})</td><td>${ST.episodes} / ${ST.crashes}</td></tr><tr><td>shield overrides (this ep.)</td><td>${ST.interv}</td></tr><tr><td>time in false-safe (this ep.)</td><td>${ST.fsTime.toFixed(2)} s</td></tr>`;
   const bn=$('banner');let cls='',txt='';if(ST.crashT>0){cls='crash';txt='💥 CRASH';}else if(ST.replay){cls='replay';txt='REPLAY of last episode';}else if(fs){cls='fs';txt='FALSE-SAFE: certifier says safe, truth says a crash is unavoidable';}else if(ST.active){cls='shield';txt='Shield overriding your input';}
   bn.className=cls;bn.textContent=txt;
   ring.material.color.set(ST.crashT>0?0xf85149:fs?0xff2bd6:ST.active?0xd29922:ST.shield?0x2ea043:0x8b949e);
   window.__gym.readout={v_true:vt,v_hat:vh,in_gap:inGap,false_safe:fs,shield:ST.shield,active:!!ST.active,x:x.slice(),t:ST.t,crashes:ST.crashes,episodes:ST.episodes,score:ST.score,scenario:S.doc.name,case:ST.ci};}
 
 let last=performance.now(),acc=0;
-function frame(now){requestAnimationFrame(frame);let dt=Math.min(0.1,(now-last)/1000);last=now;
+let hudT=0;
+function frame(now){requestAnimationFrame(frame);if(document.hidden){last=now;return;}let dt=Math.min(0.1,(now-last)/1000);last=now;
   if(!ST.paused&&!$('help').classList.contains('show')||ST.forceRun){
     if(ST.replay){const r=ST.replay;r.i+=Math.max(1,Math.round(dt/S.doc.dt));if(r.i>=r.tr.length){ST.replay=null;reset();}else{ST.x=r.tr[r.i].slice();const f=r.flags[Math.min(r.i,r.flags.length-1)]||[false,false];ST.active=f[0];}}
     else if(ST.crashT<=0){acc+=dt;let n=0;while(acc>=S.doc.dt&&n<10){acc-=S.doc.dt;n++;if(!simStep()){acc=0;break;}}}}
@@ -211,7 +217,7 @@ function frame(now){requestAnimationFrame(frame);let dt=Math.min(0.1,(now-last)/
   agentPose(ST.x);if(S.D===3)drawMap(false);drawMapAgent();
   const tr=(ST.replay?ST.replay.tr.slice(0,ST.replay.i+1):ST.trace).slice(-600).map(worldPt);trail.geometry.setFromPoints(tr);
   dyn.forEach(f=>f(dt));if(['car','rover','boat','point'].includes(S.doc.render)){const p=agent.position;ctl.target.lerp(new THREE.Vector3(p.x*0.6,0,p.z*0.6),0.03);}
-  ctl.update();hud();R.render(scene,cam);}
+  ctl.update();if(now-hudT>66){hudT=now;hud();}R.render(scene,cam);}
 
 // ------------------------------------------------------------------ batch
 function runBatch(){const N=Math.max(1,Math.min(1000,+$('bN').value||50)),pk=$('bPol').value,ci=ST.ci,seed=1+((Math.random()*1e6)|0);
