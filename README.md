@@ -11,7 +11,7 @@
 
 **A benchmark for measuring false-safe errors in Hamilton-Jacobi reachability when dynamics are learned from finite data.**
 
-[Quick Start](#quick-start) · [What This Does](#what-this-does) · [Experiments](#experiments) · [Contributing](#contributing) · [Roadmap](#roadmap)
+[Quick Start](#quick-start) · [What This Does](#what-this-does) · [Experiments](#experiments) · [Contributing](#contributing--help-wanted) · [Roadmap](#roadmap)
 
 </div>
 
@@ -168,7 +168,7 @@ Every number in this repo is traceable:
 
 See [SCOPE.md](SCOPE.md) for the full integrity contract and [PLAN.md](PLAN.md) for the research plan.
 
-## Contributing
+## Contributing / Help wanted
 
 We welcome contributions! Areas where help is especially valuable:
 
@@ -178,7 +178,7 @@ We welcome contributions! Areas where help is especially valuable:
 - 📊 **Benchmarking** (running experiments on new systems, comparing methods)
 - 📖 **Documentation** (tutorials, notebooks, examples)
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting PRs.
+Starter tasks are labelled [good first issue](https://github.com/nisaral/falsesafe-bench/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and [help wanted](https://github.com/nisaral/falsesafe-bench/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22). Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting PRs.
 
 ## Roadmap
 
