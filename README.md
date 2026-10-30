@@ -4,6 +4,7 @@
 
 ### Measuring How Wrong "Safe" Can Be — When Robots Learn Their Own Physics
 
+[![CI](https://github.com/nisaral/falsesafe-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/nisaral/falsesafe-bench/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![Status: Research Starter](https://img.shields.io/badge/status-research_starter-orange.svg)](#status)
@@ -46,7 +47,17 @@ The **false-safe volume** is the most dangerous error in safety-critical systems
 
 ## Status
 
-**Functional research starter, not completed research.** The current demos use real, seeded simulator trajectories with scripted controllers. No dynamics model or RL policy has been trained, no learned-model safety filter is attached, and no benchmark result is claimed yet.
+**Research in progress.** What exists today (2026-10-30):
+
+- **Double integrator (DI), done as pilot/primary runs:** MLP-ensemble dynamics learned from data with a
+  coverage gap, learned-model HJ backward reachable tube (`hj_learned.py`), FSV/FUV metrics with
+  bootstrap CIs (`metrics.py`), and six certifiers compared (`certifiers/`). Every number is in
+  [`claims_ledger.md`](claims_ledger.md) with run ids and commits. Headline (claim P1, n=30 seeds):
+  epistemic inflation at k=2 cut false-safe volume by 40.3% [36.5%, 44.7%], which **does not meet**
+  the pre-registered ≥50% bar for H2.
+- **Dubins car:** ground-truth HJ solver and learned-model code exist; the Dubins experiments (incl. H4) are not run yet.
+- **Simulator demos:** seeded scripted-controller replays only. No RL policy has been trained and
+  no learned safety filter drives the browser demos.
 
 ![Recorded scripted fleet replay with a visible collision; not learned or certified](demos/preview.png)
 
@@ -60,12 +71,15 @@ falsesafe-bench/
 │   ├── systems.py          # Double integrator & Dubins dynamics
 │   ├── hj_di.py            # HJ reachability for double integrator
 │   ├── hj_dubins.py        # HJ reachability for Dubins car
+│   ├── hj_learned.py       # HJ reachability on a learned (ensemble) DI model
+│   ├── metrics.py          # FSV / FUV / IoU, bootstrap CIs
+│   ├── certifiers/         # Conformal, distance-aware, Pareto (AUPC) comparison
 │   ├── data.py             # Trajectory data collection with coverage gaps
 │   ├── models/             # MLP ensembles & Gaussian Processes
 │   ├── envs/               # Dubins arena & fleet simulation
-│   ├── rl/                 # RL algorithms (PPO, A2C, DPO, GRPO)
-│   ├── population/         # Optimal transport, bridges, MFG
-│   ├── games/              # QRE inverse game theory
+│   ├── rl/                 # RL loss functions (REINFORCE, A2C, PPO, DPO, GRPO) + small actor-critic; no training loop yet
+│   ├── population/         # Toy entropic OT, discrete bridge, mean-field congestion game
+│   ├── games/              # Logit QRE solver (inverse games not implemented)
 │   ├── constraints/        # Physics & geometry constraints
 │   └── visualization/      # Browser replay generation
 ├── configs/                # Experiment configurations (immutable after use)
@@ -81,7 +95,7 @@ falsesafe-bench/
 |---|---|
 | HJ Solver | [hj_reachability](https://github.com/StanfordASL/hj_reachability) (JAX) |
 | Dynamics Learning | PyTorch (MLP ensembles) + GPyTorch (Gaussian Processes) |
-| RL | PyTorch (PPO, A2C, REINFORCE, DPO/GRPO) |
+| RL | PyTorch loss functions only (PPO, A2C, REINFORCE, DPO/GRPO) |
 | Optimal Transport | [POT](https://pythonot.github.io/) |
 | Visualization | Matplotlib + standalone HTML5 Canvas |
 | Numerics | NumPy, SciPy, JAX |
@@ -135,8 +149,8 @@ Open the printed run folder's `demo.html` in a browser. It works without a serve
 | ID | What | System | Status |
 |---|---|---|---|
 | E0 | Ground-truth BRT vs analytic | Double Integrator | ✅ Passing |
-| E1 | FSV vs data size, gap vs no-gap | DI + Dubins | 🔬 Planned |
-| E2 | Epistemic inflation tradeoff | DI + Dubins | 🔬 Planned |
+| E1 | FSV vs data size, gap vs no-gap | DI + Dubins | 🔬 DI pilot + primary cell run (`results/`); size ladder and Dubins not run |
+| E2 | Epistemic inflation tradeoff | DI + Dubins | 🔬 DI run (claims P1, S1); Dubins not run |
 | E3 | Separated vs blended uncertainty | DI + Dubins | 🔬 Planned |
 | E4 | Fleet pairwise safety | 3 Dubins | 📋 Extension |
 | E5 | QRE inverse games | 2×2 / 3×3 | 📋 Extension |
@@ -171,10 +185,10 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting PRs.
 - [x] Simulation engine with deterministic replay
 - [x] HJ reachability on double integrator (analytic match)
 - [x] Browser-based fleet replay viewer
-- [x] RL algorithm primitives
-- [ ] `metrics.py` — FSV/FUV/IoU computation pipeline
-- [ ] Trained dynamics models (ensembles + GPs)
-- [ ] Core experiments E1-E3 (the scientific heart)
+- [x] RL loss-function primitives
+- [x] `metrics.py` — FSV/FUV/IoU computation pipeline
+- [x] Learned dynamics models (MLP ensembles used in DI runs; GP code present, no GP result in claims_ledger.md yet)
+- [ ] Core experiments E1-E3 (DI partly done; Dubins pending)
 - [ ] Safety filter integration
 - [ ] Robot RL with shielding
 - [ ] Gymnasium-compatible environments
