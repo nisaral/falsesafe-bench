@@ -2,6 +2,11 @@
 
 # 🛡️ falsesafe-bench
 
+[![Live demo](https://img.shields.io/badge/live%20demo-nisaral.github.io%2Ffalsesafe--bench-2ea44f)](https://nisaral.github.io/falsesafe-bench/) [![3D viewer](https://img.shields.io/badge/3D-viewer-blue)](https://nisaral.github.io/falsesafe-bench/viewer3d/) [![Gym](https://img.shields.io/badge/interactive-gym-orange)](https://nisaral.github.io/falsesafe-bench/gym/)
+
+**New here?** Robots that *learn* their own safety checks can wrongly say "safe" in places they never saw. FalseSafe-Bench measures how often and how badly. Start with the [interactive gym](https://nisaral.github.io/falsesafe-bench/gym/) (guided tour included) or the [plain-language glossary](https://nisaral.github.io/falsesafe-bench/glossary.html).
+
+
 ### Measuring How Wrong "Safe" Can Be — When Robots Learn Their Own Physics
 
 [![CI](https://github.com/nisaral/falsesafe-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/nisaral/falsesafe-bench/actions/workflows/ci.yml)
@@ -219,3 +224,12 @@ This project is licensed under the Apache License 2.0 — see [LICENSE](LICENSE)
 **⚠️ This is a research tool, not a safety certification system. A collision-free simulation replay is not a safety guarantee.**
 
 </div>
+
+
+## Framework + 3D viewer (exploratory)
+
+Build your own dynamics/hazard/policy/certifier and evaluate it against HJ ground truth with FSV/FUV/gap-FSV: see [docs/FRAMEWORK.md](docs/FRAMEWORK.md). View results in 3D: open `demos/viewer3d/index.html` (offline). Framework numbers are exploratory, not preregistered results.
+
+**Learned-from-pixels (world model) panel.** Both demos have a *World model* button (press `W` in the 3D viewer). It compares the exact safe set with the one a camera-trained world model believes, highlights the false-safe regions in red, and splits the error into encoder, dynamics and margin parts. These are dev-seed, exploratory numbers whose gates have **not** passed, so they show where the model fails, not that it works. See [docs/WORLDMODEL_DEMO.md](docs/WORLDMODEL_DEMO.md).
+
+**Demo extras:** a *Start here* card, keyboard help (`H` or `?`), shareable links (`U` copies a link that restores the current view), *Compare side by side* in the gym (`V`), and a plain-language *What just happened* log.

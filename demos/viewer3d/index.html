@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>FalseSafe 3D viewer — HJ ground truth vs certifier</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--fg:#e6edf3;--mut:#8b949e;--acc:#58a6ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.4 system-ui,sans-serif;display:grid;grid-template-columns:330px 1fr;height:100vh;overflow:hidden}
+#side{background:var(--panel);padding:12px 14px 70px;overflow:auto;border-right:1px solid #30363d}
+h1{font-size:15px;margin:0 0 4px}h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:14px 0 6px}
+label{display:block;margin:6px 0 2px;color:var(--mut)}select,input[type=range]{width:100%}select{background:#0d1117;color:var(--fg);border:1px solid #30363d;padding:4px;border-radius:4px}
+button{background:#21262d;color:var(--fg);border:1px solid #30363d;border-radius:4px;padding:4px 8px;cursor:pointer;margin:2px 2px 2px 0}button.on{border-color:var(--acc);color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td{padding:2px 0}td:last-child{text-align:right}
+.src{font-size:11px;color:var(--mut);margin-top:6px;word-break:break-word}.badge{display:inline-block;padding:1px 6px;border-radius:9px;font-size:11px;margin-right:4px}
+.real{background:#1f6f43}.illu{background:#9e6a03}
+#main{position:relative;display:grid;grid-template-rows:1fr 230px}#c3d,#cw{width:100%;height:100%;display:block}
+#world{position:relative;border-top:1px solid #30363d}.ov{position:absolute;left:10px;top:8px;background:#0d1117cc;padding:6px 8px;border-radius:6px;font-size:12px;pointer-events:none;max-width:60%}
+.legend span{display:inline-block;width:10px;height:10px;margin:0 4px 0 8px;vertical-align:middle;border-radius:2px}
+#drop{border:1px dashed #30363d;padding:6px;border-radius:6px;color:var(--mut);font-size:11px;text-align:center;margin-top:6px}
+.tb{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}.tb button{font-size:12px}
+.what{background:#0d1117;border:1px solid #30363d;border-left:3px solid var(--acc);border-radius:6px;padding:6px 8px;margin:6px 0;font-size:12.5px;line-height:1.45}.what kbd{background:#30363d;border-radius:4px;padding:0 5px}
+@media (max-width:760px){body{display:flex;flex-direction:column;height:auto;min-height:100vh;overflow:auto}#main{order:-1;height:72vh;min-height:420px;grid-template-rows:1fr 34%;flex:none}#side{border-right:0;overflow:visible}.ov{max-width:92%;font-size:10.5px;padding:4px 6px}.ov.legend{line-height:1.7}}
+#help{position:fixed;inset:0;background:#0d1117ee;display:none;z-index:10000;overflow:auto;padding:28px;color:#e6edf3}#help.show{display:block}#help .card{max-width:640px;margin:0 auto}#help kbd{background:#30363d;border-radius:4px;padding:1px 6px}#help td{padding:3px 10px 3px 0}
+</style></head><body>
+<div id="help" role="dialog" aria-label="Keyboard help"><div class="card"><h1>3D viewer: keys</h1><table>
+<tr><td><kbd>drag</kbd> / one finger</td><td>rotate</td></tr><tr><td><kbd>scroll</kbd> / pinch</td><td>zoom</td></tr><tr><td><kbd>right-drag</kbd> / two fingers</td><td>pan</td></tr>
+<tr><td><kbd>Space</kbd></td><td>play / pause the trajectory</td></tr><tr><td><kbd>R</kbd></td><td>restart trajectory</td></tr><tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next trajectory</td></tr>
+<tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>3D / top / side camera</td></tr><tr><td><kbd>W</kbd></td><td>Learned-from-pixels (world model) panel</td></tr>
+<tr><td><kbd>U</kbd></td><td>copy a share link (dataset, parameters, slice, trajectory)</td></tr><tr><td><kbd>H</kbd> / <kbd>?</kbd></td><td>this help</td></tr><tr><td><kbd>Esc</kbd></td><td>close</td></tr></table>
+<p>Colours: green = both say safe, <b style="color:#ff2bd6">magenta = FALSE-SAFE</b> (certifier says safe, truth says a crash is unavoidable), amber = false-unsafe (over-cautious).</p>
+<button id="helpClose">Close (Esc)</button></div></div>
+<div id="side">
+  <h1>FalseSafe 3D viewer</h1><div style="font-size:12px"><a href="../gym/index.html" style="color:#58a6ff">▶ Play it: interactive gym</a></div>
+  <div class="tb"><button id="wmBtn" title="World-model panel (W)">🧠 Learned from pixels</button><button id="shareBtn" title="Copy a link to this exact view (U)">🔗 Copy share link</button><button id="helpBtn" title="Keyboard help (H or ?)">⌨ Help</button></div>
+  <div class="what"><b>What am I looking at?</b> Each point on a surface is one state of the system, and its height says how safe that state is (above the middle = safe). The solid surface is the exact answer (<span style="color:#2ea043">green</span> safe, <span style="color:#e06060">red</span> unsafe). The see-through <span style="color:#58a6ff">blue</span> surface is the learned guess. <b style="color:#ff2bd6">Pink</b> = the guess says safe, but a crash is already unavoidable. <b>Try:</b> drag to rotate, move a slider, or press <kbd>W</kbd> to see a camera-trained world model.</div>
+  <div id="badge"></div>
+  <label>Dataset (framework export)</label><select id="ds"></select>
+  <div id="drop">Drop / choose a framework JSON to add it<br><input type="file" id="file" accept=".json" multiple></div>
+  <div id="desc" class="src"></div>
+  <h2>Parameters (precomputed sweep)</h2><div id="sliders"></div>
+  <div id="slicebox"></div>
+  <h2>Layers</h2>
+  <div id="layers"></div>
+  <label>Value height scale <span id="zsv"></span></label><input type="range" id="zs" min="0.2" max="3" step="0.1" value="1">
+  <div id="views">camera: <button data-v="iso">3D</button><button data-v="top">top</button><button data-v="side">side</button></div>
+  <h2>Metrics (this case)</h2><table id="met"></table>
+  <div class="src" id="msrc"></div>
+  <h2>Trajectory</h2>
+  <label>Policy / start / mode</label><select id="tr"></select>
+  <div><button id="play" class="on">pause</button><button id="restart">restart</button></div>
+  <div id="trinfo" class="src"></div>
+  <h2>Provenance</h2><div id="prov" class="src"></div>
+</div>
+<div id="main">
+  <div style="position:relative"><canvas id="c3d"></canvas>
+    <div class="ov" id="ov3"></div>
+    <div class="ov legend" style="top:auto;bottom:8px">surface/floor:<span style="background:#2ea043"></span>both safe<span style="background:#ff2bd6"></span>FALSE-SAFE<span style="background:#d29922"></span>false-unsafe<span style="background:#30363d"></span>both unsafe (floor) <span style="background:#bf3333"></span>truly unsafe (surface)<span style="background:#58a6ff55;border:1px solid #58a6ff"></span>gap region</div></div>
+  <div id="world"><canvas id="cw"></canvas><div class="ov" id="ovw"></div></div>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script src="../common/perf.js"></script>
+<script src="../common/worldmodel.js"></script>
+<script src="data/bundle.js"></script>
+<script src="viewer3d.js"></script>
+<script src="../common/explain.js" data-page="viewer3d" data-up="../"></script>
+</body></html>

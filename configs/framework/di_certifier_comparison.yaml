@@ -1,0 +1,22 @@
+# EXPLORATORY. One knob setting per certifier, all on the same learned model (seed 0), for side-by-side
+# viewing.  Knob sweeps / AUPC: di_ensemble.yaml, di_conformal.yaml, di_distance_aware.yaml +
+# scripts/framework_aupc.py.
+name: di_certifier_comparison
+env: di_hidden_physics
+env_params: {grid_size: 101, accuracy: medium}
+certifier: ensemble
+certifier_params: {members: 3, hidden_sizes: [32, 32], epochs: 60, n_samples: 2000, seed: 0}
+certifier_presets:
+  nominal_learned: {certifier: ensemble, params: {k: 0}}
+  E_k2: {certifier: ensemble, params: {k: 2}}
+  C0_a0.1: {certifier: conformal, params: {variant: C0, alpha: 0.1, dims: [1]}}
+  C1b_a0.1: {certifier: conformal, params: {variant: C1b, alpha: 0.1, dims: [1]}}
+  C2_a0.1: {certifier: conformal, params: {variant: C2, alpha: 0.1, dims: [1], calib_region: {lo: [1.8, -2.0], hi: [2.4, 2.0]}}}
+  L_lam1: {certifier: distance_aware, params: {lam: 1.0, dims: [1]}}
+policies:
+  - {name: di_go_to, params: {target: 0.05, kp: 3.0, kd: 1.0}}
+initial_states: [[1.6, -0.6]]
+sweep:
+  certifier: [nominal_learned, E_k2, C0_a0.1, C1b_a0.1, C2_a0.1, L_lam1]
+dt: 0.02
+steps: 150
