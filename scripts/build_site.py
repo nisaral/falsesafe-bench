@@ -72,7 +72,8 @@ h1{{font-size:30px;margin:.3em 0}}.cards{{display:grid;grid-template-columns:1fr
 <body><main>
 <section class="hero"><h1>FalseSafe-Bench</h1>
 <p class="lead">When a robot <b>learns</b> its own safety check, how often does it say <b>&ldquo;safe&rdquo;</b> when a crash is actually unavoidable?</p>
-<p>Robots and AI systems increasingly learn their own physics, and their own safety checks, from data. In places they never saw, a learned check can be confidently wrong. FalseSafe-Bench <b>measures how often and how badly</b>: it computes the exact true answer (Hamilton-Jacobi reachability on a grid) and compares it with what each learned certifier claims. New to the terms? See the <a href="glossary.html">plain-language glossary</a>.</p>
+<p id="about3">Robots increasingly learn their own safety checks from data, and in situations they never saw, those checks can confidently say &ldquo;safe&rdquo; when a crash is already unavoidable. FalseSafe-Bench measures how often and how badly that happens, by comparing each learned check with the exact right answer that a solver works out on a fine grid. You can drive it yourself in the gym, explore the true and learned answers in 3D, and look at an early, honestly-labelled test of a camera-trained &ldquo;world model&rdquo;.</p>
+<p class="src">No maths needed. Unfamiliar word? Hover it, or open the <a href="glossary.html">plain-language glossary</a>.</p>
 <p><a class="cta" href="gym/index.html">&#9654; Drive the gym</a> <a class="cta sec" href="viewer3d/index.html">Explore the 3D viewer</a> <a class="cta sec" href="{REPO}">GitHub</a></p></section>
 <h2>Three takeaways</h2><div class="take">
 <div><b>1. Padding helps, but less than hoped.</b> Inflating uncertainty (k=2) cut false-safe volume by <b>40.34%</b> [95% CI 36.47&ndash;44.73%], below the preregistered 50% bar. P1 is <b>partially supported</b>.</div>
@@ -123,6 +124,14 @@ def main():
     (OUT / "index.html").write_text(landing(names), encoding="utf-8")
     (OUT / ".nojekyll").write_text("")
     (OUT / "404.html").write_text('<!doctype html><meta charset="utf-8"><title>Not found</title><p>Not found. <a href="./">FalseSafe-Bench home</a></p>')
+    # no favicon request (avoids a 404 in the console on GitHub Pages project sites)
+    for h in OUT.rglob("*.html"):
+        t = h.read_text(encoding="utf-8")
+        if 'rel="icon"' not in t:
+            m = re.search(r"<head[^>]*>", t) or re.search(r"<meta charset[^>]*>", t)
+            ins = '<link rel="icon" href="data:,">'
+            t = t[:m.end()] + ins + t[m.end():] if m else ins + t
+            h.write_text(t, encoding="utf-8")
     tot = sum(f.stat().st_size for f in OUT.rglob("*") if f.is_file())
     print(f"site/ built: {sum(1 for f in OUT.rglob('*') if f.is_file())} files, {tot/1e6:.1f} MB; datasets: {names}")
 

@@ -13,13 +13,13 @@ const pct=v=>v==null?'n/a':(100*v).toFixed(2)+'%';
 
 // ------------------------------------------------------------------ three.js scene
 const cv=$('c3d'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true,preserveDrawingBuffer:true});
-R.setPixelRatio(Math.min(1.5,devicePixelRatio||1));
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b1018);scene.fog=new THREE.Fog(0x0b1018,40,90);
 const cam=new THREE.PerspectiveCamera(45,1,0.1,300);const ctl=new THREE.OrbitControls(cam,cv);ctl.enableDamping=true;
 scene.add(new THREE.HemisphereLight(0xbcd7ff,0x202a33,0.75));const sun=new THREE.DirectionalLight(0xffffff,0.8);sun.position.set(8,20,10);scene.add(sun);
 let W=new THREE.Group();scene.add(W);let agent=null,ring=null,trail=null,goalM=null,spark=null,dyn=[];
 function resize(){const r=$('main').getBoundingClientRect();R.setSize(r.width,r.height,false);cam.aspect=r.width/Math.max(1,r.height);cam.updateProjectionMatrix();}
-addEventListener('resize',resize);
+addEventListener('resize',resize);ctl.addEventListener('change',()=>{ST.camMoved=true;});addEventListener('resize',()=>{ST.camMoved=true;});
+const AQ=window.FSBAdaptive?FSBAdaptive([R],resize):(R.setPixelRatio(Math.min(1.5,devicePixelRatio||1)),null);
 const M=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.7,metalness:0.1},o||{}));
 function box(w,h,d,c,o){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c,o));}
 function cyl(r,h,c,o,seg){return new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg||32),M(c,o));}
@@ -129,36 +129,63 @@ function opt(sel,items){sel.innerHTML='';items.forEach(([v,t])=>{const o=documen
 opt($('scn'),DOCS.map((d,i)=>[i,(d.user_defined?'[user] ':'')+d.title]));
 const POLS=[['manual','manual (you drive: keys / gamepad / touch)'],...Object.keys(G.POLICIES).map(k=>[k,G.POLICIES[k].label])];
 opt($('pol'),POLS);opt($('bPol'),Object.keys(G.POLICIES).map(k=>[k,k]));
+function plain(msg,cls){ST.plain=(ST.plain||[]);ST.plain.unshift([`${ST.t.toFixed(1)}s`,msg,cls]);ST.plain=ST.plain.slice(0,8);
+  const w=$('wjh');if(w)w.innerHTML=ST.plain.map(([t,m,c])=>`<li class="${c||''}"><span class="t">${t}</span> ${m}</li>`).join('');}
+// If the driver had kept its (unfiltered) input, when would the TRUE dynamics hit the hazard?  Look-ahead <= 3 s.
+function predictHit(x,u){const dt=S.doc.dt;let y=x.slice();for(let k=1;k*dt<=3+1e-9;k++){y=G.step(S,y,u,dt);if(S.l(y)<0)return k*dt;}return null;}
 function log(msg,cls){ST.events.unshift([msg,cls]);ST.events=ST.events.slice(0,7);$('log').innerHTML=ST.events.map(([m,c])=>`<div class="${c||''}">${m}</div>`).join('');}
 function loadScenario(i){ST.si=i;S=G.buildScenario(DOCS[i]);ST.ci=0;$('scn').value=i;
   opt($('cert'),S.cases.map((c,k)=>[k,c.label]));const d=S.doc,e=S.env;
   $('scnInfo').innerHTML=`${d.blurb}<br><span class="tag ${d.user_defined?'user':'real'}">${d.user_defined?'user-defined env':'built-in env'}</span><span class="tag">${e.name}</span><span class="tag">${S.D}D · grid ${e.shape.join('×')}</span><span class="tag">${S.dyn==='js-mirror'?'JS dynamics mirror':'tabulated dynamics'}</span><br><b>Hazard:</b> ${e.hazard}<br><b>Hidden physics (gap):</b> ${e.gap?e.gap.description:'none'}<br><b>Reduction:</b> ${d.reduction||'—'}`;
   $('prov').innerHTML=`${d.provenance.source}. created ${d.provenance.created}, git ${String(d.provenance.git_commit).slice(0,10)}. HJ horizon ${e.horizon}s; shield margin ${d.filter_margin}; dt ${d.dt}s. Quantisation: int16, max error ${S.quantErr.toExponential(2)} in V.`;
-  buildScene();resize();ST.x=null;setShield(true,true);setCase(0,true);reset(d.start);resetCounts();$('batchres').innerHTML='';$('batchNote').textContent='';log(`Scenario: ${d.title}`,'ok');}
+  buildScene();resize();ST.x=null;setShield(true,true);setCase(0,true);reset(d.start);resetCounts();$('batchres').innerHTML='';$('batchNote').textContent='';log(`Scenario: ${d.title}`,'ok');ST.plain=[];plain(`Loaded <b>${d.title}</b>. ${e.gap?'Watch for the dashed blue zone: hidden physics.':''}`,'ok');if(CMP.open)CMP.restart();writeHash();}
+function writeHash(){if(!S||ST.noHash)return;const h=new URLSearchParams({s:S.doc.name,c:ST.ci,sh:ST.shield?1:0,d:ST.pol});if(CMP.open)h.set('cmp',CMP.b);
+  const v='#'+h.toString();if(location.hash!==v)history.replaceState(null,'',v);}
+function readHash(){const h=new URLSearchParams(location.hash.slice(1));if(!h.has('s'))return false;const i=DOCS.findIndex(d=>d.name===h.get('s'));if(i<0)return false;
+  ST.noHash=true;if(i!==ST.si||!S)loadScenario(i);const c=+h.get('c');if(c>=0&&c<S.cases.length)setCase(c,true);
+  if(h.has('sh'))setShield(h.get('sh')!=='0',true);const d=h.get('d');if(d&&(d==='manual'||G.POLICIES[d]))setPol(d,true);reset();ST.noHash=false;
+  if(h.has('cmp'))openCompare(h.get('cmp'));writeHash();return true;}
+function shareLink(){writeHash();const u=location.href,done=()=>{const b=$('shareBtn');b.textContent='Link copied ✓';setTimeout(()=>b.textContent='🔗 Copy share link',1600);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(done,()=>prompt('Copy this link:',u));else prompt('Copy this link:',u);}
 function resetCounts(){ST.score=0;ST.crashes=0;ST.episodes=0;}
 // Counters are per (scenario, certifier, shield) setting: switching certifier or shield restarts the
 // episode and the counters, so a crash is never attributed to a certifier it did not happen under.
 function tallyKey(){return `${S.doc.name}|${ST.ci}|${ST.shield?'on':'off'}`;}
 function setCase(k,quiet){const ch=k!==ST.ci;ST.ci=k;$('cert').value=k;if(ch&&!quiet&&ST.x){reset();resetCounts();}const m=S.cases[k].metrics;
   $('met').innerHTML=`<tr><td>FSV (false-safe volume)</td><td><b style="color:#ff2bd6">${pct(m.fsv)}</b></td></tr><tr><td>FUV (false-unsafe)</td><td>${pct(m.fuv)}</td></tr><tr><td>gap-FSV</td><td>${pct(m.gap_fsv)}</td></tr><tr><td colspan=2 class="src">Full-grid metrics computed in Python (lcert.metrics), not in the browser.</td></tr>`;
-  mapKey=null;if(ST.x)drawMap(true);}
-function reset(x0){ST.replay=null;ST.x=(x0||S.doc.start||S.env.lo.map((a,i)=>(a+S.env.hi[i])/2)).slice();ST.t=0;ST.step=0;ST.trace=[ST.x.slice()];ST.flags=[];ST.interv=0;ST.fsTime=0;ST.crashT=0;
+  mapKey=null;if(ST.x)drawMap(true);if(CMP.open)CMP.restart();writeHash();}
+function reset(x0){if(ST.x&&ST.t>0)plain('— new episode —','');ST.lastShT=-9;ST.replay=null;ST.x=(x0||S.doc.start||S.env.lo.map((a,i)=>(a+S.env.hi[i])/2)).slice();ST.t=0;ST.step=0;ST.trace=[ST.x.slice()];ST.flags=[];ST.interv=0;ST.fsTime=0;ST.crashT=0;
   polFn=ST.pol==='manual'?null:G.POLICIES[ST.pol].make(S,(Math.random()*1e9)|0);mapKey=null;drawMap(true);}
 function randomStart(){const r=G.mulberry32((Math.random()*1e9)|0);const x=G.sampleStart(S,r,S.cases[ST.ci].V,S.doc.filter_margin);if(x){reset(x);log('Random start where the certifier claims safe','ok');}}
-function setShield(on,quiet){const ch=on!==ST.shield;ST.shield=on;if(ch&&!quiet&&ST.x&&!ST.replay){reset();resetCounts();}const b=$('shieldBtn');b.classList.toggle('on',on);b.textContent=`Shield ${on?'ON':'OFF'} (space)`;if(!quiet)log(`Shield ${on?'ON':'OFF'} — episode and counters restarted`,'sh');}
-function setPol(p){ST.pol=p;$('pol').value=p;polFn=p==='manual'?null:G.POLICIES[p].make(S,(Math.random()*1e9)|0);log(`Driver: ${p}`,'ok');}
+function setShield(on,quiet){const ch=on!==ST.shield;ST.shield=on;if(ch&&!quiet&&ST.x&&!ST.replay){reset();resetCounts();}const b=$('shieldBtn');b.classList.toggle('on',on);b.textContent=`Shield ${on?'ON':'OFF'} (space)`;b.setAttribute('aria-pressed',on);if(!quiet){log(`Shield ${on?'ON':'OFF'} — episode and counters restarted`,'sh');plain(`Shield turned <b>${on?'ON':'OFF'}</b>.`,'sh');}if(CMP.open&&ch)CMP.restart();writeHash();}
+function setPol(p,quiet){ST.pol=p;$('pol').value=p;polFn=p==='manual'?null:G.POLICIES[p].make(S,(Math.random()*1e9)|0);if(!quiet)log(`Driver: ${p}`,'ok');if(CMP.open)CMP.restart();writeHash();}
 $('scn').onchange=e=>loadScenario(+e.target.value);$('cert').onchange=e=>{setCase(+e.target.value);log('Certifier: '+S.cases[ST.ci].label,'ok');};
 $('pol').onchange=e=>setPol(e.target.value);$('shieldBtn').onclick=()=>setShield(!ST.shield);$('resetBtn').onclick=()=>reset();$('randStart').onclick=randomStart;
 $('pauseBtn').onclick=()=>{ST.paused=!ST.paused;$('pauseBtn').classList.toggle('on',ST.paused);};$('replayBtn').onclick=startReplay;
 $('helpLink').onclick=e=>{e.preventDefault();$('help').classList.add('show');};$('helpClose').onclick=()=>$('help').classList.remove('show');
 $('batchBtn').onclick=runBatch;
+$('cmpBtn').onclick=()=>openCompare();$('cmpClose').onclick=closeCompare;$('cmpRestart').onclick=()=>CMP.restart();$('cmpB').onchange=e=>{CMP.b=e.target.value;CMP.restart();writeHash();};
+$('shareBtn').onclick=shareLink;
+$('wmBtn').onclick=()=>{if(!window.FSBWorldModel)return;const was=ST.paused;ST.paused=true;window.FSBWorldModel.open({base:'../common/',onClose:()=>{ST.paused=was;$('wmBtn').focus();}});};$('keysBtn').onclick=()=>$('help').classList.add('show');
+addEventListener('hashchange',()=>{if(!ST.noHash)readHash();});
+// start-here choices on the welcome card
+function startDemo(){const i=DOCS.findIndex(d=>d.name==='cart_wall');if(i>=0)loadScenario(i);setCase(0,true);setShield(true,true);setPol('adversarial',true);reset();
+  $('help').classList.remove('show');try{localStorage.setItem('fsb-tour-gym','done');}catch(e){}
+  plain('<b>Demo:</b> an autopilot pushes the cart toward the wall. The shield trusts the <b>naive</b> certifier. Watch the minimap: does it get caught in the magenta (false-safe) zone? Then press <b>C</b> to switch certifier.','ok');writeHash();}
+$('startDemo').onclick=startDemo;$('startDrive').onclick=()=>{$('help').classList.remove('show');try{localStorage.setItem('fsb-tour-gym','done');}catch(e){}setPol('manual',true);writeHash();};
+$('startTour').onclick=()=>{$('help').classList.remove('show');if(window.__fsbExplain)window.__fsbExplain.tour(0);};
+$('startCompare').onclick=()=>{startDemo();openCompare('c'+(S.cases.length-1));};
+function showTyo(){$('help').classList.add('show');setTimeout(()=>{const t=$('tyo');if(t)t.scrollIntoView({block:'start'});},30);}
+$('startTyo').onclick=showTyo;$('tyoLink').onclick=e=>{e.preventDefault();showTyo();};
+$('whatDemo').onclick=e=>{e.preventDefault();startDemo();};
+$('tyoCopy').onclick=()=>{const t=$('tyoCode').textContent;const ok=()=>{$('tyoCopy').textContent='Copied ✓';setTimeout(()=>$('tyoCopy').textContent='Copy',1500);};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,()=>prompt('Copy:',t));else prompt('Copy:',t);};
 const KEYMAP={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down'};
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'&&!KEYMAP[e.code])return;
   if(KEYMAP[e.code]){ST.keys[KEYMAP[e.code]]=true;e.preventDefault();return;}
   if(e.repeat)return;const c=e.code;
   if(c==='Space'){setShield(!ST.shield);e.preventDefault();}else if(c==='KeyR')reset();else if(c==='KeyT')randomStart();else if(c==='KeyP')$('pauseBtn').onclick();
   else if(c==='KeyL')startReplay();else if(c==='KeyN')loadScenario((ST.si+(e.shiftKey?DOCS.length-1:1))%DOCS.length);else if(c==='KeyC'){setCase((ST.ci+1)%S.cases.length);log('Certifier: '+S.cases[ST.ci].label,'ok');}
-  else if(c==='KeyM'){const ks=POLS.map(p=>p[0]);setPol(ks[(ks.indexOf(ST.pol)+1)%ks.length]);}else if(c==='KeyB')runBatch();else if(c==='KeyH'||e.key==='?')$('help').classList.toggle('show');else if(c==='Escape')$('help').classList.remove('show');});
+  else if(c==='KeyM'){const ks=POLS.map(p=>p[0]);setPol(ks[(ks.indexOf(ST.pol)+1)%ks.length]);}else if(c==='KeyB')runBatch();else if(c==='KeyV'){CMP.open?closeCompare():openCompare();}else if(c==='KeyU')shareLink();else if(c==='KeyH'||e.key==='?')$('help').classList.toggle('show');else if(c==='KeyH'||e.key==='?')$('help').classList.toggle('show');else if(c==='Escape'){$('help').classList.remove('show');if(CMP.open)closeCompare();}});
 addEventListener('keyup',e=>{if(KEYMAP[e.code])ST.keys[KEYMAP[e.code]]=false;});
 document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.k;const on=e=>{e.preventDefault();ST.touch[k]=true;},off=e=>{e.preventDefault();ST.touch[k]=false;};
   b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off);});
@@ -178,14 +205,20 @@ function endEpisode(crashed){ST.episodes++;ST.last={tr:ST.trace.slice(),flags:ST
   if($('autoReset').checked)setTimeout(()=>{if(!ST.replay)reset();},crashed?1300:300);else ST.paused=true;}
 function simStep(){const dt=S.doc.dt,V=S.cases[ST.ci].V,x=ST.x;
   let u=ST.pol==='manual'?manualU():polFn(x,ST.t,dt),active=false;
-  if(ST.shield){const r=G.shield(S,V,x,u,dt,S.doc.filter_margin);if(r.active&&!ST.wasActive)log(`t=${ST.t.toFixed(2)}s shield override`,'sh');u=r.u;active=r.active;}
+  if(ST.shield){const r=G.shield(S,V,x,u,dt,S.doc.filter_margin);if(r.active&&!ST.wasActive){log(`t=${ST.t.toFixed(2)}s shield override`,'sh');}
+    if(r.active&&!ST.wasActive&&!(ST.t-(ST.lastShT??-9)<1.5)){ST.lastShT=ST.t;
+      const th=predictHit(x,u);plain(th!=null?`<b>Shield stepped in.</b> If ${ST.pol==='manual'?'you':'the driver'} had kept going, the real physics would have hit the hazard in about <b>${th.toFixed(1)} s</b>.`:
+        `<b>Shield stepped in.</b> The certifier's safety score dropped below its margin, so it took over (no crash was imminent within 3 s).`,'sh');}
+    u=r.u;active=r.active;}
   ST.wasActive=active;ST.lastU=u;ST.active=active;const vt=S.Vtrue(x),vh=V(x),fs=vh>=0&&vt<0;
+  if(fs&&!ST.wasFS)plain(`<b>Entered a trap.</b> The certifier still says "safe" (V̂=${vh.toFixed(2)}), but the true physics says a crash can no longer be avoided (V_true=${vt.toFixed(2)}).`,'fs');
+  const ing=S.gap(x);if(ing&&!ST.wasGap)plain('Entered the <b>hidden-physics zone</b>: here the real physics differ from what the certifier was built on.','gap');ST.wasGap=ing;
   if(fs&&!ST.wasFS)log(`t=${ST.t.toFixed(2)}s entered FALSE-SAFE region (V̂=${vh.toFixed(3)}, V_true=${vt.toFixed(3)})`,'fs');ST.wasFS=fs;
   if(active)ST.interv++;if(fs)ST.fsTime+=dt;
   ST.x=G.step(S,x,u,dt);ST.t+=dt;ST.step++;ST.trace.push(ST.x.slice());ST.flags.push([active,fs]);if(ST.trace.length>2000)ST.trace.shift();
   ST.score+=10*dt;if(S.doc.goal&&goalDist(ST.x)<0.25)ST.score+=20*dt;
-  if(S.l(ST.x)<0){ST.crashT=1.3;burst(ST.x);log(`t=${ST.t.toFixed(2)}s CRASH (${S.env.hazard})${fs||ST.fsTime>0?' — after trusting a false-safe certificate':''}${ST.shield?' with shield ON':''}`,'crash');endEpisode(true);return false;}
-  if(ST.step>=S.doc.max_steps){log(`episode survived ${ST.t.toFixed(1)}s`,'ok');endEpisode(false);return false;}
+  if(S.l(ST.x)<0){plain(`<b>Crash</b> (${S.env.hazard}).`+(ST.fsTime>0?` The shield ${ST.shield?'was ON but ':''}trusted a false-safe certificate for ${ST.fsTime.toFixed(1)} s first.`:ST.shield?' The shield was ON.':' The shield was OFF.'),'crash');ST.crashT=1.3;burst(ST.x);log(`t=${ST.t.toFixed(2)}s CRASH (${S.env.hazard})${fs||ST.fsTime>0?' — after trusting a false-safe certificate':''}${ST.shield?' with shield ON':''}`,'crash');endEpisode(true);return false;}
+  if(ST.step>=S.doc.max_steps){plain(`Survived the whole episode (${ST.t.toFixed(1)} s)`+(ST.interv?`, with ${ST.interv} shield override steps.`:'.'),'ok');log(`episode survived ${ST.t.toFixed(1)}s`,'ok');endEpisode(false);return false;}
   return true;}
 function goalDist(x){const g=S.doc.goal,w=S.doc.goal_weights||g.map(()=>1);let c=0,sw=0;g.forEach((gi,i)=>{if(gi==null)return;c+=w[i]*(x[i]-gi)**2;sw+=w[i];});return Math.sqrt(c/Math.max(sw,1e-9));}
 function startReplay(){if(!ST.last){log('nothing to replay yet','sh');return;}ST.replay={tr:ST.last.tr,flags:ST.last.flags,i:0,crashed:ST.last.crashed};log('Replaying last episode','ok');}
@@ -208,16 +241,66 @@ function hud(){const V=S.cases[ST.ci].V,x=ST.x,vt=S.Vtrue(x),vh=V(x),inGap=S.gap
 
 let last=performance.now(),acc=0;
 let hudT=0;
-function frame(now){requestAnimationFrame(frame);if(document.hidden){last=now;return;}let dt=Math.min(0.1,(now-last)/1000);last=now;
+function frame(now){requestAnimationFrame(frame);if(document.hidden){last=now;ST.prevNow=0;return;}let dt=Math.min(0.1,(now-last)/1000);last=now;
   if(!ST.paused&&!$('help').classList.contains('show')||ST.forceRun){
     if(ST.replay){const r=ST.replay;r.i+=Math.max(1,Math.round(dt/S.doc.dt));if(r.i>=r.tr.length){ST.replay=null;reset();}else{ST.x=r.tr[r.i].slice();const f=r.flags[Math.min(r.i,r.flags.length-1)]||[false,false];ST.active=f[0];}}
     else if(ST.crashT<=0){acc+=dt;let n=0;while(acc>=S.doc.dt&&n<10){acc-=S.doc.dt;n++;if(!simStep()){acc=0;break;}}}}
-  if(ST.crashT>0)ST.crashT-=dt;
+  if(ST.crashT>0)ST.crashT-=dt;if(CMP.open)cmpFrame(dt);
   if(spark.userData.t>0){spark.userData.t-=dt;const a=spark.geometry.attributes.position;if(a){for(let i=0;i<a.count;i++){const v=spark.userData.v[i];v[1]-=9*dt;a.setXYZ(i,a.getX(i)+v[0]*dt,Math.max(0,a.getY(i)+v[1]*dt),a.getZ(i)+v[2]*dt);}a.needsUpdate=true;}spark.visible=true;}else spark.visible=false;
   agentPose(ST.x);if(S.D===3)drawMap(false);drawMapAgent();
-  const tr=(ST.replay?ST.replay.tr.slice(0,ST.replay.i+1):ST.trace).slice(-600).map(worldPt);trail.geometry.setFromPoints(tr);
+  const tk=(ST.replay?'r'+ST.replay.i:ST.step+'|'+ST.trace.length);if(tk!==ST.trailKey){ST.trailKey=tk;const tr=(ST.replay?ST.replay.tr.slice(0,ST.replay.i+1):ST.trace).slice(-600).map(worldPt);trail.geometry.setFromPoints(tr);}
   dyn.forEach(f=>f(dt));if(['car','rover','boat','point'].includes(S.doc.render)){const p=agent.position;ctl.target.lerp(new THREE.Vector3(p.x*0.6,0,p.z*0.6),0.03);}
-  ctl.update();if(now-hudT>66){hudT=now;hud();}R.render(scene,cam);}
+  ctl.update();if(now-hudT>66){hudT=now;hud();}
+  // perf safeguards: skip the 3D render while a full-screen panel covers it, and render on demand when nothing moves
+  const P=window.FSB_PERF=window.FSB_PERF||{};const covered=$('help').classList.contains('show')||CMP.open||(window.FSBWorldModel&&FSBWorldModel.isOpen());
+  const sig=ST.x.map(v=>v.toFixed(4)).join()+'|'+ST.active+'|'+ST.crashT.toFixed(2)+'|'+spark.visible+'|'+ST.trailKey;
+  const moved=sig!==ST.sig||ST.camMoved;ST.sig=sig;ST.camMoved=false;
+  const idle=!moved&&now-(ST.lastRT||0)<250;// nothing changed: refresh at most 4 times a second (animated props)
+  if(covered||idle){P.skipped=(P.skipped||0)+1;ST.prevNow=0;ST.wasCovered=ST.wasCovered||covered;return;}
+  ST.wasCovered=false;R.render(scene,cam);ST.lastRT=now;P.renders=(P.renders||0)+1;if(AQ&&ST.prevNow)AQ.sample(now-ST.prevNow);ST.prevNow=now;}
+
+// ------------------------------------------------------------------ compare side by side
+// Two copies of the same scenario run in lock-step from the same start with the same driver input:
+// A = the current certifier + shield setting; B = shield OFF, or another certifier with the shield ON.
+const CMP={open:false,b:'off',sims:[],restart(){}};
+// low-end devices (few cores, or ?lowend=1): draw the compare maps at <=20 fps and keep shorter trails
+const LOWEND=/[?&]lowend=1/.test(location.search)||((navigator.hardwareConcurrency||8)<=2);
+function classImage(ctx,N,ci,th){const e=S.env,D=S.D,img=ctx.createImageData(N,N),V=S.cases[ci].V,x=new Array(D).fill(0);if(D===3)x[2]=th;
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){x[0]=e.lo[0]+(e.hi[0]-e.lo[0])*(i+0.5)/N;if(D>1)x[1]=e.hi[1]-(e.hi[1]-e.lo[1])*(j+0.5)/N;
+    const vt=S.Vtrue(x),vh=V(x),l=S.l(x);const c=l<0?[0x6e,0x1b,0x1b]:vt>=0&&vh>=0?[0x2e,0xa0,0x43]:vt<0&&vh>=0?[0xff,0x2b,0xd6]:vt>=0?[0xd2,0x99,0x22]:[0x30,0x36,0x3d];
+    const o=4*(j*N+i);img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=255;}return img;}
+function cmpConfigs(){const a={ci:ST.ci,shield:ST.shield,label:`A: ${S.cases[ST.ci].label}, shield ${ST.shield?'ON':'OFF'}`};
+  let b;if(CMP.b==='off'||!/^c\d+$/.test(CMP.b)){b={ci:ST.ci,shield:!ST.shield,label:`B: same certifier, shield ${!ST.shield?'ON':'OFF'}`};}
+  else{const k=Math.min(S.cases.length-1,+CMP.b.slice(1));b={ci:k,shield:true,label:`B: ${S.cases[k].label}, shield ON`};}return [a,b];}
+function openCompare(b){if(b)CMP.b=b;CMP.open=true;$('cmp').classList.add('show');ST.paused=true;$('pauseBtn').classList.add('on');
+  const sel=$('cmpB');opt(sel,[['off',`shield ${ST.shield?'OFF':'ON'} (same certifier)`],...S.cases.map((c,k)=>['c'+k,`${c.label} (shield ON)`])]);sel.value=CMP.b;CMP.restart();writeHash();}
+function closeCompare(){CMP.open=false;$('cmp').classList.remove('show');ST.paused=false;$('pauseBtn').classList.remove('on');writeHash();}
+CMP.restart=function(){const cf=cmpConfigs(),x0=(ST.x||S.doc.start).slice(),seed=(Math.random()*1e9)|0;CMP.t=0;CMP.acc=0;CMP.endT=null;
+  CMP.sims=cf.map((c,k)=>({...c,x:x0.slice(),tr:[x0.slice()],done:null,interv:0,fsT:0,active:false,mapKey:null,cv:$(k?'cmpB_c':'cmpA_c'),
+    pol:ST.pol==='manual'?null:G.POLICIES[ST.pol].make(S,seed)}));
+  CMP.sims.forEach((m,k)=>{$(k?'cmpB_t':'cmpA_t').textContent=m.label;});CMP.events=[];$('cmpLog').innerHTML='';cmpDraw();};
+function cmpEvent(k,msg,cls){CMP.events.unshift(`<li class="${cls}"><span class="t">${CMP.t.toFixed(1)}s</span> <b>${k?'B':'A'}</b>: ${msg}</li>`);CMP.events=CMP.events.slice(0,6);$('cmpLog').innerHTML=CMP.events.join('');}
+function cmpStep(){const dt=S.doc.dt,um=ST.pol==='manual'?manualU():null;
+  CMP.sims.forEach((m,k)=>{if(m.done)return;const V=S.cases[m.ci].V;let u=um?um.slice():m.pol(m.x,CMP.t,dt),act=false;
+    if(m.shield){const r=G.shield(S,V,m.x,u,dt,S.doc.filter_margin);if(r.active&&!m.active&&!(CMP.t-(m.lastShT??-9)<1.5)){m.lastShT=CMP.t;const th=predictHit(m.x,u);cmpEvent(k,th!=null?`shield stepped in (hazard was ${th.toFixed(1)} s away)`:'shield stepped in','sh');}u=r.u;act=r.active;}
+    m.active=act;if(act)m.interv++;const vt=S.Vtrue(m.x),vh=V(m.x),fs=vh>=0&&vt<0;if(fs&&!m.fs)cmpEvent(k,'entered a false-safe trap','fs');m.fs=fs;if(fs)m.fsT+=dt;
+    m.x=G.step(S,m.x,u,dt);m.tr.push(m.x.slice());if(m.tr.length>1500)m.tr.shift();
+    if(S.l(m.x)<0){m.done='crash';m.doneT=CMP.t+dt;cmpEvent(k,'<b>crashed</b>','crash');}});
+  CMP.t+=dt;if(CMP.t>=S.doc.max_steps*dt)CMP.sims.forEach((m,k)=>{if(!m.done){m.done='survived';m.doneT=CMP.t;cmpEvent(k,'survived the episode','ok');}});}
+function cmpDraw(){const e=S.env,N=150;CMP.sims.forEach((m,k)=>{const cx=m.cv.getContext('2d'),th=S.D===3?m.x[2]:0,key=m.ci+'|'+(S.D===3?Math.round(th/e.axes[2][1]):0);
+    if(key!==m.mapKey){m.mapKey=key;m.base=classImage(cx,N,m.ci,th);}cx.putImageData(m.base,0,0);
+    const X=v=>(v-e.lo[0])/(e.hi[0]-e.lo[0])*N,Y=v=>S.D>1?(e.hi[1]-v)/(e.hi[1]-e.lo[1])*N:N/2;
+    const g=e.gap;if(g){cx.strokeStyle='#58a6ff';cx.setLineDash([4,3]);cx.strokeRect(X(g.lo[0]),S.D>1?Y(g.hi[1]):0,X(g.hi[0])-X(g.lo[0]),S.D>1?Y(g.lo[1])-Y(g.hi[1]):N);cx.setLineDash([]);}
+    cx.strokeStyle='#ffffffc0';cx.lineWidth=1.2;cx.beginPath();m.tr.forEach((s,i)=>i?cx.lineTo(X(s[0]),Y(s[1])):cx.moveTo(X(s[0]),Y(s[1])));cx.stroke();
+    cx.fillStyle=m.done==='crash'?'#f85149':m.active?'#d29922':'#fff';cx.beginPath();cx.arc(X(m.x[0]),Y(m.x[1]),4,0,7);cx.fill();
+    const V=S.cases[m.ci].V,vt=S.Vtrue(m.x),vh=V(m.x);
+    $(k?'cmpB_s':'cmpA_s').innerHTML=`${m.done==='crash'?`<b style="color:#f85149">CRASHED at ${m.doneT.toFixed(1)} s</b>`:m.done?`<b style="color:#2ea043">survived ${m.doneT.toFixed(1)} s</b>`:m.active?'<b style="color:#d29922">shield intervening</b>':(m.shield?'shield armed':'shield OFF')}`+
+      ` · V̂ ${vh.toFixed(2)} · V_true ${vt.toFixed(2)}<br>override steps ${m.interv} · time in false-safe ${m.fsT.toFixed(1)} s`;});
+  $('cmpT').textContent=`t = ${CMP.t.toFixed(1)} s · driver: ${ST.pol}${ST.pol==='manual'?' (your keys drive BOTH)':' (same seed for both)'}`;}
+function cmpFrame(dt){if(!CMP.open||!CMP.sims.length)return;CMP.acc+=dt;let n=0;const allDone=()=>CMP.sims.every(m=>m.done);
+  while(CMP.acc>=S.doc.dt&&n<10&&!allDone()){CMP.acc-=S.doc.dt;n++;cmpStep();}
+  if(allDone()){CMP.acc=0;if(CMP.endT==null)CMP.endT=performance.now();else if($('cmpLoop').checked&&performance.now()-CMP.endT>2000)CMP.restart();}
+  const low=LOWEND||(window.FSB_PERF&&FSB_PERF.pixelRatio<1);const t=performance.now();if(low&&t-(CMP.lastDraw||0)<50&&!allDone())return;CMP.lastDraw=t;cmpDraw();}
 
 // ------------------------------------------------------------------ batch
 function runBatch(){const N=Math.max(1,Math.min(1000,+$('bN').value||50)),pk=$('bPol').value,ci=ST.ci,seed=1+((Math.random()*1e6)|0);
@@ -229,9 +312,10 @@ function runBatch(){const N=Math.max(1,Math.min(1000,+$('bN').value||50)),pk=$('
     $('batchNote').innerHTML=`<span class="tag expl">in-browser simulation</span> ${S.doc.title} · certifier “${S.cases[ci].label}” · policy ${pk} · N=${N} seeded starts (seed ${seed}) sampled in the start box where V̂ ≥ margin, same starts for OFF/ON, ≤ ${S.doc.max_steps} steps of ${S.doc.dt}s, true dynamics via ${S.dyn==='js-mirror'?'JS mirror of the Python env (cross-checked in tests/test_gym_js_parity.py)':'grid-tabulated dynamics'}, value lookups from exported grids. Exploratory, not a preregistered result.`;
     log(`Batch done: crash rate OFF ${pct(r.off.rate)} vs ON ${pct(r.on.rate)}`,'ok');});}
 
-window.__gym={ready:false,ST,get S(){return S;},loadScenario,setCase,setPol,setShield,reset,runBatch,DOCS};
+window.__gym={ready:false,ST,get S(){return S;},loadScenario,setCase,setPol,setShield,reset,runBatch,DOCS,CMP,openCompare,closeCompare,predictHit,readHash,writeHash,startDemo};
 if(!DOCS.length){document.body.innerHTML='<p style="padding:20px">No scenarios found in data/. Run <code>python -m lcert.framework.gym</code>.</p>';return;}
 const qs=new URLSearchParams(location.search);const qi=DOCS.findIndex(d=>d.name===qs.get('scenario'));
-loadScenario(qi>=0?qi:0);if(!qs.has('nohelp')&&!localStorage.getItem('fsbGymSeen')){$('help').classList.add('show');localStorage.setItem('fsbGymSeen','1');}
+const hadHash=location.hash.length>1;ST.noHash=true;loadScenario(qi>=0?qi:0);ST.noHash=false;const fromLink=hadHash&&readHash();if(!fromLink)writeHash();
+if(!fromLink&&!qs.has('nohelp')&&!localStorage.getItem('fsbGymSeen')){$('help').classList.add('show');localStorage.setItem('fsbGymSeen','1');}
 requestAnimationFrame(frame);window.__gym.ready=true;
 })();

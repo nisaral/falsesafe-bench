@@ -229,3 +229,7 @@ This project is licensed under the Apache License 2.0 — see [LICENSE](LICENSE)
 ## Framework + 3D viewer (exploratory)
 
 Build your own dynamics/hazard/policy/certifier and evaluate it against HJ ground truth with FSV/FUV/gap-FSV: see [docs/FRAMEWORK.md](docs/FRAMEWORK.md). View results in 3D: open `demos/viewer3d/index.html` (offline). Framework numbers are exploratory, not preregistered results.
+
+**Learned-from-pixels (world model) panel.** Both demos have a *World model* button (press `W` in the 3D viewer). It compares the exact safe set with the one a camera-trained world model believes, highlights the false-safe regions in red, and splits the error into encoder, dynamics and margin parts. These are dev-seed, exploratory numbers whose gates have **not** passed, so they show where the model fails, not that it works. See [docs/WORLDMODEL_DEMO.md](docs/WORLDMODEL_DEMO.md).
+
+**Demo extras:** a *Start here* card, keyboard help (`H` or `?`), shareable links (`U` copies a link that restores the current view), *Compare side by side* in the gym (`V`), and a plain-language *What just happened* log.
