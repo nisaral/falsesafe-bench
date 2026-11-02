@@ -1,0 +1,15 @@
+# Preregistered DI hidden-physics dynamics; NON-learned nominal certifier with
+# constant disturbance k*sigma on v-dot.  Not the P1 experiment (see claims_ledger.md).
+name: di_nominal_sweep
+env: di_hidden_physics
+env_params: {grid_size: 101, accuracy: medium, horizon: 1.5}  # longer than prereg T=0.5 so the safety filter is meaningful
+certifier: nominal_inflated
+certifier_params: {sigma: 0.15, dims: [1]}
+policies:
+  - {name: di_go_to, params: {target: 0.05, kp: 3.0, kd: 1.0}}
+initial_states: [[1.6, -0.6], [2.4, -1.4]]
+sweep:
+  env.b: [0.0, 0.3, 0.6]
+  certifier.k: [0, 1, 2, 3]
+dt: 0.02
+steps: 150

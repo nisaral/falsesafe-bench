@@ -1,0 +1,14 @@
+# Adapter around lcert.train ensemble + lcert.hj_learned evaluator.  Framework i.i.d.
+# training data outside the gap -> NOT the preregistered P1 pipeline or numbers.
+name: di_ensemble
+env: di_hidden_physics
+env_params: {grid_size: 101, accuracy: medium}
+certifier: ensemble
+certifier_params: {members: 3, hidden_sizes: [32, 32], epochs: 60, n_samples: 2000, seed: 0}
+policies:
+  - {name: di_go_to, params: {target: 0.05, kp: 3.0, kd: 1.0}}
+initial_states: [[1.6, -0.6]]
+sweep:
+  certifier.k: [0, 1, 2, 3]
+dt: 0.02
+steps: 150

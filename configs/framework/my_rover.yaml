@@ -1,0 +1,14 @@
+# User-defined env + policy (examples/framework/my_rover.py), nominal certifier with inflation sweep.
+name: my_rover
+env: rover_cliff
+env_params: {grid_size: 81}
+certifier: nominal_inflated
+certifier_params: {sigma: 0.15, dims: [1]}
+policies:
+  - {name: rover_cruise, params: {speed: 1.2}}
+initial_states: [[0.0, 0.5], [0.5, 1.0]]
+sweep:
+  env.slope: [0.0, 0.4, 0.8]
+  certifier.k: [0, 1, 2, 3]
+dt: 0.02
+steps: 200

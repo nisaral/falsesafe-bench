@@ -1,0 +1,15 @@
+# EXPLORATORY. Distance-aware Lipschitz certifier L adapted to the framework
+# (lcert.framework.bound_certifiers): d(x,u) = eps0 + lam * L_hat * dist((x,u), D_train), evaluated on
+# the HJ grid and interpolated inside the JAX dynamics.  Same model/data recipe as di_ensemble.yaml.
+name: di_distance_aware
+env: di_hidden_physics
+env_params: {grid_size: 101, accuracy: medium}
+certifier: distance_aware
+certifier_params: {members: 3, hidden_sizes: [32, 32], epochs: 60, n_samples: 2000, seed: 0, dims: [1]}
+policies:
+  - {name: di_go_to, params: {target: 0.05, kp: 3.0, kd: 1.0}}
+initial_states: [[1.6, -0.6]]
+sweep:
+  certifier.lam: [0.0, 0.5, 1.0, 1.5, 2.0, 3.0]
+dt: 0.02
+steps: 150

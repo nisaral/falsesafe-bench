@@ -31,3 +31,7 @@ KICKOFF_PROMPT.md
 SCOPE_UPDATE_REPORT.md
 STARTER_REPORT.md
 .agents/
+
+# viewer3d per-dataset JSONs are merged into bundle.js (shipped); keep local copies untracked
+demos/viewer3d/data/*.json
+site/
