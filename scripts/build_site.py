@@ -53,8 +53,38 @@ def split_bundle(vdir: Path):
     return [d["name"] for d in docs]
 
 
+# Reading list for the landing page: what each line of work does and how this benchmark relates.
+# Descriptions paraphrase the papers' abstracts; no numbers from other papers are quoted.
+RELATED_WORK = [
+    ("Latent safety filters", "Nakamura, Peters &amp; Bajcsy, RSS 2025", "https://arxiv.org/abs/2502.00935",
+     "HJ reachability inside a world model's latent space, learned from images.",
+     "The <i>Learned from pixels</i> panel measures where such a latent certificate says &ldquo;safe&rdquo; wrongly."),
+    ("Uncertainty-aware latent filters (UNISafe)", "Seo, Nakamura &amp; Bajcsy, CoRL 2025", "https://proceedings.mlr.press/v305/seo25a.html",
+     "Adds the world model's epistemic uncertainty and a conformal threshold to flag out-of-distribution states.",
+     "An uncertainty-aware certifier of the kind this benchmark can grade against exact HJ ground truth on a known gap."),
+    ("Conformal bounds for learned HJ value functions", "Tabbara, Yang &amp; Sibai, 2025", "https://arxiv.org/abs/2511.07899",
+     "Uses conformal prediction to bound the gap between a learned value function and the true safety outcome; also studies ensembles of value functions.",
+     "Close to the conformal C0/C1b/C2 and ensemble certifiers already in the framework."),
+    ("Adaptive conformal filtering (ACoFi)", "Huriot, Tabbara &amp; Sibai, L4DC 2026", "https://arxiv.org/abs/2604.18482",
+     "Lets the filter's switching threshold adapt online to observed prediction errors instead of staying fixed.",
+     "The gym's shield trigger margin is the fixed-threshold version; an adaptive margin is an open item here."),
+    ("Control barrier-value functions", "Choi, Lee, Sreenath, Tomlin &amp; Herbert, CDC 2021", "https://arxiv.org/abs/2104.02808",
+     "Connects HJ value functions with control barrier functions.",
+     "Suggests CBF-style filters as another family to grade on the same hidden-physics gaps."),
+]
+
+
+def related_html():
+    rows = "".join(f'<div class="rel"><h3><a href="{u}">{t}</a></h3><p class="src">{a}</p><p>{d}</p><p class="why"><b>Here:</b> {w}</p></div>'
+                   for t, a, u, d, w in RELATED_WORK)
+    return ('<h2 id="related">How this connects to current research</h2>'
+            '<p class="src">A short reading list, not results of this repo. Learned safety filters are being built from data, images and '
+            'conformal statistics; FalseSafe-Bench asks the complementary question of how often each one says &ldquo;safe&rdquo; when it is not, '
+            'measured against an exact solver.</p><div class="rels">' + rows + '</div>')
+
+
 def landing(names):
-    og = "og.png"
+    og, RELATED = "og.png", related_html()
     cards = "".join(f'<div class="card"><a href="{n}/index.html"><img src="shot_{n}.png" alt="{html.escape(t)} screenshot"></a><h3><a href="{n}/index.html">{html.escape(t)}</a></h3><span class="ill">illustrative, not solver output</span></div>' for n, t in OLD)
     docs = "".join(f'<li><a href="{REPO}/blob/{"feat/framework-3d-demo" if f.startswith("docs/") else "main"}/{f}">{f}</a></li>' for f in
                    ["README.md", "claims_ledger.md", "PREREGISTRATION.md", "PREREGISTRATION_v2.md", "SCOPE.md",
@@ -68,7 +98,7 @@ def landing(names):
 <style>body{{margin:0;background:#0d1117;color:#e6edf3;font:16px/1.55 system-ui,sans-serif}}main{{max-width:900px;margin:auto;padding:24px}}a{{color:#58a6ff}}
 h1{{font-size:30px;margin:.3em 0}}.cards{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}.card{{border:1px solid #30363d;border-radius:10px;padding:14px;background:#161b22}}
 .card img{{width:100%;border-radius:6px}}table{{border-collapse:collapse;width:100%;font-size:14px}}td,th{{border-bottom:1px solid #30363d;padding:6px;text-align:left}}
-.ill{{background:#7a4b00;color:#fff;font-size:11px;padding:1px 6px;border-radius:4px}}.src{{color:#8b949e;font-size:13px}}.hero{{padding:20px 0 8px}}.hero h1{{font-size:40px}}.lead{{font-size:21px;line-height:1.4}}.cta{{display:inline-block;background:#238636;color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;font-weight:600;margin:4px 6px 4px 0}}.cta.sec{{background:#30363d}}.take{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}}.take div{{border:1px solid #30363d;border-left:4px solid #f0b72f;border-radius:8px;padding:12px;background:#161b22;font-size:15px}}@media(max-width:700px){{.take{{grid-template-columns:1fr}}}}@media(max-width:700px){{.cards{{grid-template-columns:1fr}}}}</style></head>
+.ill{{background:#7a4b00;color:#fff;font-size:11px;padding:1px 6px;border-radius:4px}}.src{{color:#8b949e;font-size:13px}}.hero{{padding:20px 0 8px}}.hero h1{{font-size:40px}}.lead{{font-size:21px;line-height:1.4}}.cta{{display:inline-block;background:#238636;color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;font-weight:600;margin:4px 6px 4px 0}}.cta.sec{{background:#30363d}}.take{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}}.take div{{border:1px solid #30363d;border-left:4px solid #f0b72f;border-radius:8px;padding:12px;background:#161b22;font-size:15px}}@media(max-width:700px){{.take{{grid-template-columns:1fr}}}}.rels{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}.rel{{border:1px solid #30363d;border-radius:10px;padding:10px 14px;background:#161b22;font-size:15px}}.rel h3{{margin:.2em 0;font-size:16px}}.rel p{{margin:.3em 0}}.rel .why{{color:#c9d1d9;border-left:3px solid #58a6ff;padding-left:8px}}@media(max-width:700px){{.rels{{grid-template-columns:1fr}}}}@media(max-width:700px){{.cards{{grid-template-columns:1fr}}}}</style></head>
 <body><main>
 <section class="hero"><h1>FalseSafe-Bench</h1>
 <p class="lead">When a robot <b>learns</b> its own safety check, how often does it say <b>&ldquo;safe&rdquo;</b> when a crash is actually unavoidable?</p>
@@ -82,7 +112,7 @@ h1{{font-size:30px;margin:.3em 0}}.cards{{display:grid;grid-template-columns:1fr
 <p class="src">All numbers: double integrator, 30 preregistered seeds, 201&times;201 grid. Source: <a href="{REPO}/blob/main/claims_ledger.md">claims_ledger.md</a>, sweep <code>results/sweeps/20261027_184119</code>.</p>
 <h2>Interactive demos (real solver output)</h2>
 <div class="cards">
-<div class="card"><a href="gym/index.html"><img src="{og}" alt="FalseSafe gym screenshot"></a><h3><a href="gym/index.html">Interactive gym</a></h3><b>What it is:</b> drive a cart, drone, pendulum, boat, car or rover yourself, with a learned safety shield. <b>What to look for:</b> the magenta &ldquo;false-safe&rdquo; cells on the minimap, where the shield trusts a wrong answer. Includes a guided tour and a &ldquo;Try this&rdquo; list.</div>
+<div class="card"><a href="gym/index.html"><img src="{og}" alt="FalseSafe gym screenshot"></a><h3><a href="gym/index.html">Interactive gym</a></h3><b>What it is:</b> drive a cart, drone, pendulum, boat, car or rover yourself, with a learned safety shield. <b>What to look for:</b> the magenta &ldquo;false-safe&rdquo; cells on the minimap, where the shield trusts a wrong answer. Rewind any episode on the safety timeline, click the map to start inside a trap, and compare every certifier on a danger-vs-caution chart. Includes a guided tour.</div>
 <div class="card"><a href="viewer3d/index.html"><img src="viewer3d.png" alt="3D viewer screenshot"></a><h3><a href="viewer3d/index.html">3D value-function viewer</a></h3><b>What it is:</b> the true and the learned safety surfaces from the solver, in 3D, for {len(names)} exported datasets. <b>What to look for:</b> where the learned surface is above zero and the true one is below it.</div></div>
 <h2>Detailed results</h2>
 <table><tr><th>Claim</th><th>Result</th><th>Status</th></tr>
@@ -90,6 +120,7 @@ h1{{font-size:30px;margin:.3em 0}}.cards{{display:grid;grid-template-columns:1fr
 <tr><td>S1: where false-safe volume sits</td><td><b>87.3%</b> of nominal FSV is inside the gap</td><td>post hoc</td></tr>
 <tr><td>S1: reduction outside vs inside the gap</td><td><b>89.1%</b> outside (0.00145&rarr;0.00016) vs <b>33.3%</b> inside (0.0534&rarr;0.0356)</td><td>post hoc</td></tr>
 <tr><td>Cost: FUV k=0 &rarr; k=2</td><td>0.0001 &rarr; 0.0018; break-even r* = 0.45</td><td>confirmatory auxiliary</td></tr></table>
+{RELATED}
 <h2 id="illustrative">Older illustrative demos</h2><p class="src">Hand-built geometry and toy in-browser maths, kept for intuition only. <b>Not solver output.</b></p><div class="cards">{cards}</div>
 <h2>Docs and notes</h2><ul>{docs}</ul>
 <p><a href="{REPO}">GitHub repository</a> &middot; <a href="{PR}">PR #1 (framework + 3D viewer)</a></p>

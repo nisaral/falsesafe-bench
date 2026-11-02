@@ -109,11 +109,13 @@ const mc=$('map'),mx=mc.getContext('2d'),MN=160;let mapKey=null;
 function mapDims(){const D=S.D;return D===1?[0,null]:[0,1];}
 function drawMap(force){const e=S.env,D=S.D,th=D===3?ST.x[2]:null,dth=D===3?e.axes[2][1]:1;
   const key=ST.ci+'|'+(D===3?Math.round(th/dth):0);if(!force&&key===mapKey)return;mapKey=key;
-  const img=mx.createImageData(MN,MN),V=S.cases[ST.ci].V,x=new Array(D).fill(0);if(D===3)x[2]=th;
+  const img=mx.createImageData(MN,MN),V=S.cases[ST.ci].V,x=new Array(D).fill(0),above=new Uint8Array(MN*MN),mg=S.doc.filter_margin;if(D===3)x[2]=th;
   for(let j=0;j<MN;j++)for(let i=0;i<MN;i++){x[0]=e.lo[0]+(e.hi[0]-e.lo[0])*(i+0.5)/MN;x[1]=e.hi[1]-(e.hi[1]-e.lo[1])*(j+0.5)/MN;
-    const vt=S.Vtrue(x),vh=V(x),l=S.l(x);let c;
+    const vt=S.Vtrue(x),vh=V(x),l=S.l(x);let c;above[j*MN+i]=vh>=mg?1:0;
     if(l<0)c=[0x6e,0x1b,0x1b];else if(vt>=0&&vh>=0)c=[0x2e,0xa0,0x43];else if(vt<0&&vh>=0)c=[0xff,0x2b,0xd6];else if(vt>=0)c=[0xd2,0x99,0x22];else c=[0x30,0x36,0x3d];
     const o=4*(j*MN+i);img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=255;}
+  // shield trigger line {V̂ = margin}: dotted white where the "above margin" flag flips between neighbours
+  for(let j=0;j<MN;j++)for(let i=0;i<MN;i++){const k=j*MN+i;if((i<MN-1&&above[k]!==above[k+1]||j<MN-1&&above[k]!==above[k+MN])&&((i+j)&2)){const o=4*k;img.data[o]=img.data[o+1]=img.data[o+2]=255;}}
   mx.putImageData(img,0,0);const g=e.gap;if(g){mx.strokeStyle='#58a6ff';mx.setLineDash([4,3]);mx.lineWidth=1.5;
     const X=v=>(v-e.lo[0])/(e.hi[0]-e.lo[0])*MN,Y=v=>(e.hi[1]-v)/(e.hi[1]-e.lo[1])*MN;mx.strokeRect(X(g.lo[0]),Y(g.hi[1]),X(g.hi[0])-X(g.lo[0]),Y(g.lo[1])-Y(g.hi[1]));mx.setLineDash([]);}
   mapBase=mx.getImageData(0,0,MN,MN);
@@ -140,12 +142,13 @@ function loadScenario(i){ST.si=i;S=G.buildScenario(DOCS[i]);ST.ci=0;$('scn').val
   $('prov').innerHTML=`${d.provenance.source}. created ${d.provenance.created}, git ${String(d.provenance.git_commit).slice(0,10)}. HJ horizon ${e.horizon}s; shield margin ${d.filter_margin}; dt ${d.dt}s. Quantisation: int16, max error ${S.quantErr.toExponential(2)} in V.`;
   buildScene();resize();ST.x=null;setShield(true,true);setCase(0,true);reset(d.start);resetCounts();$('batchres').innerHTML='';$('batchNote').textContent='';log(`Scenario: ${d.title}`,'ok');ST.plain=[];plain(`Loaded <b>${d.title}</b>. ${e.gap?'Watch for the dashed blue zone: hidden physics.':''}`,'ok');if(CMP.open)CMP.restart();writeHash();}
 function writeHash(){if(!S||ST.noHash)return;const h=new URLSearchParams({s:S.doc.name,c:ST.ci,sh:ST.shield?1:0,d:ST.pol});if(CMP.open)h.set('cmp',CMP.b);
+  if(S.doc.margin0!=null&&S.doc.filter_margin!==S.doc.margin0)h.set('m',S.doc.filter_margin);
   const v='#'+h.toString();if(location.hash!==v)history.replaceState(null,'',v);}
 function readHash(){const h=new URLSearchParams(location.hash.slice(1));if(!h.has('s'))return false;const i=DOCS.findIndex(d=>d.name===h.get('s'));if(i<0)return false;
   ST.noHash=true;if(i!==ST.si||!S)loadScenario(i);const c=+h.get('c');if(c>=0&&c<S.cases.length)setCase(c,true);
-  if(h.has('sh'))setShield(h.get('sh')!=='0',true);const d=h.get('d');if(d&&(d==='manual'||G.POLICIES[d]))setPol(d,true);reset();ST.noHash=false;
+  if(h.has('sh'))setShield(h.get('sh')!=='0',true);if(h.has('m')&&isFinite(+h.get('m')))setMargin(+h.get('m'),true);const d=h.get('d');if(d&&(d==='manual'||G.POLICIES[d]))setPol(d,true);reset();ST.noHash=false;
   if(h.has('cmp'))openCompare(h.get('cmp'));writeHash();return true;}
-function shareLink(){writeHash();const u=location.href,done=()=>{const b=$('shareBtn');b.textContent='Link copied ✓';setTimeout(()=>b.textContent='🔗 Copy share link',1600);};
+function shareLink(){writeHash();const u=location.href,done=()=>{const b=$('shareBtn');b.textContent='Link copied ✓';setTimeout(()=>b.textContent='🔗 Share',1600);};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(done,()=>prompt('Copy this link:',u));else prompt('Copy this link:',u);}
 function resetCounts(){ST.score=0;ST.crashes=0;ST.episodes=0;}
 // Counters are per (scenario, certifier, shield) setting: switching certifier or shield restarts the
@@ -158,6 +161,11 @@ function reset(x0){if(ST.x&&ST.t>0)plain('— new episode —','');ST.lastShT=-9
   polFn=ST.pol==='manual'?null:G.POLICIES[ST.pol].make(S,(Math.random()*1e9)|0);mapKey=null;drawMap(true);}
 function randomStart(){const r=G.mulberry32((Math.random()*1e9)|0);const x=G.sampleStart(S,r,S.cases[ST.ci].V,S.doc.filter_margin);if(x){reset(x);log('Random start where the certifier claims safe','ok');}}
 function setShield(on,quiet){const ch=on!==ST.shield;ST.shield=on;if(ch&&!quiet&&ST.x&&!ST.replay){reset();resetCounts();}const b=$('shieldBtn');b.classList.toggle('on',on);b.textContent=`Shield ${on?'ON':'OFF'} (space)`;b.setAttribute('aria-pressed',on);if(!quiet){log(`Shield ${on?'ON':'OFF'} — episode and counters restarted`,'sh');plain(`Shield turned <b>${on?'ON':'OFF'}</b>.`,'sh');}if(CMP.open&&ch)CMP.restart();writeHash();}
+// Exploratory knob: the in-browser shield's trigger margin (exported default kept in doc.margin0).
+// Python FSV/FUV classify V̂ >= 0 and do not depend on it.
+function setMargin(m,quiet){const d=S.doc;if(d.margin0==null)d.margin0=d.filter_margin;m=Math.max(0,Math.round(m*100)/100);if(m===d.filter_margin)return;
+  d.filter_margin=m;mapKey=null;if(ST.x)drawMap(true);if(!quiet){reset();resetCounts();plain(`Shield trigger margin set to <b>${m.toFixed(2)}</b>${m===d.margin0?' (exported default)':''}. Episode and counters restarted.`,'sh');}
+  if(CMP.open)CMP.restart();writeHash();}
 function setPol(p,quiet){ST.pol=p;$('pol').value=p;polFn=p==='manual'?null:G.POLICIES[p].make(S,(Math.random()*1e9)|0);if(!quiet)log(`Driver: ${p}`,'ok');if(CMP.open)CMP.restart();writeHash();}
 $('scn').onchange=e=>loadScenario(+e.target.value);$('cert').onchange=e=>{setCase(+e.target.value);log('Certifier: '+S.cases[ST.ci].label,'ok');};
 $('pol').onchange=e=>setPol(e.target.value);$('shieldBtn').onclick=()=>setShield(!ST.shield);$('resetBtn').onclick=()=>reset();$('randStart').onclick=randomStart;
@@ -312,7 +320,7 @@ function runBatch(){const N=Math.max(1,Math.min(1000,+$('bN').value||50)),pk=$('
     $('batchNote').innerHTML=`<span class="tag expl">in-browser simulation</span> ${S.doc.title} · certifier “${S.cases[ci].label}” · policy ${pk} · N=${N} seeded starts (seed ${seed}) sampled in the start box where V̂ ≥ margin, same starts for OFF/ON, ≤ ${S.doc.max_steps} steps of ${S.doc.dt}s, true dynamics via ${S.dyn==='js-mirror'?'JS mirror of the Python env (cross-checked in tests/test_gym_js_parity.py)':'grid-tabulated dynamics'}, value lookups from exported grids. Exploratory, not a preregistered result.`;
     log(`Batch done: crash rate OFF ${pct(r.off.rate)} vs ON ${pct(r.on.rate)}`,'ok');});}
 
-window.__gym={ready:false,ST,get S(){return S;},loadScenario,setCase,setPol,setShield,reset,runBatch,DOCS,CMP,openCompare,closeCompare,predictHit,readHash,writeHash,startDemo};
+window.__gym={ready:false,ST,get S(){return S;},loadScenario,setCase,setPol,setShield,setMargin,reset,resetCounts,runBatch,DOCS,CMP,openCompare,closeCompare,predictHit,readHash,writeHash,startDemo,plain,log,startReplay};
 if(!DOCS.length){document.body.innerHTML='<p style="padding:20px">No scenarios found in data/. Run <code>python -m lcert.framework.gym</code>.</p>';return;}
 const qs=new URLSearchParams(location.search);const qi=DOCS.findIndex(d=>d.name===qs.get('scenario'));
 const hadHash=location.hash.length>1;ST.noHash=true;loadScenario(qi>=0?qi:0);ST.noHash=false;const fromLink=hadHash&&readHash();if(!fromLink)writeHash();

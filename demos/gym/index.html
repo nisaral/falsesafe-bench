@@ -39,6 +39,29 @@ table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td{p
 #help pre{background:#010409;border:1px solid #30363d;border-radius:6px;padding:10px;overflow:auto;font-size:12px;line-height:1.4}#help details{margin:8px 0;color:#c9d1d9}#help summary{cursor:pointer;color:var(--acc)}
 @media (hover:hover) and (pointer:fine){#touch{display:none}}
 #batchres td{font-size:12px}progress{width:100%}
+/* ---- insight layer (gym_insight.js): value timeline, interactive map, certifier trade-off, margin slider ---- */
+#side details.sec{border-top:1px solid #30363d;margin-top:10px;padding-top:2px}#side details.sec>summary{cursor:pointer;list-style:none;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);padding:8px 0 4px}
+#side details.sec>summary::before{content:'▸ ';color:var(--acc)}#side details.sec[open]>summary::before{content:'▾ '}
+#trade{margin:6px 0 2px;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:6px 6px 4px}#trade svg{display:block;width:100%;height:auto;overflow:visible}
+#trade .tt{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11.5px;color:var(--mut)}#trade .seg{display:inline-flex;border:1px solid #30363d;border-radius:6px;overflow:hidden}
+#trade .seg button{margin:0;border:0;border-radius:0;padding:2px 7px;font-size:11px;background:transparent;color:var(--mut)}#trade .seg button.on{background:#1f6feb;color:#fff}
+#trade circle.pt{cursor:pointer;transition:r .12s}#trade circle.pt:hover{r:7}#trade text{font:10px system-ui;fill:#8b949e}#trade .cur{fill:#e6edf3;font-weight:700}
+#tradeList{list-style:none;padding:0;margin:4px 0 0;font-size:11.5px}#tradeList li{display:flex;gap:6px;align-items:baseline;padding:2px 4px;border-radius:4px;cursor:pointer}#tradeList li:hover{background:#21262d}#tradeList li.on{background:#1f6feb33;color:#fff}
+#tradeList i{flex:none;width:16px;height:16px;border-radius:50%;font:700 10px/16px system-ui;text-align:center;color:#0d1117;font-style:normal}#tradeList span.v{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--mut);white-space:nowrap}
+.mrow{display:flex;align-items:center;gap:8px}.mrow input[type=range]{flex:1;accent-color:#58a6ff;padding:0}.mrow b{min-width:38px;text-align:right;font-variant-numeric:tabular-nums}
+#tl{position:absolute;left:10px;right:10px;bottom:52px;height:118px;background:#0d1117e6;border:1px solid #30363d;border-radius:10px;padding:4px 8px 6px;z-index:2}
+#tl .hd{display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden}#tl .hd b{color:var(--fg)}#tl .hd .sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:3px}
+#tl canvas{display:block;width:100%;height:86px;cursor:ew-resize;touch-action:none}#tlResume{display:none;margin:0 0 0 auto;padding:2px 9px;font-size:11.5px;background:#1f6feb;border-color:#1f6feb;color:#fff}#tl.scrub #tlResume{display:inline-block}
+#tlRead{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--fg);overflow:hidden;text-overflow:ellipsis}#tl.scrub #tlRead{margin-left:auto}#tl.scrub #tlResume{margin-left:4px}
+#tl .hd>span:not(#tlRead){flex:none}#tl.scrub .hd>span:not(#tlRead){display:none}
+#mapwrap{transition:width .2s}#mapwrap.big #map{width:380px;height:380px}#map{cursor:crosshair}
+#mapX{position:absolute;right:6px;top:6px;margin:0;padding:0 6px;font-size:13px;line-height:20px;background:#0d1117cc}
+#mapTip{position:absolute;z-index:4;pointer-events:none;display:none;background:#0d1117f2;border:1px solid #58a6ff;border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.45;font-variant-numeric:tabular-nums;max-width:240px}
+#mapTip .cls{font-weight:700}#mapTip .hint{color:var(--mut);font-size:11px}
+#banner{top:auto;bottom:182px;max-width:calc(100% - 40px)}#log{display:none}#touch{bottom:182px}
+#tools{max-width:calc(100% - 270px)}#hud{min-width:230px}
+/* "body" raises specificity over the older mobile block further down */
+@media (max-width:800px){body #tl{bottom:8px;height:104px}body #tl canvas{height:72px}body #banner{bottom:122px}body #touch{bottom:122px}body #mapwrap.big #map{width:240px;height:240px}body #tools{max-width:none}body #mapwrap{top:44px}.maphint{display:none}}
 @media (max-width:800px){#help,#cmp{position:fixed;z-index:20}body{grid-template-columns:1fr;grid-template-rows:58vh auto;overflow:auto}#main{grid-row:1}#side{grid-row:2;border-right:0}
  #map{width:130px;height:130px}#hud{min-width:0;font-size:11px;padding:5px}#log{display:none}#tools{top:6px;left:6px;right:6px;flex-wrap:nowrap;overflow-x:auto;gap:4px}#tools button{font-size:11.5px;padding:4px 7px;min-height:30px;white-space:nowrap;flex:none}#hud{top:44px}#mapwrap{top:44px;padding:3px}#mapwrap .legend{font-size:10px;max-width:130px!important}#banner{top:auto;bottom:130px;font-size:13px}#touch{bottom:52px}#touch{grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px)}#touch button{width:48px;height:48px}}
 </style></head><body>
@@ -50,22 +73,29 @@ table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td{p
   <div id="scnInfo" class="src" style="margin-top:4px"></div>
   <label>Rule-book the guard trusts (&ldquo;certifier&rdquo;)</label><select id="cert"></select>
   <table id="met" style="margin-top:4px"></table>
+  <div id="trade" aria-label="Certifier trade-off chart"><div class="tt"><span><b style="color:var(--fg)">Danger vs. caution</b> · click a dot</span><span class="seg" role="group" aria-label="Region"><button data-r="all" class="on">whole map</button><button data-r="gap">gap only</button></span></div>
+    <svg id="tradeSvg" viewBox="0 0 290 150" role="img" aria-label="False-safe vs false-unsafe volume per certifier"></svg>
+    <ul id="tradeList"></ul>
+    <div class="src">Each dot is one rule-book. Up = more <b style="color:var(--fs)">false-safe</b> (dangerous), right = more <b style="color:var(--warn)">false-unsafe</b> (over-cautious). Bottom-left is ideal. Numbers computed in Python on the full grid.</div></div>
   <h2>Control</h2>
   <label>Driver</label><select id="pol"></select>
   <div style="margin-top:6px"><button id="shieldBtn" class="big on">Shield ON (space)</button><button id="resetBtn" class="big">Reset (R)</button></div>
   <div><button id="pauseBtn">Pause (P)</button><button id="replayBtn">Replay last (L)</button><button id="randStart">Random start</button></div>
   <label><input type="checkbox" id="autoReset" checked style="width:auto"> auto-restart after crash/timeout</label>
+  <label for="marg">Shield trigger margin <span class="tag expl">exploratory</span></label>
+  <div class="mrow"><input type="range" id="marg" min="0" max="0.6" step="0.01" aria-describedby="margNote"><b id="margV"></b><button id="margReset" title="Back to the exported value" style="padding:2px 7px">↺</button></div>
+  <div class="src" id="margNote">The guard takes over when V̂ drops below this line (dotted white on the map). Higher = steps in earlier. Changes only the in-browser shield, not the Python FSV/FUV.</div>
   <h2>What just happened</h2><ul id="wjh" aria-live="polite"></ul>
   <h2>Score</h2><table id="score"></table>
-  <h2>Batch: run N episodes (in-browser)</h2>
+  <details class="sec"><summary>Batch: run N episodes (in-browser)</summary>
   <div style="display:flex;gap:6px"><input id="bN" type="number" value="50" min="5" max="1000" style="width:70px"><select id="bPol"></select></div>
   <button id="batchBtn" style="margin-top:4px">Run batch (B)</button><progress id="bProg" value="0" max="1" style="display:none"></progress>
   <table id="batchres"></table>
-  <div class="src" id="batchNote"></div>
-  <h2>Provenance</h2><div id="prov" class="src"></div>
+  <div class="src" id="batchNote"></div></details>
+  <details class="sec"><summary>Provenance</summary><div id="prov" class="src"></div></details>
 </div>
 <div id="main"><canvas id="c3d" aria-label="3D view of the simulated system"></canvas>
-  <div id="tools"><button id="cmpBtn" title="Run two set-ups side by side (V)">⇆ Compare side by side</button><button id="shareBtn" title="Copy a link to this exact set-up (U)">🔗 Copy share link</button><button id="keysBtn" title="Keyboard and help (H or ?)">⌨ Help</button><button id="wmBtn" title="World-model panel">🧠 Learned from pixels</button></div>
+  <div id="tools"><button id="cmpBtn" title="Run two set-ups side by side (V)">⇆ Compare</button><button id="shareBtn" title="Copy a link to this exact set-up (U)">🔗 Share</button><button id="keysBtn" title="Keyboard and help (H or ?)">⌨ Help</button><button id="wmBtn" title="World-model panel">🧠 Learned from pixels</button></div>
   <div id="cmp" role="dialog" aria-label="Compare side by side"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center">
     <b>Compare side by side</b><label style="margin:0">B =</label><select id="cmpB" style="max-width:320px" aria-label="Second set-up"></select>
     <button id="cmpRestart">Restart both</button><label style="margin:0"><input type="checkbox" id="cmpLoop" checked style="width:auto"> loop</label><button id="cmpClose">Close (Esc)</button></div>
@@ -75,9 +105,12 @@ table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td{p
     <ul id="cmpLog" aria-live="polite"></ul>
     <p class="src" style="text-align:center">Same start, same driver, same physics; only the certifier / shield differs. Map colours as in the mini-map. In-browser simulation (exploratory).</p></div>
   <div id="hud"></div><div id="banner"></div>
-  <div id="mapwrap"><canvas id="map" width="160" height="160"></canvas>
+  <div id="tl" aria-label="Safety-value timeline of this episode"><div class="hd"><b>Timeline</b><span title="the true safety value (HJ, real physics)"><i class="sw" style="background:#2ea043"></i>V_true</span><span title="what the guard's rule-book believes"><i class="sw" style="background:#58a6ff"></i>V̂ guard</span><span><i class="sw" style="background:#ff2bd655;height:9px"></i>false-safe</span><span><i class="sw" style="background:#d29922"></i>override</span><span id="tlRead">drag to rewind</span><button id="tlResume">▶ Back to live</button></div>
+    <canvas id="tlc" aria-label="Plot of V_true and V-hat over time; drag to scrub"></canvas></div>
+  <div id="mapTip"></div>
+  <div id="mapwrap"><button id="mapX" title="Bigger map">⤢</button><canvas id="map" width="160" height="160" aria-label="State-space map; hover to inspect, click to start from that state"></canvas>
     <div class="src legend" id="mapcap" style="max-width:230px"></div>
-    <div class="src legend"><span style="background:#2ea043"></span>safe<span style="background:#ff2bd6"></span>false-safe<span style="background:#d29922"></span>false-unsafe<br><span style="background:#30363d"></span>truly unsafe<span style="background:#6e1b1b"></span>hazard<span style="border:1px dashed #58a6ff"></span>gap</div></div>
+    <div class="src legend"><span style="background:#2ea043"></span>safe<span style="background:#ff2bd6"></span>false-safe<span style="background:#d29922"></span>false-unsafe<br><span style="background:#30363d"></span>truly unsafe<span style="background:#6e1b1b"></span>hazard<span style="border:1px dashed #58a6ff"></span>gap<span style="border-top:2px dotted #fff;height:0;border-radius:0"></span>trigger<span class="maphint"><br><b style="color:var(--fg)">Hover</b> to inspect · <b style="color:var(--fg)">click</b> to start there</span></div></div>
   <div id="log"></div>
   <div id="touch"><span></span><button data-k="up">▲</button><span></span><button data-k="left">◀</button><button data-k="down">▼</button><button data-k="right">▶</button></div>
   <div id="help"><div class="card">
@@ -92,7 +125,9 @@ table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td{p
     <p><b>Map (top right):</b> every possible position and speed. <span style="color:#2ea043">Green</span> = safe and the guard knows it. <b style="color:#ff2bd6">Pink</b> = the guard thinks it is safe but it is not (a trap). <span style="color:#d29922">Amber</span> = over-cautious. Dark = truly unsafe. The dashed blue band is where the real physics differ from the guard's model. <b>Left panel:</b> &ldquo;What just happened&rdquo; explains each event in plain words. The score adds 10 per second survived and 20 per second near the goal, and takes off 100 per crash.</p>
     <h2>Keys</h2>
     <p><kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> and <kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>S</kbd> drive (gamepad left stick and the on-screen pad work too) ·
-    <kbd>Space</kbd> shield on/off · <kbd>R</kbd> reset · <kbd>T</kbd> random start · <kbd>P</kbd> pause · <kbd>L</kbd> replay last episode · <kbd>N</kbd>/<kbd>Shift+N</kbd> next/prev scenario · <kbd>V</kbd> compare side by side · <kbd>U</kbd> copy share link · <kbd>H</kbd>/<kbd>?</kbd> this help · <kbd>Esc</kbd> close · <kbd>C</kbd> next certifier · <kbd>M</kbd> next driver (manual / go-to-goal / random / adversarial) · <kbd>B</kbd> batch · <kbd>H</kbd> this help.</p>
+    <kbd>Space</kbd> shield on/off · <kbd>R</kbd> reset · <kbd>T</kbd> random start · <kbd>P</kbd> pause · <kbd>L</kbd> replay last episode · <kbd>N</kbd>/<kbd>Shift+N</kbd> next/prev scenario · <kbd>V</kbd> compare side by side · <kbd>U</kbd> copy share link · <kbd>H</kbd>/<kbd>?</kbd> this help · <kbd>Esc</kbd> close · <kbd>C</kbd> next certifier · <kbd>M</kbd> next driver (manual / go-to-goal / random / adversarial) · <kbd>B</kbd> batch · <kbd>[</kbd>/<kbd>]</kbd> rewind / step forward one frame (<kbd>Shift</kbd>: 10 frames) · <kbd>H</kbd> this help.</p>
+    <h2>New: see the mistake happen</h2>
+    <p><b>Timeline (bottom):</b> the green line is the true safety value, the blue line is what the guard believes. Where blue is above zero but green is below, the stretch is shaded <b style="color:#ff2bd6">pink</b>: that is a false-safe trap. Drag across it to rewind the episode and see where the robot was. <b>Map:</b> hover any point for its values, click to start an episode right there (try a pink spot). <b>Danger vs. caution chart</b> (left): every rule-book's false-safe and false-unsafe volume, computed in Python; switch to <i>gap only</i> to see that most of the danger lives where the training data was missing. <b>Shield trigger margin</b> (exploratory): move the dotted line and watch the guard step in earlier or later.</p>
     <details><summary>For the technically curious (the maths)</summary>
     
     <p>Each <b>scenario</b> is a system with <b>hidden physics</b> (a region, the <i>gap</i>, where the true dynamics differ from the model the certifier was built on), a <b>hazard</b>, and a choice of <b>certifiers</b>. The <b>shield</b> lets your input through while the certifier's value <b>V̂(x) ≥ margin</b>; otherwise it overrides you with the candidate control that maximises V̂ one step ahead under the nominal model (exactly <code>lcert.framework.policies.SafetyFilter</code>).</p>
@@ -146,5 +181,6 @@ python scripts/build_site.py   # optional: rebuild the static site</pre>
  if(!fs.length){const s=document.createElement('script');s.src='gym.js';document.body.appendChild(s);return;}
  fs.forEach(f=>{const s=document.createElement('script');s.src='data/'+f+'.js';s.onload=s.onerror=()=>{if(++n===fs.length){const g=document.createElement('script');g.src='gym.js';document.body.appendChild(g);}};document.body.appendChild(s);});})();
 </script>
+<script src="gym_insight.js"></script>
 <script src="../common/explain.js" data-page="gym" data-up="../"></script>
 </body></html>
