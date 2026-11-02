@@ -8,10 +8,10 @@ SNIP = ROOT / "examples/framework/my_certifier.py"
 
 
 def test_snippet_in_gym_matches_example_file():
-    page = (ROOT / "demos/gym/index.html").read_text()
+    page = (ROOT / "demos/gym/index.html").read_text(encoding="utf-8")
     m = re.search(r'<pre id="tyoCode"[^>]*>(.*?)</pre>', page, re.S)
     assert m, "Try-your-own snippet missing from the gym help"
-    assert html.unescape(m.group(1)).strip() == SNIP.read_text().strip()
+    assert html.unescape(m.group(1)).strip() == SNIP.read_text(encoding="utf-8").strip()
     assert "docs/FRAMEWORK.md" in page and "--plugin examples/framework/my_certifier.py" in page
 
 

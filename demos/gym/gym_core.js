@@ -57,6 +57,12 @@ const MIRRORS={
     ft:(x,u)=>[P.speed*Math.cos(x[2]),P.speed*Math.sin(x[2])+(x[1]>=P.slope_lo?P.drift:0),u[0]],
     fn:(x,u)=>[P.speed*Math.cos(x[2]),P.speed*Math.sin(x[2]),u[0]],
     l:x=>Math.min(P.cliff-x[1],Math.hypot(x[0]-p[0],x[1]-p[1])-p[2])};},
+  track_race(P){const ice=P.ice||[1,2.6,-1.35,1.35];return{
+    ft:(x,u)=>{const on=x[0]>=ice[0]&&x[0]<=ice[1]&&x[1]>=ice[2]&&x[1]<=ice[3];
+      const v=on?P.speed*(1-P.speed_loss):P.speed,w=on?(1-P.slip)*u[0]:u[0];
+      return[v*Math.cos(x[2]),v*Math.sin(x[2]),w];},
+    fn:(x,u)=>[P.speed*Math.cos(x[2]),P.speed*Math.sin(x[2]),u[0]],
+    l:x=>{const r=Math.hypot(x[0],x[1]);return Math.min(P.r_outer-r,r-P.r_inner);}};},
 };
 
 // Tabulated fallback for user-defined envs: f(x,u) interpolated on the grid; linear in u

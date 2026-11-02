@@ -139,11 +139,14 @@ Built-in scenarios (all low-dimensional reductions, stated in the UI):
 | `boat_rocks` | `boat_current` | (x, y) holonomic | cross-current (0.2, −1.0) m/s near shore | rock, shore |
 | `car_slippery` | `dubins_slippery` | (x, y, θ) | slippery patch | obstacle |
 | `rover_cliff` | `rover_cliff3d` | (x, y, θ) | scree drift toward the cliff | cliff edge, pit |
+| `track_ice` | `track_race` | (x, y, θ) on an annulus | ice corner: slower + understeer | leave the track |
 | `my_rover` | user plug-in (`examples/framework/my_rover.py`) | (p, v) | slope | cliff |
+
+`track_ice` is the World Models (Ha & Schmidhuber 2018, arXiv:1803.10122) CarRacing-v0 task reduced to 3D Dubins so FSV is exact HJ, not a 64×64 pixel dream. Gym numbers for it are exploratory.
 
 Every scenario includes an `oracle` case (V_hat = V_true; a sanity check, not a certifier).
 
-In the browser (`gym_core.js`) the six built-in envs have hand-written JS mirrors of the Python
+In the browser (`gym_core.js`) the built-in envs have hand-written JS mirrors of the Python
 dynamics and hazards; user-defined envs are driven by f_true / f_nom tabulated on the grid by the
 exporter (multilinear interpolation; approximate at discontinuities). Simulation is RK4 at dt=0.02 s
 under the true dynamics; the shield is `SafetyFilter` (keep the driver's control while V_hat(x) ≥ margin,

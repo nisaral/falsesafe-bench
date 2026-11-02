@@ -60,7 +60,7 @@ def test_export_synthetic(tmp_path):
     out = tmp_path / "out"
     assert X.main(["--tag", "faketag", "--src", str(src), "--out", str(out)]) == 0
     obj = X.read_js(out / "faketag__QA_s3.js")
-    idx = (out / "index.js").read_text()
+    idx = (out / "index.js").read_text(encoding="utf-8")
     assert "faketag__QA_s3" in idx
     assert obj["schema"] == "falsesafe.worldmodel_demo/v1"
     assert obj["status"]["exploratory"] and obj["status"]["dev_seeds"] and obj["status"]["gates_passed"] is False
@@ -119,7 +119,7 @@ REAL_MAIN = REAL.parent / "sweep_main"
 
 
 def _index(out: Path):
-    t = (out / "index.js").read_text()
+    t = (out / "index.js").read_text(encoding="utf-8")
     files = json.loads(t.split("window.FSB_WM_FILES=", 1)[1].split(";\n", 1)[0])
     meta = json.loads(t.split("window.FSB_WM_META=", 1)[1].rsplit(";", 1)[0])
     return files, meta
@@ -139,7 +139,7 @@ def test_real_sweep_main_and_sup(tmp_path):
     assert meta["gates_passed"] is False and "gates not passed" in meta["label"]
     # every metric equals the source JSON
     for f in main + sup:
-        d = json.loads((REAL.parent / f["tag"] / f"{f['condition']}_s{f['seed']}.json").read_text())
+        d = json.loads((REAL.parent / f["tag"] / f"{f['condition']}_s{f['seed']}.json").read_text(encoding="utf-8"))
         assert f["FSV"] == pytest.approx(d["decomposition"]["V_full"]["FSV"])
         assert f["fold"] == pytest.approx(d["geometry"]["fold_frac_C25"])
         assert f["spearman"] == pytest.approx(d["geometry"]["spearman_state_latent"])
@@ -154,7 +154,7 @@ def test_real_sweep_main_and_sup(tmp_path):
     # gates: recomputed from data == parsed from doc == the doc's literal sentence
     assert meta["gates_per_seed"]["main"]["QA"] == meta["doc_gates"]["main"]["per_seed"]
     assert meta["gates_per_seed"]["sup"]["QA"] == meta["doc_gates"]["sup"]["per_seed"]
-    txt = DOC.read_text()
+    txt = DOC.read_text(encoding="utf-8")
     assert "G1 5/10, G4 0/10 (FSV_enc part only: 3/10), C2.5 2/10" in txt
     g = meta["doc_gates"]["main"]["per_seed"]
     assert (g["G1"]["pass"], g["G4"]["pass"], g["G4_FSV_enc_part"]["pass"], g["C2.5"]["pass"]) == (5, 0, 3, 2)
@@ -199,19 +199,19 @@ def test_shipped_demo_files_are_labelled():
         obj = X.read_js(f)
         assert obj["schema"] == "falsesafe.worldmodel_demo/v1"
         assert obj["status"]["gates_passed"] is False and obj["status"]["exploratory"] is True
-        assert "EXPLORATORY" in f.read_text()[:200]
+        assert "EXPLORATORY" in f.read_text(encoding="utf-8")[:200]
 
 
 def test_panel_wired_and_has_empty_state():
-    js = (ROOT / "demos/common/worldmodel.js").read_text()
+    js = (ROOT / "demos/common/worldmodel.js").read_text(encoding="utf-8")
     assert "No world-model data in this build" in js and "gates not passed" in js
     for page in ("demos/gym/index.html", "demos/viewer3d/index.html"):
-        h = (ROOT / page).read_text()
+        h = (ROOT / page).read_text(encoding="utf-8")
         assert "../common/worldmodel.js" in h and 'id="wmBtn"' in h
 
 
 def test_panel_honesty_labels():
-    js = (ROOT / "demos/common/worldmodel.js").read_text()
+    js = (ROOT / "demos/common/worldmodel.js").read_text(encoding="utf-8")
     assert js.count("exploratory · dev seeds · gates not passed") >= 1 and "header()" in js
     assert "tuning seed — not representative" in js
     assert "different encoder: trained with the true state" in js.lower()

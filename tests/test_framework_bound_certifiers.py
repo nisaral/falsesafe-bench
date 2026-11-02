@@ -103,7 +103,7 @@ def test_preset_comparison_export(tmp_path):
                            "E": {"certifier": "ensemble", "params": {"k": 2}}},
         sweep={"certifier": ["E", "C0", "L"]}, display_n=13)
     run_experiment(spec, out_dir=tmp_path, verbose=False)
-    d = json.loads((tmp_path / "cmp.json").read_text())
+    d = json.loads((tmp_path / "cmp.json").read_text(encoding="utf-8"))
     assert [c["certifier"] for c in d["cases"]] == ["ensemble", "conformal_C0", "distance_aware"]
     assert d["sweep_keys"] == ["certifier"] and "eps0" in d["cases"][2]["certifier_info"]
-    assert "window.FSB_DATASETS" in (tmp_path / "bundle.js").read_text()
+    assert "window.FSB_DATASETS" in (tmp_path / "bundle.js").read_text(encoding="utf-8")

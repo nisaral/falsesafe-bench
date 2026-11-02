@@ -1,0 +1,16 @@
+# Circular-track Dubins car with a hidden ice corner (CarRacing-v0 reduction).
+# Exploratory framework run: not a preregistered P1/P2 result.
+name: track_race
+env: track_race
+env_params: {grid_size: 41, accuracy: low}
+certifier: nominal_inflated
+certifier_params: {sigma: 0.2, dims: [0, 1, 2]}
+policies:
+  - {name: dubins_goal, params: {goal: [0.0, 1.85]}}
+initial_states: [[0.0, -1.85, 0.0], [1.85, 0.0, 1.5708]]
+sweep:
+  env.slip: [0.0, 0.55]
+  certifier.k: [0, 2]
+slice_values: [-1.5708, 0.0, 1.5708, 3.1416]
+dt: 0.05
+steps: 140

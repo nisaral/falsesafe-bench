@@ -1,5 +1,14 @@
 # World-model panel ("Learned from pixels") — plain-language guide and data schema
 
+> **How this relates to Ha & Schmidhuber 2018.** *World Models* (arXiv:1803.10122) trained a
+> VAE (pixels → latent) + MDN-RNN (latent dynamics) + a tiny controller **inside the dream**,
+> on CarRacing-v0 and ViZDoom. This repo uses the same three-part stack (encoder, latent
+> dynamics, learned margin) from a different question: **how often is a safety certificate
+> computed in that dream false-safe**, compared with exact Hamilton-Jacobi on the real state.
+> That is why the confirmatory protocol (`PREREGISTRATION_v2.md`) keeps the latent at 2D and
+> the gym's `track_ice` scenario is CarRacing reduced to 3D Dubins rather than Box2D 64×64 RGB.
+> Raw CarRacing / Dreamer-style walkers exceed the grid-solver limit; they stay gated.
+
 > **Status: exploratory · dev seeds · gates not passed.** Nothing in this panel shows that the
 > world model works. It shows *where* and *why* it currently fails, so the numbers are a diagnostic, not a result.
 

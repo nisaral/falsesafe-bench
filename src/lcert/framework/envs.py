@@ -187,3 +187,52 @@ def rover_cliff3d(speed=0.6, turn_rate=1.5, cliff=2.0, slope_lo=0.8, drift=0.35,
         params=dict(speed=speed, turn_rate=turn_rate, cliff=cliff, slope_lo=slope_lo, drift=drift, pit=list(pit),
                     horizon=horizon, grid_size=grid_size),
         description="Unicycle rover near a cliff (3D) with a hidden scree slope.")
+
+
+@register_env("track_race")
+def track_race(speed=1.0, turn_rate=1.8, r_inner=1.2, r_outer=2.5,
+               ice=(1.0, 2.6, -1.35, 1.35), slip=0.55, speed_loss=0.4,
+               horizon=1.2, grid_size=41, accuracy="low",
+               lo=(-3.0, -3.0, -np.pi), hi=(3.0, 3.0, np.pi)):
+    """Dubins car on a circular track — CarRacing-v0 reduced to 3D HJ.
+
+    Ha & Schmidhuber, *World Models* (arXiv:1803.10122) trained a VAE + MDN-RNN on
+    64×64 pixel CarRacing and a controller *inside the dream*.  This env is the
+    same task family (stay on a closed track) at (x, y, heading) so the repo's
+    grid solver can measure exact false-safe volume of a certifier that does not
+    know about a hidden ice corner.  It is not Box2D and not pixels; those exceed
+    the 3D grid limit.  Pixel world-model FSV on this env is the v2 protocol.
+
+    Failure: off the annulus ``r_inner <= hypot(x,y) <= r_outer``.
+    True: inside the ice box, speed × (1 − speed_loss) and turn × (1 − slip).
+    Nominal: dry constant-speed Dubins.
+    """
+    x0, x1, y0, y1 = ice
+
+    def f_nom(x, u):
+        return jnp.array([speed * jnp.cos(x[2]), speed * jnp.sin(x[2]), u[0]])
+
+    def f_true(x, u):
+        on = (x[0] >= x0) & (x[0] <= x1) & (x[1] >= y0) & (x[1] <= y1)
+        v = jnp.where(on, speed * (1.0 - speed_loss), speed)
+        w = jnp.where(on, (1.0 - slip) * u[0], u[0])
+        return jnp.array([v * jnp.cos(x[2]), v * jnp.sin(x[2]), w])
+
+    def l(s):
+        r = jnp.sqrt(s[..., 0] ** 2 + s[..., 1] ** 2)
+        return jnp.minimum(r_outer - r, r - r_inner)
+
+    return Environment(
+        name="track_race", state_names=("x", "y", "heading"), lo=lo, hi=hi,
+        true_dynamics=f_true, nominal_dynamics=f_nom,
+        controls=np.array([[-turn_rate], [0.0], [turn_rate]]),
+        hazard=Hazard(l, f"off-track: r not in [{r_inner}, {r_outer}]"),
+        horizon=horizon, grid_size=int(grid_size), periodic_dims=(2,), accuracy=accuracy,
+        gap=GapRegion((x0, y0, -np.pi), (x1, y1, np.pi),
+                      f"hidden ice corner x in [{x0},{x1}], y in [{y0},{y1}]: "
+                      f"speed x{1 - speed_loss:.2f}, turn x{1 - slip:.2f}"),
+        params=dict(speed=speed, turn_rate=turn_rate, r_inner=r_inner, r_outer=r_outer,
+                    ice=list(ice), slip=slip, speed_loss=speed_loss,
+                    horizon=horizon, grid_size=grid_size),
+        description="Dubins car on a circular track with a hidden ice corner "
+                    "(CarRacing-v0 reduction; exact 3D HJ).")

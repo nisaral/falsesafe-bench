@@ -61,6 +61,37 @@ def test_simulate_and_filter():
     assert not filt["hit_failure"]
 
 
+def test_track_race_is_on_track_and_ice_changes_dynamics():
+    """CarRacing analog: on-track is safe, off-track is failure, ice slows and understeers."""
+    env = ENVS["track_race"](grid_size=15)
+    mid = 0.5 * (env.params["r_inner"] + env.params["r_outer"])
+    on = np.array([0.0, -mid, 0.0])
+    off = np.array([0.0, 0.0, 0.0])  # origin is the infield
+    assert float(env.hazard(on)) > 0
+    assert float(env.hazard(off)) < 0
+    ice = np.array([1.8, 0.0, 0.0])  # right-hand corner, on the ring
+    assert float(env.hazard(ice)) > 0
+    u = np.array([env.params["turn_rate"]])
+    nom = np.asarray(env.nominal_dynamics(ice, u))
+    tru = np.asarray(env.true_dynamics(ice, u))
+    dry = np.asarray(env.true_dynamics(on, u))
+    assert tru[2] < nom[2]  # less turn on ice
+    assert np.hypot(tru[0], tru[1]) < np.hypot(nom[0], nom[1])  # slower on ice
+    assert np.allclose(dry, np.asarray(env.nominal_dynamics(on, u)))
+
+
+def test_track_race_oracle_fsv_near_zero():
+    env = ENVS["track_race"](grid_size=15, horizon=0.6, accuracy="low")
+    res = run_case(env, OracleCertifier(), ExperimentSpec(name="t"))
+    assert res["metrics"]["fsv"] < 1e-3
+    g = make_grid(env)
+    _, v_true = ground_truth(env)
+    _, v_nom = solve_brt(env, env.nominal_dynamics, None, g)
+    # Coarse 15^3 + short T can give FSV=0 after the 3-cell border; the ice still
+    # has to change the value field, which the gym 41^3 export measures as FSV.
+    assert float(np.max(np.abs(np.asarray(v_true) - np.asarray(v_nom)))) > 0.01
+
+
 def test_gridvalue_periodic():
     env = ENVS["dubins_slippery"](grid_size=15)
     g = make_grid(env)
@@ -74,14 +105,14 @@ def test_export_schema_and_bundle(tmp_path):
                           policies=[{"name": "di_go_to"}], initial_states=[[1.5, -1.0]],
                           sweep={"certifier.k": [0, 2]}, steps=20, display_n=16)
     doc = run_experiment(spec, out_dir=tmp_path, verbose=False)
-    d = json.loads((tmp_path / "tiny.json").read_text())
+    d = json.loads((tmp_path / "tiny.json").read_text(encoding="utf-8"))
     assert d["schema"] == "falsesafe.framework/v1" and d["illustrative"] is False
     assert len(d["cases"]) == 2 and d["sweep_keys"] == ["certifier.k"]
     c = d["cases"][0]
     assert len(c["v_true"][0]) == len(d["axes"][0]) and len(c["v_true"][0][0]) == len(d["axes"][1])
     assert {t["mode"] for t in c["trajectories"]} == {"unfiltered", "filtered_by_certifier"}
     assert c["metrics"]["fsv"] == doc["cases"][0]["metrics"]["fsv"]
-    assert "window.FSB_DATASETS" in rebuild_bundle(tmp_path).read_text()
+    assert "window.FSB_DATASETS" in rebuild_bundle(tmp_path).read_text(encoding="utf-8")
 
 
 def test_cli_with_user_plugin(tmp_path):
@@ -93,4 +124,4 @@ def test_cli_with_user_plugin(tmp_path):
                         "--plugin", str(ROOT / "examples/framework/my_rover.py")],
                        capture_output=True, text=True, cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT / "src")})  # full env: Windows needs SYSTEMROOT etc.
     assert r.returncode == 0, r.stderr[-2000:]
-    assert json.loads((tmp_path / "rover_t.json").read_text())["env"]["name"] == "rover_cliff"
+    assert json.loads((tmp_path / "rover_t.json").read_text(encoding="utf-8"))["env"]["name"] == "rover_cliff"

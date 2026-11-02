@@ -30,7 +30,7 @@ function mapTexture(){const t=new THREE.CanvasTexture($('map'));t.magFilter=THRE
 function buildScene(){
   scene.remove(W);W=new THREE.Group();scene.add(W);dyn=[];const e=S.env,pr=e.params,kind=S.doc.render;
   const lo=e.lo,hi=e.hi;
-  if(['car','rover','boat','point'].includes(kind)&&!(kind==='point'&&false)){
+  if(['car','rover','boat','point','track'].includes(kind)&&!(kind==='point'&&false)){
     SC=16/Math.max(hi[0]-lo[0],hi[1]-lo[1]);
     const gw=(hi[0]-lo[0])*SC,gd=(hi[1]-lo[1])*SC,cx=(lo[0]+hi[0])/2,cy=(lo[1]+hi[1])/2;
     const ground=new THREE.Mesh(new THREE.PlaneGeometry(gw,gd),new THREE.MeshBasicMaterial({map:mapTexture(),transparent:true,opacity:kind==='boat'?0.55:0.9}));
@@ -43,11 +43,18 @@ function buildScene(){
       dyn.push(dt=>arrows.forEach(a=>{const u=a.userData;u.x+=pr.current[0]*dt;u.y+=pr.current[1]*dt;if(u.y<pr.band[0]){u.y=pr.band[1];}if(u.x>hi[0])u.x=lo[0];a.position.copy(P(u.x,u.y,0.15));}));}
     if(kind==='car'){const ob=pr.obstacle||[0,0,0.8];const c=cyl(ob[2]*SC,1.4,0xbf3333);c.position.copy(P(ob[0],ob[1],0.7));W.add(c);
       const pa=pr.patch||[0.8,2,-1.5,1.5];const ice=box((pa[1]-pa[0])*SC,0.03,(pa[3]-pa[2])*SC,0x9fd4ff,{transparent:true,opacity:0.35,metalness:0.6,roughness:0.05});ice.position.copy(P((pa[0]+pa[1])/2,(pa[2]+pa[3])/2,0.04));W.add(ice);}
+    if(kind==='track'){const rin=pr.r_inner,rout=pr.r_outer;
+      const curb=(r,c)=>{const m=new THREE.Mesh(new THREE.TorusGeometry(r*SC,0.07,8,64),M(c));m.rotation.x=Math.PI/2;m.position.y=0.08;W.add(m);};
+      curb(rout,0xbf3333);curb(rin,0xbf3333);
+      const mid=new THREE.Mesh(new THREE.RingGeometry(((rin+rout)/2-0.03)*SC,((rin+rout)/2+0.03)*SC,72),new THREE.MeshBasicMaterial({color:0xd4a017,side:THREE.DoubleSide}));
+      mid.rotation.x=-Math.PI/2;mid.position.y=0.03;W.add(mid);
+      const pa=pr.ice||[1,2.6,-1.35,1.35];const ice=box((pa[1]-pa[0])*SC,0.03,(pa[3]-pa[2])*SC,0x9fd4ff,{transparent:true,opacity:0.45,metalness:0.6,roughness:0.05});
+      ice.position.copy(P((pa[0]+pa[1])/2,(pa[2]+pa[3])/2,0.045));W.add(ice);}
     if(kind==='rover'){const drop=box(gw,6,(hi[1]-pr.cliff)*SC,0x1a0d0d);drop.position.copy(P(cx,(pr.cliff+hi[1])/2,-3.05));W.add(drop);
       const edge=box(gw,0.25,0.15,0xf85149);edge.position.copy(P(cx,pr.cliff,0.12));W.add(edge);
       const pit=cyl(pr.pit[2]*SC,0.06,0x050505,null,40);pit.position.copy(P(pr.pit[0],pr.pit[1],0.03));W.add(pit);
       const scree=box(gw,0.02,(pr.cliff-pr.slope_lo)*SC,0x8a6d3b,{transparent:true,opacity:0.3});scree.position.copy(P(cx,(pr.cliff+pr.slope_lo)/2,0.03));W.add(scree);}
-    if(kind==='car'){agent=new THREE.Group();const b=box(0.9,0.35,0.5,0x58a6ff);b.position.y=0.3;agent.add(b);const cab=box(0.45,0.25,0.42,0xcfe3ff);cab.position.set(-0.05,0.58,0);agent.add(cab);
+    if(kind==='car'||kind==='track'){agent=new THREE.Group();const b=box(0.9,0.35,0.5,0x58a6ff);b.position.y=0.3;agent.add(b);const cab=box(0.45,0.25,0.42,0xcfe3ff);cab.position.set(-0.05,0.58,0);agent.add(cab);
       for(const[a,c]of[[0.3,0.27],[0.3,-0.27],[-0.3,0.27],[-0.3,-0.27]]){const w=cyl(0.13,0.1,0x111111);w.rotation.x=Math.PI/2;w.position.set(a,0.13,c);agent.add(w);}}
     else if(kind==='rover'){agent=new THREE.Group();const b=box(0.8,0.3,0.6,0xd29922);b.position.y=0.35;agent.add(b);const m=cyl(0.04,0.6,0xcccccc);m.position.set(-0.2,0.8,0);agent.add(m);const h=box(0.15,0.12,0.25,0xffffff);h.position.set(-0.2,1.1,0);agent.add(h);
       for(const a of[0.3,0,-0.3])for(const c of[0.34,-0.34]){const w=cyl(0.12,0.08,0x222222);w.rotation.x=Math.PI/2;w.position.set(a,0.12,c);agent.add(w);}}
@@ -86,20 +93,20 @@ function buildScene(){
   ring=new THREE.Mesh(new THREE.RingGeometry(0.55,0.72,32),new THREE.MeshBasicMaterial({color:0x2ea043,side:THREE.DoubleSide,transparent:true,opacity:0.9}));ring.rotation.x=-Math.PI/2;
   W.add(agent);W.add(ring);
   trail=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.6}));W.add(trail);
-  goalM=null;const g=S.doc.goal;if(g&&['car','rover','boat','point'].includes(kind)){goalM=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.06,8,32),M(0x2ea043,{emissive:0x2ea043}));goalM.rotation.x=Math.PI/2;goalM.position.copy(P(g[0],kind==='point'?0:g[1],0.1));W.add(goalM);}
+  goalM=null;const g=S.doc.goal;if(g&&['car','rover','boat','point','track'].includes(kind)){goalM=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.06,8,32),M(0x2ea043,{emissive:0x2ea043}));goalM.rotation.x=Math.PI/2;goalM.position.copy(P(g[0],kind==='point'?0:g[1],0.1));W.add(goalM);}
   else if(g&&kind==='cart'){goalM=box(0.08,0.02,1.25,0x2ea043);goalM.position.set(g[0]*SC,0.08,0);W.add(goalM);}
   else if(g&&kind==='drone'){goalM=box(12,0.02,0.02,0x2ea043);goalM.position.y=g[0]*SC;W.add(goalM);}
   spark=new THREE.Points(new THREE.BufferGeometry(),new THREE.PointsMaterial({color:0xff7b54,size:0.25}));spark.userData={v:[],t:0};W.add(spark);
 }
 function agentPose(x){const k=S.doc.render;
-  if(k==='car'||k==='rover'){agent.position.copy(P(x[0],x[1]));agent.rotation.y=x[2];}
+  if(k==='car'||k==='rover'||k==='track'){agent.position.copy(P(x[0],x[1]));agent.rotation.y=x[2];}
   else if(k==='boat'){agent.position.copy(P(x[0],x[1]));const u=ST.lastU||[0,0];if(Math.hypot(u[0],u[1])>0.05)agent.rotation.y=Math.atan2(u[1],u[0]);}
   else if(k==='point'){agent.position.copy(P(x[0],0));}
   else if(k==='cart'){agent.position.set(x[0]*SC,0,0);}
   else if(k==='drone'){agent.position.set(0,x[0]*SC,0);agent.rotation.z=-0.15*(ST.lastU?ST.lastU[0]:0)*0;}
   else if(k==='pendulum'){agent.rotation.z=-x[0];}
   const p=agent.position;ring.position.set(p.x,(k==='drone'?p.y-0.3:k==='pendulum'?-0.15:0.05),p.z);if(k==='drone'||k==='pendulum')ring.rotation.x=-Math.PI/2;}
-function worldPt(x){const k=S.doc.render;if(k==='car'||k==='rover'||k==='boat')return P(x[0],x[1],0.08);if(k==='point')return P(x[0],0,0.08);
+function worldPt(x){const k=S.doc.render;if(k==='car'||k==='rover'||k==='boat'||k==='track')return P(x[0],x[1],0.08);if(k==='point')return P(x[0],0,0.08);
   if(k==='cart')return new THREE.Vector3(x[0]*SC,0.1,0);if(k==='drone')return new THREE.Vector3(0,x[0]*SC,0);const L=4;return new THREE.Vector3(L*Math.sin(x[0]),L*Math.cos(x[0]),0);}
 function burst(x){const p=worldPt(x),pos=[],v=[];for(let i=0;i<80;i++){pos.push(p.x,p.y+0.3,p.z);v.push([(Math.random()-0.5)*6,Math.random()*5,(Math.random()-0.5)*6]);}
   spark.geometry.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));spark.userData={v,t:1.2};}
@@ -257,7 +264,7 @@ function frame(now){requestAnimationFrame(frame);if(document.hidden){last=now;ST
   if(spark.userData.t>0){spark.userData.t-=dt;const a=spark.geometry.attributes.position;if(a){for(let i=0;i<a.count;i++){const v=spark.userData.v[i];v[1]-=9*dt;a.setXYZ(i,a.getX(i)+v[0]*dt,Math.max(0,a.getY(i)+v[1]*dt),a.getZ(i)+v[2]*dt);}a.needsUpdate=true;}spark.visible=true;}else spark.visible=false;
   agentPose(ST.x);if(S.D===3)drawMap(false);drawMapAgent();
   const tk=(ST.replay?'r'+ST.replay.i:ST.step+'|'+ST.trace.length);if(tk!==ST.trailKey){ST.trailKey=tk;const tr=(ST.replay?ST.replay.tr.slice(0,ST.replay.i+1):ST.trace).slice(-600).map(worldPt);trail.geometry.setFromPoints(tr);}
-  dyn.forEach(f=>f(dt));if(['car','rover','boat','point'].includes(S.doc.render)){const p=agent.position;ctl.target.lerp(new THREE.Vector3(p.x*0.6,0,p.z*0.6),0.03);}
+  dyn.forEach(f=>f(dt));if(['car','rover','boat','point','track'].includes(S.doc.render)){const p=agent.position;ctl.target.lerp(new THREE.Vector3(p.x*0.6,0,p.z*0.6),0.03);}
   ctl.update();if(now-hudT>66){hudT=now;hud();}
   // perf safeguards: skip the 3D render while a full-screen panel covers it, and render on demand when nothing moves
   const P=window.FSB_PERF=window.FSB_PERF||{};const covered=$('help').classList.contains('show')||CMP.open||(window.FSBWorldModel&&FSBWorldModel.isOpen());

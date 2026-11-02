@@ -56,6 +56,9 @@ def split_bundle(vdir: Path):
 # Reading list for the landing page: what each line of work does and how this benchmark relates.
 # Descriptions paraphrase the papers' abstracts; no numbers from other papers are quoted.
 RELATED_WORK = [
+    ("World Models", "Ha &amp; Schmidhuber, NeurIPS 2018", "https://arxiv.org/abs/1803.10122",
+     "VAE + MDN-RNN world model on pixel CarRacing-v0 / ViZDoom; a tiny controller is trained inside the dream.",
+     "Same stack, different question: we grade how often a safety certificate computed in that dream is false-safe, against exact HJ. The gym&rsquo;s <i>Race track with a hidden ice corner</i> is CarRacing reduced to 3D so the grid solver still applies."),
     ("Latent safety filters", "Nakamura, Peters &amp; Bajcsy, RSS 2025", "https://arxiv.org/abs/2502.00935",
      "HJ reachability inside a world model's latent space, learned from images.",
      "The <i>Learned from pixels</i> panel measures where such a latent certificate says &ldquo;safe&rdquo; wrongly."),

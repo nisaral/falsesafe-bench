@@ -3,28 +3,25 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+# Publish site/ to the existing gh-pages branch (repo Pages source is "Deploy from a
+# branch"). actions/deploy-pages needs Pages source = GitHub Actions and failed on
+# merge of PR #1 with no runner. This matches the live nisaral.github.io/falsesafe-bench.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: python scripts/build_site.py
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: peaceiris/actions-gh-pages@v4
         with:
-          path: site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          force_orphan: true
