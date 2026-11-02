@@ -32,20 +32,19 @@ const G=window.FSB_GLOSSARY=[
 ['Rollout / trajectory','One simulated run of the robot from a start state, step by step.',/trajector|rollout/i],
 ];
 const LOOK={
-gym:'You are driving a small system (cart, drone, car...) yourself. The big view shows the world; the minimap on the top right is the state space (position vs velocity): green = truly safe, magenta = FALSE-SAFE (the certifier says safe, but a crash is unavoidable), dashed box = hidden-physics gap. With the shield ON, the certifier overrides you when it thinks you are about to become unsafe. Where it is wrong, you can still crash.',
+gym:'Left: the 3-line idea and the scene. Big view: the robot. Pink map cells: the guard is wrong. Dashed blue: physics it never saw. The sentence in the top-left box is what is happening right now — read that first.',
 viewer3d:'A 3D plot of two value functions computed by a real HJ solver: the true one and the one the learned certifier believes. Where the certifier surface is above zero but the true one is below, the floor is coloured as false-safe. Use the sliders to change the amount of training data, the gap or k, and watch the false-safe area grow or shrink. The numbers come from exported solver runs, not from the browser.',
 illustrative:'This is an older illustrative page: hand-made geometry or toy in-browser maths, for intuition only. It is not solver output. For real numbers use the 3D viewer or the gym.',
 landing:'This site collects the FalseSafe-Bench demos.', glossary:'Plain-language explanations of the jargon used across the site.'};
 const WHAT='<b>The problem.</b> Robots and AI systems increasingly <i>learn</i> their own physics and their own safety checks. A learned check can confidently say <b>"safe"</b> in places it never saw, where in reality a crash is unavoidable. <b>FalseSafe-Bench measures how often and how badly that happens</b>: it computes the true answer exactly (HJ reachability on a grid) and compares it with what each learned certifier claims.<br><br><b>Honest headline.</b> Adding uncertainty padding (k=2) cut false-safe volume by <b>40.34%</b> [95% CI 36.47–44.73%] on the double integrator, below the preregistered 50% bar, so P1 is only <b>partially supported</b>. It removed 89.1% of the error where the model had data but only 33.3% inside the unseen gap, which holds 87.3% of the error. Source: claims_ledger.md.';
 const TOURS={
-gym:[[null,'Welcome! This gym lets you drive a robot whose safety guard was learned from data. Take the 30-second tour or skip it.'],
-['#scn','Pick a scenario: each has a hazard (wall, cliff, ground...) and a hidden-physics gap the model never saw.'],
-['#cert','Pick the certifier, the learned safety check the shield trusts. "oracle" knows the true physics; the others learned it.'],
-['#met','The numbers for this certifier, computed offline by the Python solver: FSV = how much of the space it wrongly calls safe.'],
-['#shieldBtn','Turn the shield on or off (Space). ON: it overrides your input near danger. OFF: you are on your own.'],
-['#map','The state-space map: green = safe, magenta = false-safe (looks safe, is not), dashed box = hidden gap. The dot is you.'],
-['#hud','Live readout: both value functions at your current state, and whether you are in the gap or a false-safe region. Hover any term for an explanation.'],
-['#fsb-try','Try these experiments. You can replay this tour any time from the "?" button.']],
+gym:[[null,'Three things matter. The rest is optional.'],
+['#what','The guard learned from incomplete data. Pink = it still says safe, but a crash is already unavoidable.'],
+['#scn','Pick a scene. Every one has a crash (wall, cliff, off-track) and a dashed blue zone the guard never saw.'],
+['#cert','Which guard is in charge. Naive trusts the model. Perfect knows the real physics. Switch with C.'],
+['#shieldBtn','Guard ON: it can grab the wheel. OFF: you are on your own. Space toggles.'],
+['#hud','Read this sentence first. It says, in English, whether you are safe, in a trap, or crashing.'],
+['#map','Green = actually safe. Pink = trap. Dashed blue = unseen physics. Click a pink cell to start inside a trap.']],
 viewer3d:[[null,'This 3D viewer shows real solver output: the true value function vs the learned one. Quick tour?'],
 ['#ds','Choose a dataset (an exported experiment).'],['#sliders','Move through the precomputed sweep: training data, gap size, inflation k.'],
 ['#layers','Toggle surfaces and layers: V_true, V̂, the false-safe floor, the gap box, trajectories.'],
@@ -54,7 +53,7 @@ viewer3d:[[null,'This 3D viewer shows real solver output: the true value functio
 illustrative:[[null,'This is an illustrative demo (toy maths, not solver output). Use "?" for explanations and the glossary.']],
 landing:[[null,'Start with the Interactive gym (drive it yourself) or the 3D viewer (see the real solver output). The glossary explains every term.']]};
 const LEGEND='<div><i style="background:#2ea043"></i>truly safe, certifier agrees</div><div><i style="background:#ff2fd0"></i><b>false-safe</b>: says safe, crash unavoidable</div><div><i style="background:#d29922"></i>false-unsafe: says unsafe, actually fine</div><div><i style="background:#3b4048"></i>truly unsafe</div><div><i style="background:#8b1e1e"></i>hazard (wall, cliff, ground)</div><div><i style="border:2px dashed #79c0ff"></i>hidden-physics gap</div><p style="margin:6px 0 0;color:#8b949e">Exact colours vary slightly per demo; the minimap and floor legends on each page are authoritative.</p>';
-const TRY=['Pick <b>Cart vs wall</b>, keep the shield ON with the <b>naive</b> certifier (k=0), and drive hard towards the wall through the drift band. Does the shield save you?','Switch the certifier to <b>oracle</b> and repeat. The oracle knows the true physics: no crashes with the shield on.','Turn the shield <b>OFF</b> (Space) and try to stop just short of the hazard yourself.','Find a <b>magenta</b> cell on the minimap and start from it ("Random start" until the log says you start in a false-safe region). Watch V̂ say safe while V_true says no.','Try an inflated certifier (k=2): fewer false-safe cells, but the shield intervenes more often (the false-unsafe cost).','Run <b>Batch</b> with 100 episodes and compare crash counts with the shield ON vs OFF.'];
+const TRY=['Press <b>Watch a 20-second demo</b>. When the top-left box says TRAP, the guard is wrong.','Switch the guard to <b>Perfect</b> (or press C until you get there) and run the same crash. It should save you.','Turn the guard <b>OFF</b> (Space) and try to stop yourself.','Click a <b>pink</b> cell on the map. That starts you already in a trap.','Open <b>Race track with a hidden ice corner</b>. Same idea, on a track.'];
 const css=`#fsb-x-btn{position:fixed;right:12px;bottom:12px;z-index:10001;display:flex;gap:6px}#fsb-x-btn button{background:#1f6feb;color:#fff;border:0;border-radius:16px;padding:6px 12px;font:600 13px system-ui;cursor:pointer;box-shadow:0 2px 8px #0008}#fsb-x-btn button.sec{background:#30363d}
 .fsb-x-panel{position:fixed;right:12px;bottom:56px;z-index:10002;width:min(440px,92vw);max-height:70vh;overflow:auto;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:10px;padding:14px 16px;font:14px/1.5 system-ui;box-shadow:0 8px 30px #000a}.fsb-x-panel h3{margin:.2em 0 .4em;font-size:16px}.fsb-x-panel a{color:#58a6ff}.fsb-x-close{float:right;cursor:pointer;color:#8b949e}
 .fsb-x-legend div{margin:3px 0}.fsb-x-legend i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:8px;vertical-align:-2px}
@@ -80,9 +79,12 @@ if(PAGE==='glossary'){const m=document.getElementById('gloss');if(m)m.innerHTML=
 const bar=el('div',{id:'fsb-x-btn'});const B=(l,f,c)=>{const b=el('button',{className:c||''},l);b.onclick=f;bar.appendChild(b);};
 B('? What is this',()=>panel('fsb-what','What is this?',WHAT+`<h3 style="margin-top:12px">What am I looking at?</h3>${LOOK[PAGE]||LOOK.illustrative}<p><a href="${UP}glossary.html">Full glossary</a></p>`));
 if(PAGE!=='glossary')B('Tour',()=>tour(0),'sec');B('Legend',()=>panel('fsb-legend','Colour legend','<div class="fsb-x-legend">'+LEGEND+'</div>'),'sec');B('Glossary',()=>panel('fsb-gloss','Glossary (plain language)',glossHTML()+`<p><a href="${UP}glossary.html">Open as a page</a></p>`),'sec');document.body.appendChild(bar);
-if(PAGE==='gym'){const side=document.getElementById('side'),anchor0=document.getElementById('prov'),anchor=anchor0&&anchor0.previousElementSibling&&anchor0.previousElementSibling.tagName==='H2'?anchor0.previousElementSibling:anchor0;if(side){const t=el('div',{id:'fsb-try'},'<h2>Try this</h2><ol>'+TRY.map(x=>`<li>${x}</li>`).join('')+'</ol>');anchor&&anchor.parentNode===side?side.insertBefore(t,anchor):side.appendChild(t);}}
-mark();setInterval(mark,1500);let seen=null;try{seen=localStorage.getItem('fsb-tour-'+PAGE);}catch(e){}
-const auto=!/[?&](notour|nohelp)=1/.test(location.search)&&!seen&&PAGE!=='glossary';const go=()=>{try{if(localStorage.getItem('fsb-tour-'+PAGE))return;}catch(e){}const cm=document.getElementById('cmp');if(cm&&cm.classList.contains('show'))return setTimeout(go,1500);const h=document.getElementById('help');if(h&&(h.classList.contains('show')||getComputedStyle(h).display!=='none'))return setTimeout(go,700);tour(0);};if(auto)setTimeout(go,1200);
+if(PAGE==='gym'){const side=document.getElementById('side'),wjh=document.getElementById('wjh'),anchor=wjh&&wjh.previousElementSibling;if(side){const t=el('div',{id:'fsb-try'},'<h2>Try this</h2><ol>'+TRY.map(x=>`<li>${x}</li>`).join('')+'</ol>');anchor&&anchor.parentNode===side?side.insertBefore(t,anchor):side.appendChild(t);}}
+mark();setInterval(mark,1500);
+// Gym has its own story overlay. Do not auto-start a panel tour on top of it.
+const auto=PAGE!=='gym'&&PAGE!=='glossary'&&!/[?&](notour|nohelp)=1/.test(location.search);
+let seen=null;try{seen=localStorage.getItem('fsb-tour-'+PAGE);}catch(e){}
+const go=()=>{try{if(localStorage.getItem('fsb-tour-'+PAGE))return;}catch(e){}tour(0);};if(auto&&!seen)setTimeout(go,1200);
 window.__fsbExplain={tour,endTour,glossary:G,page:PAGE};}
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
 })();

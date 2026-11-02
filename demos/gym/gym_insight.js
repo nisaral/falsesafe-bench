@@ -103,7 +103,7 @@ const PAL=['#58a6ff','#d2a8ff','#ffa657','#7ee787','#ff7b72','#79c0ff','#f2cc60'
 document.querySelectorAll('#trade .seg button').forEach(b=>b.onclick=()=>{region=b.dataset.r;document.querySelectorAll('#trade .seg button').forEach(o=>o.classList.toggle('on',o===b));trade(true);});
 function esc(s){return String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[ch]);}
 function trade(force){const S=g.S,key=S.doc.name+'|'+ST.ci+'|'+region;if(!force&&key===tkey)return;tkey=key;
-  const pts=S.cases.map((c,k)=>{const m=c.metrics||{};return{k,label:c.label,fs:region==='gap'?m.gap_fsv:m.fsv,fu:region==='gap'?m.gap_fuv:m.fuv,oracle:/oracle/i.test(c.label)};}).filter(p=>p.fs!=null&&p.fu!=null);
+  const pts=S.cases.map((c,k)=>{const m=c.metrics||{};return{k,label:(g.friendlyCert||(x=>x.label))(c),fs:region==='gap'?m.gap_fsv:m.fsv,fu:region==='gap'?m.gap_fuv:m.fuv,oracle:/oracle/i.test(c.label)};}).filter(p=>p.fs!=null&&p.fu!=null);
   const W=290,H=150,L=40,R=10,T=10,B=26,mx=Math.max(0.002,...pts.map(p=>p.fu))*1.15,my=Math.max(0.002,...pts.map(p=>p.fs))*1.15;
   const X=v=>L+(W-L-R)*v/mx,Y=v=>H-B-(H-B-T)*v/my;let s='';
   for(const f of[0,0.5,1]){s+=`<line x1="${L}" x2="${W-R}" y1="${Y(f*my/1.15)}" y2="${Y(f*my/1.15)}" stroke="#21262d"/><text x="${L-4}" y="${Y(f*my/1.15)+3}" text-anchor="end">${pct(f*my/1.15)}</text>`;
@@ -120,7 +120,7 @@ function trade(force){const S=g.S,key=S.doc.name+'|'+ST.ci+'|'+region;if(!force&
   const svg=$('tradeSvg');svg.innerHTML=s;svg.querySelectorAll('circle.pt').forEach(c=>c.onclick=()=>pick(+c.dataset.k));
   $('tradeList').innerHTML=pts.map(p=>`<li data-k="${p.k}" class="${p.k===ST.ci?'on':''}"><i style="background:${p.oracle?'transparent':PAL[p.k%PAL.length]};${p.oracle?`border:2px solid ${PAL[p.k%PAL.length]};color:${PAL[p.k%PAL.length]};width:12px;height:12px;line-height:12px`:''}">${p.k+1}</i>${esc(p.label)}<span class="v">${pct(p.fs)} · ${pct(p.fu)}</span></li>`).join('');
   $('tradeList').querySelectorAll('li').forEach(li=>li.onclick=()=>pick(+li.dataset.k));}
-function pick(k){if(k===ST.ci)return;g.setCase(k);g.log('Certifier: '+g.S.cases[k].label,'ok');g.plain(`Rule-book switched to <b>${g.S.cases[k].label}</b>. Same scenario, new guard.`,'ok');trade(true);}
+function pick(k){if(k===ST.ci)return;g.setCase(k);const n=(g.friendlyCert||(c=>c.label))(g.S.cases[k]);g.log('Guard: '+n,'ok');g.plain(`Switched to <b>${n}</b>. Same scene, new guard.`,'ok');trade(true);}
 
 // ------------------------------------------------------------------ shield trigger margin (exploratory)
 const mr=$('marg'),mv=$('margV');let mkey='';

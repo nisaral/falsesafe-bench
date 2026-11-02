@@ -105,6 +105,7 @@ h1{{font-size:30px;margin:.3em 0}}.cards{{display:grid;grid-template-columns:1fr
 <body><main>
 <section class="hero"><h1>FalseSafe-Bench</h1>
 <p class="lead">When a robot <b>learns</b> its own safety check, how often does it say <b>&ldquo;safe&rdquo;</b> when a crash is actually unavoidable?</p>
+<p>In one minute: open the gym, watch the 20-second demo, and read the sentence in the top-left box. <b style="color:#ff2bd6">TRAP</b> means the guard is wrong.</p>
 <p id="about3">Robots increasingly learn their own safety checks from data, and in situations they never saw, those checks can confidently say &ldquo;safe&rdquo; when a crash is already unavoidable. FalseSafe-Bench measures how often and how badly that happens, by comparing each learned check with the exact right answer that a solver works out on a fine grid. You can drive it yourself in the gym, explore the true and learned answers in 3D, and look at an early, honestly-labelled test of a camera-trained &ldquo;world model&rdquo;.</p>
 <p class="src">No maths needed. Unfamiliar word? Hover it, or open the <a href="glossary.html">plain-language glossary</a>.</p>
 <p><a class="cta" href="gym/index.html">&#9654; Drive the gym</a> <a class="cta sec" href="viewer3d/index.html">Explore the 3D viewer</a> <a class="cta sec" href="{REPO}">GitHub</a></p></section>
@@ -115,7 +116,7 @@ h1{{font-size:30px;margin:.3em 0}}.cards{{display:grid;grid-template-columns:1fr
 <p class="src">All numbers: double integrator, 30 preregistered seeds, 201&times;201 grid. Source: <a href="{REPO}/blob/main/claims_ledger.md">claims_ledger.md</a>, sweep <code>results/sweeps/20261027_184119</code>.</p>
 <h2>Interactive demos (real solver output)</h2>
 <div class="cards">
-<div class="card"><a href="gym/index.html"><img src="{og}" alt="FalseSafe gym screenshot"></a><h3><a href="gym/index.html">Interactive gym</a></h3><b>What it is:</b> drive a cart, drone, pendulum, boat, car or rover yourself, with a learned safety shield. <b>What to look for:</b> the magenta &ldquo;false-safe&rdquo; cells on the minimap, where the shield trusts a wrong answer. Rewind any episode on the safety timeline, click the map to start inside a trap, and compare every certifier on a danger-vs-caution chart. Includes a guided tour.</div>
+<div class="card"><a href="gym/index.html"><img src="{og}" alt="FalseSafe gym screenshot"></a><h3><a href="gym/index.html">Interactive gym</a></h3><b>What it is:</b> a robot with a safety guard that learned from incomplete data. <b>What to look for:</b> the sentence in the top-left box. When it says TRAP, the guard still says &ldquo;safe&rdquo; but a crash is already unavoidable (pink on the map). Start with the 20-second demo.</div>
 <div class="card"><a href="viewer3d/index.html"><img src="viewer3d.png" alt="3D viewer screenshot"></a><h3><a href="viewer3d/index.html">3D value-function viewer</a></h3><b>What it is:</b> the true and the learned safety surfaces from the solver, in 3D, for {len(names)} exported datasets. <b>What to look for:</b> where the learned surface is above zero and the true one is below it.</div></div>
 <h2>Detailed results</h2>
 <table><tr><th>Claim</th><th>Result</th><th>Status</th></tr>

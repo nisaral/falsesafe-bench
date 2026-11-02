@@ -135,8 +135,34 @@ function drawMapAgent(){if(!mapBase)return;mx.putImageData(mapBase,0,0);const e=
 
 // ------------------------------------------------------------------ UI
 function opt(sel,items){sel.innerHTML='';items.forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;sel.appendChild(o);});}
+function friendlyCert(c){const L=(c&&c.label)||String(c||'');
+  if(/oracle/i.test(L))return 'Perfect guard — knows the real physics';
+  if(/naive|k=0(\.0)?\b/i.test(L)&&!/k\*/i.test(L))return 'Naive guard — trusts the model blindly';
+  if(/ensemble/i.test(L))return 'Committee of models';
+  if(/conformal/i.test(L))return 'Statistical error-bar guard';
+  if(/cushion/i.test(L))return 'Padded guard — subtracts a safety cushion';
+  const m=L.match(/k\*sigma=([0-9.]+)/);if(m)return 'Cautious guard — adds a '+m[1]+' safety pad';
+  if(/robust|inflat|margin/i.test(L))return 'Cautious guard — adds a safety pad';
+  return L;}
+function metricPlain(m){if(!m)return '';
+  if(!(m.fsv>1e-6))return 'This guard is not calling any unsafe state “safe” on the full map.';
+  let s=`This guard wrongly says “safe” on <b style="color:var(--fs)">${pct(m.fsv)}</b> of the map.`;
+  if(m.gap_fsv!=null&&m.gap_fsv>m.fsv)s+=` Inside the unseen (blue) zone that rises to <b>${pct(m.gap_fsv)}</b>.`;
+  if(m.fuv>1e-4)s+=` It is also over-cautious on ${pct(m.fuv)} of the map.`;
+  return s;}
+function sceneStory(d,e){const k=d.render;
+  const world={cart:'You are a cart. The red wall on the left is a crash. A/D or arrows to brake and accelerate.',
+    drone:'You are a drone. Hitting the floor or the ceiling is a crash. Up/down to climb.',
+    pendulum:'Keep the pole from falling past the red wedges.',
+    boat:'Steer the boat. Rocks and the sandy shore are a crash.',
+    car:'Steer the car. The red cylinder is a crash.',
+    rover:'Steer the rover. Going over the cliff is a crash.',
+    track:'Stay on the ring. Leaving the track is a crash. A/D or arrows to steer.',
+    point:'Move the dot. Hitting the hazard is a crash.'}[k]||'Drive with the arrows.';
+  const ice=e.gap?' The dashed blue patch is physics the guard never practised on.':'';
+  return world+ice+' <b style="color:var(--fs)">Pink on the map = a trap</b> (guard says safe, crash unavoidable).';}
 opt($('scn'),DOCS.map((d,i)=>[i,(d.user_defined?'[user] ':'')+d.title]));
-const POLS=[['manual','manual (you drive: keys / gamepad / touch)'],...Object.keys(G.POLICIES).map(k=>[k,G.POLICIES[k].label])];
+const POLS=[['manual','You drive (arrows / WASD / touch)'],['goal','Go to the green marker'],['random','Wander at random'],['adversarial','Try to crash (the interesting one)']];
 opt($('pol'),POLS);opt($('bPol'),Object.keys(G.POLICIES).map(k=>[k,k]));
 function plain(msg,cls){ST.plain=(ST.plain||[]);ST.plain.unshift([`${ST.t.toFixed(1)}s`,msg,cls]);ST.plain=ST.plain.slice(0,8);
   const w=$('wjh');if(w)w.innerHTML=ST.plain.map(([t,m,c])=>`<li class="${c||''}"><span class="t">${t}</span> ${m}</li>`).join('');}
@@ -144,10 +170,11 @@ function plain(msg,cls){ST.plain=(ST.plain||[]);ST.plain.unshift([`${ST.t.toFixe
 function predictHit(x,u){const dt=S.doc.dt;let y=x.slice();for(let k=1;k*dt<=3+1e-9;k++){y=G.step(S,y,u,dt);if(S.l(y)<0)return k*dt;}return null;}
 function log(msg,cls){ST.events.unshift([msg,cls]);ST.events=ST.events.slice(0,7);$('log').innerHTML=ST.events.map(([m,c])=>`<div class="${c||''}">${m}</div>`).join('');}
 function loadScenario(i){ST.si=i;S=G.buildScenario(DOCS[i]);ST.ci=0;$('scn').value=i;
-  opt($('cert'),S.cases.map((c,k)=>[k,c.label]));const d=S.doc,e=S.env;
-  $('scnInfo').innerHTML=`${d.blurb}<br><span class="tag ${d.user_defined?'user':'real'}">${d.user_defined?'user-defined env':'built-in env'}</span><span class="tag">${e.name}</span><span class="tag">${S.D}D · grid ${e.shape.join('×')}</span><span class="tag">${S.dyn==='js-mirror'?'JS dynamics mirror':'tabulated dynamics'}</span><br><b>Hazard:</b> ${e.hazard}<br><b>Hidden physics (gap):</b> ${e.gap?e.gap.description:'none'}<br><b>Reduction:</b> ${d.reduction||'—'}`;
+  opt($('cert'),S.cases.map((c,k)=>[k,friendlyCert(c)]));const d=S.doc,e=S.env;
+  const story=$('sceneStory');if(story)story.innerHTML=sceneStory(d,e);
+  $('scnInfo').innerHTML=d.blurb?`<span class="src">${d.blurb}</span>`:'';
   $('prov').innerHTML=`${d.provenance.source}. created ${d.provenance.created}, git ${String(d.provenance.git_commit).slice(0,10)}. HJ horizon ${e.horizon}s; shield margin ${d.filter_margin}; dt ${d.dt}s. Quantisation: int16, max error ${S.quantErr.toExponential(2)} in V.`;
-  buildScene();resize();ST.x=null;setShield(true,true);setCase(0,true);reset(d.start);resetCounts();$('batchres').innerHTML='';$('batchNote').textContent='';log(`Scenario: ${d.title}`,'ok');ST.plain=[];plain(`Loaded <b>${d.title}</b>. ${e.gap?'Watch for the dashed blue zone: hidden physics.':''}`,'ok');if(CMP.open)CMP.restart();writeHash();}
+  buildScene();resize();ST.x=null;setShield(true,true);setCase(0,true);reset(d.start);resetCounts();$('batchres').innerHTML='';$('batchNote').textContent='';log(`Scene: ${d.title}`,'ok');ST.plain=[];plain(`<b>${d.title}.</b> ${e.gap?'Watch the dashed blue zone — that is what the guard never saw.':''}`,'ok');if(CMP.open)CMP.restart();writeHash();}
 function writeHash(){if(!S||ST.noHash)return;const h=new URLSearchParams({s:S.doc.name,c:ST.ci,sh:ST.shield?1:0,d:ST.pol});if(CMP.open)h.set('cmp',CMP.b);
   if(S.doc.margin0!=null&&S.doc.filter_margin!==S.doc.margin0)h.set('m',S.doc.filter_margin);
   const v='#'+h.toString();if(location.hash!==v)history.replaceState(null,'',v);}
@@ -162,12 +189,16 @@ function resetCounts(){ST.score=0;ST.crashes=0;ST.episodes=0;}
 // episode and the counters, so a crash is never attributed to a certifier it did not happen under.
 function tallyKey(){return `${S.doc.name}|${ST.ci}|${ST.shield?'on':'off'}`;}
 function setCase(k,quiet){const ch=k!==ST.ci;ST.ci=k;$('cert').value=k;if(ch&&!quiet&&ST.x){reset();resetCounts();}const m=S.cases[k].metrics;
-  $('met').innerHTML=`<tr><td>FSV (false-safe volume)</td><td><b style="color:#ff2bd6">${pct(m.fsv)}</b></td></tr><tr><td>FUV (false-unsafe)</td><td>${pct(m.fuv)}</td></tr><tr><td>gap-FSV</td><td>${pct(m.gap_fsv)}</td></tr><tr><td colspan=2 class="src">Full-grid metrics computed in Python (lcert.metrics), not in the browser.</td></tr>`;
+  const mp=$('metPlain');if(mp)mp.innerHTML=metricPlain(m);
+  $('met').innerHTML=`<tr><td>Wrongly says safe (whole map)</td><td><b style="color:#ff2bd6">${pct(m.fsv)}</b></td></tr><tr><td>Wrongly says safe (unseen zone)</td><td>${pct(m.gap_fsv)}</td></tr><tr><td>Over-cautious</td><td>${pct(m.fuv)}</td></tr><tr><td colspan=2 class="src">Percentages from the Python solver on the full map, not from this live run.</td></tr>`;
   mapKey=null;if(ST.x)drawMap(true);if(CMP.open)CMP.restart();writeHash();}
 function reset(x0){if(ST.x&&ST.t>0)plain('— new episode —','');ST.lastShT=-9;ST.replay=null;ST.x=(x0||S.doc.start||S.env.lo.map((a,i)=>(a+S.env.hi[i])/2)).slice();ST.t=0;ST.step=0;ST.trace=[ST.x.slice()];ST.flags=[];ST.interv=0;ST.fsTime=0;ST.crashT=0;
   polFn=ST.pol==='manual'?null:G.POLICIES[ST.pol].make(S,(Math.random()*1e9)|0);mapKey=null;drawMap(true);}
-function randomStart(){const r=G.mulberry32((Math.random()*1e9)|0);const x=G.sampleStart(S,r,S.cases[ST.ci].V,S.doc.filter_margin);if(x){reset(x);log('Random start where the certifier claims safe','ok');}}
-function setShield(on,quiet){const ch=on!==ST.shield;ST.shield=on;if(ch&&!quiet&&ST.x&&!ST.replay){reset();resetCounts();}const b=$('shieldBtn');b.classList.toggle('on',on);b.textContent=`Shield ${on?'ON':'OFF'} (space)`;b.setAttribute('aria-pressed',on);if(!quiet){log(`Shield ${on?'ON':'OFF'} — episode and counters restarted`,'sh');plain(`Shield turned <b>${on?'ON':'OFF'}</b>.`,'sh');}if(CMP.open&&ch)CMP.restart();writeHash();}
+function randomStart(){const r=G.mulberry32((Math.random()*1e9)|0);let x=null;
+  for(let i=0;i<80&&!x;i++){const c=G.sampleStart(S,r,S.cases[ST.ci].V,S.doc.filter_margin);if(c&&S.Vtrue(c)<0)x=c;}
+  if(!x)x=G.sampleStart(S,r,S.cases[ST.ci].V,S.doc.filter_margin);
+  if(x){reset(x);log('Started where the guard claims safe','ok');plain(S.Vtrue(x)<0?'<b>Started in a trap.</b> The guard says this is safe. Reality: a crash is already unavoidable.':'Random start where the guard still says safe.','fs');}}
+function setShield(on,quiet){const ch=on!==ST.shield;ST.shield=on;if(ch&&!quiet&&ST.x&&!ST.replay){reset();resetCounts();}const b=$('shieldBtn');b.classList.toggle('on',on);b.textContent=`Guard ${on?'ON':'OFF'} (space)`;b.setAttribute('aria-pressed',on);if(!quiet){log(`Guard ${on?'ON':'OFF'} — episode and counters restarted`,'sh');plain(`Guard turned <b>${on?'ON':'OFF'}</b>.`,'sh');}if(CMP.open&&ch)CMP.restart();writeHash();}
 // Exploratory knob: the in-browser shield's trigger margin (exported default kept in doc.margin0).
 // Python FSV/FUV classify V̂ >= 0 and do not depend on it.
 function setMargin(m,quiet){const d=S.doc;if(d.margin0==null)d.margin0=d.filter_margin;m=Math.max(0,Math.round(m*100)/100);if(m===d.filter_margin)return;
@@ -177,20 +208,26 @@ function setPol(p,quiet){ST.pol=p;$('pol').value=p;polFn=p==='manual'?null:G.POL
 $('scn').onchange=e=>loadScenario(+e.target.value);$('cert').onchange=e=>{setCase(+e.target.value);log('Certifier: '+S.cases[ST.ci].label,'ok');};
 $('pol').onchange=e=>setPol(e.target.value);$('shieldBtn').onclick=()=>setShield(!ST.shield);$('resetBtn').onclick=()=>reset();$('randStart').onclick=randomStart;
 $('pauseBtn').onclick=()=>{ST.paused=!ST.paused;$('pauseBtn').classList.toggle('on',ST.paused);};$('replayBtn').onclick=startReplay;
-$('helpLink').onclick=e=>{e.preventDefault();$('help').classList.add('show');};$('helpClose').onclick=()=>$('help').classList.remove('show');
+function showHelp(details){const det=$('helpDetails');if(det)det.hidden=!details;$('help').classList.add('show');if(details){const t=$('helpDetails');if(t)t.scrollIntoView({block:'start'});}}
+function hideHelp(){$('help').classList.remove('show');const det=$('helpDetails');if(det)det.hidden=true;}
+$('helpLink').onclick=e=>{e.preventDefault();showHelp(false);};
+$('helpClose').onclick=hideHelp;
+const helpSkip=$('helpSkip');if(helpSkip)helpSkip.onclick=hideHelp;
+const helpMore=$('helpMore');if(helpMore)helpMore.onclick=e=>{e.preventDefault();showHelp(true);};
+const helpBack=$('helpBack');if(helpBack)helpBack.onclick=()=>{const det=$('helpDetails');if(det)det.hidden=true;$('help').querySelector('.story').scrollIntoView({block:'start'});};
 $('batchBtn').onclick=runBatch;
 $('cmpBtn').onclick=()=>openCompare();$('cmpClose').onclick=closeCompare;$('cmpRestart').onclick=()=>CMP.restart();$('cmpB').onchange=e=>{CMP.b=e.target.value;CMP.restart();writeHash();};
 $('shareBtn').onclick=shareLink;
-$('wmBtn').onclick=()=>{if(!window.FSBWorldModel)return;const was=ST.paused;ST.paused=true;window.FSBWorldModel.open({base:'../common/',onClose:()=>{ST.paused=was;$('wmBtn').focus();}});};$('keysBtn').onclick=()=>$('help').classList.add('show');
+$('wmBtn').onclick=()=>{if(!window.FSBWorldModel)return;const was=ST.paused;ST.paused=true;window.FSBWorldModel.open({base:'../common/',onClose:()=>{ST.paused=was;$('wmBtn').focus();}});};$('keysBtn').onclick=()=>showHelp(false);
 addEventListener('hashchange',()=>{if(!ST.noHash)readHash();});
 // start-here choices on the welcome card
 function startDemo(){const i=DOCS.findIndex(d=>d.name==='cart_wall');if(i>=0)loadScenario(i);setCase(0,true);setShield(true,true);setPol('adversarial',true);reset();
-  $('help').classList.remove('show');try{localStorage.setItem('fsb-tour-gym','done');}catch(e){}
-  plain('<b>Demo:</b> an autopilot pushes the cart toward the wall. The shield trusts the <b>naive</b> certifier. Watch the minimap: does it get caught in the magenta (false-safe) zone? Then press <b>C</b> to switch certifier.','ok');writeHash();}
-$('startDemo').onclick=startDemo;$('startDrive').onclick=()=>{$('help').classList.remove('show');try{localStorage.setItem('fsb-tour-gym','done');}catch(e){}setPol('manual',true);writeHash();};
-$('startTour').onclick=()=>{$('help').classList.remove('show');if(window.__fsbExplain)window.__fsbExplain.tour(0);};
+  hideHelp();try{sessionStorage.setItem('fsbGymSeen','1');localStorage.setItem('fsb-tour-gym','done');}catch(e){}
+  plain('<b>Demo:</b> an autopilot is charging the wall. The <b>naive</b> guard is on. Watch the sentence in the top-left box — when it says TRAP, the guard is wrong. Then press <b>C</b> to try the perfect guard.','ok');writeHash();}
+$('startDemo').onclick=startDemo;$('startDrive').onclick=()=>{hideHelp();try{sessionStorage.setItem('fsbGymSeen','1');localStorage.setItem('fsb-tour-gym','done');}catch(e){}setPol('manual',true);writeHash();};
+$('startTour').onclick=e=>{if(e&&e.preventDefault)e.preventDefault();hideHelp();if(window.__fsbExplain)window.__fsbExplain.tour(0);};
 $('startCompare').onclick=()=>{startDemo();openCompare('c'+(S.cases.length-1));};
-function showTyo(){$('help').classList.add('show');setTimeout(()=>{const t=$('tyo');if(t)t.scrollIntoView({block:'start'});},30);}
+function showTyo(){showHelp(true);setTimeout(()=>{const t=$('tyo');if(t)t.scrollIntoView({block:'start'});},30);}
 $('startTyo').onclick=showTyo;$('tyoLink').onclick=e=>{e.preventDefault();showTyo();};
 $('whatDemo').onclick=e=>{e.preventDefault();startDemo();};
 $('tyoCopy').onclick=()=>{const t=$('tyoCode').textContent;const ok=()=>{$('tyoCopy').textContent='Copied ✓';setTimeout(()=>$('tyoCopy').textContent='Copy',1500);};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,()=>prompt('Copy:',t));else prompt('Copy:',t);};
@@ -200,7 +237,7 @@ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==
   if(e.repeat)return;const c=e.code;
   if(c==='Space'){setShield(!ST.shield);e.preventDefault();}else if(c==='KeyR')reset();else if(c==='KeyT')randomStart();else if(c==='KeyP')$('pauseBtn').onclick();
   else if(c==='KeyL')startReplay();else if(c==='KeyN')loadScenario((ST.si+(e.shiftKey?DOCS.length-1:1))%DOCS.length);else if(c==='KeyC'){setCase((ST.ci+1)%S.cases.length);log('Certifier: '+S.cases[ST.ci].label,'ok');}
-  else if(c==='KeyM'){const ks=POLS.map(p=>p[0]);setPol(ks[(ks.indexOf(ST.pol)+1)%ks.length]);}else if(c==='KeyB')runBatch();else if(c==='KeyV'){CMP.open?closeCompare():openCompare();}else if(c==='KeyU')shareLink();else if(c==='KeyH'||e.key==='?')$('help').classList.toggle('show');else if(c==='KeyH'||e.key==='?')$('help').classList.toggle('show');else if(c==='Escape'){$('help').classList.remove('show');if(CMP.open)closeCompare();}});
+  else if(c==='KeyM'){const ks=POLS.map(p=>p[0]);setPol(ks[(ks.indexOf(ST.pol)+1)%ks.length]);}else if(c==='KeyB')runBatch();else if(c==='KeyV'){CMP.open?closeCompare():openCompare();}else if(c==='KeyU')shareLink();else if(c==='KeyH'||e.key==='?'){$('help').classList.contains('show')?hideHelp():showHelp(false);}else if(c==='Escape'){hideHelp();if(CMP.open)closeCompare();}});
 addEventListener('keyup',e=>{if(KEYMAP[e.code])ST.keys[KEYMAP[e.code]]=false;});
 document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.k;const on=e=>{e.preventDefault();ST.touch[k]=true;},off=e=>{e.preventDefault();ST.touch[k]=false;};
   b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off);});
@@ -222,34 +259,40 @@ function simStep(){const dt=S.doc.dt,V=S.cases[ST.ci].V,x=ST.x;
   let u=ST.pol==='manual'?manualU():polFn(x,ST.t,dt),active=false;
   if(ST.shield){const r=G.shield(S,V,x,u,dt,S.doc.filter_margin);if(r.active&&!ST.wasActive){log(`t=${ST.t.toFixed(2)}s shield override`,'sh');}
     if(r.active&&!ST.wasActive&&!(ST.t-(ST.lastShT??-9)<1.5)){ST.lastShT=ST.t;
-      const th=predictHit(x,u);plain(th!=null?`<b>Shield stepped in.</b> If ${ST.pol==='manual'?'you':'the driver'} had kept going, the real physics would have hit the hazard in about <b>${th.toFixed(1)} s</b>.`:
-        `<b>Shield stepped in.</b> The certifier's safety score dropped below its margin, so it took over (no crash was imminent within 3 s).`,'sh');}
+      const th=predictHit(x,u);plain(th!=null?`<b>Guard grabbed the controls.</b> If ${ST.pol==='manual'?'you':'the driver'} had kept going, you would have hit the hazard in about <b>${th.toFixed(1)} s</b>.`:
+        `<b>Guard grabbed the controls.</b> It thinks you are too close to danger.`,'sh');}
     u=r.u;active=r.active;}
   ST.wasActive=active;ST.lastU=u;ST.active=active;const vt=S.Vtrue(x),vh=V(x),fs=vh>=0&&vt<0;
-  if(fs&&!ST.wasFS)plain(`<b>Entered a trap.</b> The certifier still says "safe" (V̂=${vh.toFixed(2)}), but the true physics says a crash can no longer be avoided (V_true=${vt.toFixed(2)}).`,'fs');
-  const ing=S.gap(x);if(ing&&!ST.wasGap)plain('Entered the <b>hidden-physics zone</b>: here the real physics differ from what the certifier was built on.','gap');ST.wasGap=ing;
+  if(fs&&!ST.wasFS)plain(`<b>Entered a trap.</b> The guard still says “safe”, but a crash is already unavoidable.`,'fs');
+  const ing=S.gap(x);if(ing&&!ST.wasGap)plain('Entered the <b>unseen zone</b>: real physics are different here, and the guard never practised on them.','gap');ST.wasGap=ing;
   if(fs&&!ST.wasFS)log(`t=${ST.t.toFixed(2)}s entered FALSE-SAFE region (V̂=${vh.toFixed(3)}, V_true=${vt.toFixed(3)})`,'fs');ST.wasFS=fs;
   if(active)ST.interv++;if(fs)ST.fsTime+=dt;
   ST.x=G.step(S,x,u,dt);ST.t+=dt;ST.step++;ST.trace.push(ST.x.slice());ST.flags.push([active,fs]);if(ST.trace.length>2000)ST.trace.shift();
   ST.score+=10*dt;if(S.doc.goal&&goalDist(ST.x)<0.25)ST.score+=20*dt;
-  if(S.l(ST.x)<0){plain(`<b>Crash</b> (${S.env.hazard}).`+(ST.fsTime>0?` The shield ${ST.shield?'was ON but ':''}trusted a false-safe certificate for ${ST.fsTime.toFixed(1)} s first.`:ST.shield?' The shield was ON.':' The shield was OFF.'),'crash');ST.crashT=1.3;burst(ST.x);log(`t=${ST.t.toFixed(2)}s CRASH (${S.env.hazard})${fs||ST.fsTime>0?' — after trusting a false-safe certificate':''}${ST.shield?' with shield ON':''}`,'crash');endEpisode(true);return false;}
+  if(S.l(ST.x)<0){plain(`<b>Crash.</b>`+(ST.fsTime>0?` The guard ${ST.shield?'was ON but ':''}trusted a wrong “safe” for ${ST.fsTime.toFixed(1)} s first.`:ST.shield?' The guard was ON.':' The guard was OFF.'),'crash');ST.crashT=1.3;burst(ST.x);log(`t=${ST.t.toFixed(2)}s CRASH`,'crash');endEpisode(true);return false;}
   if(ST.step>=S.doc.max_steps){plain(`Survived the whole episode (${ST.t.toFixed(1)} s)`+(ST.interv?`, with ${ST.interv} shield override steps.`:'.'),'ok');log(`episode survived ${ST.t.toFixed(1)}s`,'ok');endEpisode(false);return false;}
   return true;}
 function goalDist(x){const g=S.doc.goal,w=S.doc.goal_weights||g.map(()=>1);let c=0,sw=0;g.forEach((gi,i)=>{if(gi==null)return;c+=w[i]*(x[i]-gi)**2;sw+=w[i];});return Math.sqrt(c/Math.max(sw,1e-9));}
 function startReplay(){if(!ST.last){log('nothing to replay yet','sh');return;}ST.replay={tr:ST.last.tr,flags:ST.last.flags,i:0,crashed:ST.last.crashed};log('Replaying last episode','ok');}
 
+function coachLine(){if(ST.crashT>0)return 'Crashed. The guard trusted a wrong “safe”.';
+  const V=S.cases[ST.ci].V,x=ST.x,vt=S.Vtrue(x),vh=V(x),fs=vh>=0&&vt<0,ing=S.gap(x);
+  if(fs)return 'TRAP. The guard still says SAFE. Reality: you cannot avoid a crash from here.';
+  if(ST.active)return 'The guard just grabbed the controls — it thinks you are too close to danger.';
+  if(ing)return 'You are in the unseen zone. Real physics are worse here. The guard does not know that.';
+  if(vt<0)return 'Reality: a crash is already unavoidable.';
+  return sceneStory(S.doc,S.env).replace(/<[^>]+>/g,'');}
 function hud(){const V=S.cases[ST.ci].V,x=ST.x,vt=S.Vtrue(x),vh=V(x),inGap=S.gap(x),fs=vh>=0&&vt<0;
-  const sc=Math.max(0.5,...[vt,vh].map(Math.abs));const bar=(v,c)=>`<div class="bar"><i style="background:${c};${v>=0?`left:50%;width:${Math.min(50,50*v/sc)}%`:`left:${50-Math.min(50,-50*v/sc)}%;width:${Math.min(50,-50*v/sc)}%`}"></i></div>`;
-  const sh=!ST.shield?'<b style="color:#f85149">OFF</b>':ST.active?'<b style="color:#d29922">INTERVENING</b>':'<b style="color:#2ea043">armed</b>';const m=S.cases[ST.ci].metrics;
-  $('hud').innerHTML=`<div class="row"><span class="k">state</span><span>${x.map(v=>v.toFixed(2)).join(', ')}</span></div>
-   <div class="row"><span class="k">V_true (HJ, true physics)</span><b style="color:${vt>=0?'#2ea043':'#f85149'}">${fmt(vt)}</b></div>${bar(vt,vt>=0?'#2ea043':'#f85149')}
-   <div class="row"><span class="k">V̂ (certifier)</span><b style="color:${vh>=0?'#2ea043':'#f85149'}">${fmt(vh)}</b></div>${bar(vh,vh>=0?'#58a6ff':'#f85149')}
-   <div class="row"><span class="k">shield</span><span>${sh}</span></div><div class="row"><span class="k">in hidden-physics gap</span><b style="color:${inGap?'#58a6ff':'#8b949e'}">${inGap?'YES':'no'}</b></div>
-   <div class="row"><span class="k">false-safe here</span><b style="color:${fs?'#ff2bd6':'#8b949e'}">${fs?'YES':'no'}</b></div>
-   <div class="row"><span class="k">case FSV / gap-FSV</span><span>${pct(m.fsv)} / ${pct(m.gap_fsv)}</span></div>
-   <div class="row"><span class="k">driver · t</span><span>${ST.replay?'REPLAY':ST.pol} · ${ST.t.toFixed(1)}s</span></div>`;
-  $('score').innerHTML=`<tr><td>score (in-browser)</td><td><b>${ST.score.toFixed(0)}</b></td></tr><tr><td>episodes / crashes (this certifier, shield ${ST.shield?'ON':'OFF'})</td><td>${ST.episodes} / ${ST.crashes}</td></tr><tr><td>shield overrides (this ep.)</td><td>${ST.interv}</td></tr><tr><td>time in false-safe (this ep.)</td><td>${ST.fsTime.toFixed(2)} s</td></tr>`;
-  const bn=$('banner');let cls='',txt='';if(ST.crashT>0){cls='crash';txt='💥 CRASH';}else if(ST.replay){cls='replay';txt='REPLAY of last episode';}else if(fs){cls='fs';txt='FALSE-SAFE: certifier says safe, truth says a crash is unavoidable';}else if(ST.active){cls='shield';txt='Shield overriding your input';}
+  const sh=!ST.shield?'<b style="color:#f85149">OFF — you are on your own</b>':ST.active?'<b style="color:#d29922">grabbing the controls</b>':'<b style="color:#2ea043">watching, not interfering</b>';
+  const hudEl=$('hud');hudEl.className=ST.crashT>0?'crash':fs?'fs':ST.active?'sh':'ok';
+  hudEl.innerHTML=`<div class="say">${coachLine()}</div>
+   <div class="row"><span class="k">Reality</span><b style="color:${vt>=0?'#2ea043':'#f85149'}">${vt>=0?'still possible to stay safe':'crash already unavoidable'}</b></div>
+   <div class="row"><span class="k">Guard thinks</span><b style="color:${fs?'#ff2bd6':vh>=0?'#2ea043':'#f85149'}">${fs?'SAFE — and that is wrong':vh>=0?'safe':'danger'}</b></div>
+   <div class="row"><span class="k">Unseen zone</span><b style="color:${inGap?'#58a6ff':'#8b949e'}">${inGap?'you are in it':'not here'}</b></div>
+   <div class="row"><span class="k">Guard</span><span>${sh}</span></div>
+   <div class="row"><span class="k">Time</span><span>${ST.replay?'replay':ST.pol==='manual'?'you driving':ST.pol} · ${ST.t.toFixed(1)}s</span></div>`;
+  $('score').innerHTML=`<tr><td>score</td><td><b>${ST.score.toFixed(0)}</b></td></tr><tr><td>episodes / crashes (this guard, ${ST.shield?'ON':'OFF'})</td><td>${ST.episodes} / ${ST.crashes}</td></tr><tr><td>times the guard grabbed the wheel</td><td>${ST.interv}</td></tr><tr><td>time spent in a trap</td><td>${ST.fsTime.toFixed(2)} s</td></tr>`;
+  const bn=$('banner');let cls='',txt='';if(ST.crashT>0){cls='crash';txt='CRASH';}else if(ST.replay){cls='replay';txt='Replaying the last run';}else if(fs){cls='fs';txt='TRAP: guard says safe, crash is unavoidable';}else if(ST.active){cls='shield';txt='Guard is driving now';}
   bn.className=cls;bn.textContent=txt;
   ring.material.color.set(ST.crashT>0?0xf85149:fs?0xff2bd6:ST.active?0xd29922:ST.shield?0x2ea043:0x8b949e);
   window.__gym.readout={v_true:vt,v_hat:vh,in_gap:inGap,false_safe:fs,shield:ST.shield,active:!!ST.active,x:x.slice(),t:ST.t,crashes:ST.crashes,episodes:ST.episodes,score:ST.score,scenario:S.doc.name,case:ST.ci};}
@@ -284,11 +327,11 @@ function classImage(ctx,N,ci,th){const e=S.env,D=S.D,img=ctx.createImageData(N,N
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){x[0]=e.lo[0]+(e.hi[0]-e.lo[0])*(i+0.5)/N;if(D>1)x[1]=e.hi[1]-(e.hi[1]-e.lo[1])*(j+0.5)/N;
     const vt=S.Vtrue(x),vh=V(x),l=S.l(x);const c=l<0?[0x6e,0x1b,0x1b]:vt>=0&&vh>=0?[0x2e,0xa0,0x43]:vt<0&&vh>=0?[0xff,0x2b,0xd6]:vt>=0?[0xd2,0x99,0x22]:[0x30,0x36,0x3d];
     const o=4*(j*N+i);img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=255;}return img;}
-function cmpConfigs(){const a={ci:ST.ci,shield:ST.shield,label:`A: ${S.cases[ST.ci].label}, shield ${ST.shield?'ON':'OFF'}`};
-  let b;if(CMP.b==='off'||!/^c\d+$/.test(CMP.b)){b={ci:ST.ci,shield:!ST.shield,label:`B: same certifier, shield ${!ST.shield?'ON':'OFF'}`};}
-  else{const k=Math.min(S.cases.length-1,+CMP.b.slice(1));b={ci:k,shield:true,label:`B: ${S.cases[k].label}, shield ON`};}return [a,b];}
+function cmpConfigs(){const a={ci:ST.ci,shield:ST.shield,label:`A: ${friendlyCert(S.cases[ST.ci])}, guard ${ST.shield?'ON':'OFF'}`};
+  let b;if(CMP.b==='off'||!/^c\d+$/.test(CMP.b)){b={ci:ST.ci,shield:!ST.shield,label:`B: same guard, ${!ST.shield?'ON':'OFF'}`};}
+  else{const k=Math.min(S.cases.length-1,+CMP.b.slice(1));b={ci:k,shield:true,label:`B: ${friendlyCert(S.cases[k])}, guard ON`};}return [a,b];}
 function openCompare(b){if(b)CMP.b=b;CMP.open=true;$('cmp').classList.add('show');ST.paused=true;$('pauseBtn').classList.add('on');
-  const sel=$('cmpB');opt(sel,[['off',`shield ${ST.shield?'OFF':'ON'} (same certifier)`],...S.cases.map((c,k)=>['c'+k,`${c.label} (shield ON)`])]);sel.value=CMP.b;CMP.restart();writeHash();}
+  const sel=$('cmpB');opt(sel,[['off',`same guard, ${ST.shield?'OFF':'ON'}`],...S.cases.map((c,k)=>['c'+k,friendlyCert(c)+' (guard ON)'])]);sel.value=CMP.b;CMP.restart();writeHash();}
 function closeCompare(){CMP.open=false;$('cmp').classList.remove('show');ST.paused=false;$('pauseBtn').classList.remove('on');writeHash();}
 CMP.restart=function(){const cf=cmpConfigs(),x0=(ST.x||S.doc.start).slice(),seed=(Math.random()*1e9)|0;CMP.t=0;CMP.acc=0;CMP.endT=null;
   CMP.sims=cf.map((c,k)=>({...c,x:x0.slice(),tr:[x0.slice()],done:null,interv:0,fsT:0,active:false,mapKey:null,cv:$(k?'cmpB_c':'cmpA_c'),
@@ -327,10 +370,11 @@ function runBatch(){const N=Math.max(1,Math.min(1000,+$('bN').value||50)),pk=$('
     $('batchNote').innerHTML=`<span class="tag expl">in-browser simulation</span> ${S.doc.title} · certifier “${S.cases[ci].label}” · policy ${pk} · N=${N} seeded starts (seed ${seed}) sampled in the start box where V̂ ≥ margin, same starts for OFF/ON, ≤ ${S.doc.max_steps} steps of ${S.doc.dt}s, true dynamics via ${S.dyn==='js-mirror'?'JS mirror of the Python env (cross-checked in tests/test_gym_js_parity.py)':'grid-tabulated dynamics'}, value lookups from exported grids. Exploratory, not a preregistered result.`;
     log(`Batch done: crash rate OFF ${pct(r.off.rate)} vs ON ${pct(r.on.rate)}`,'ok');});}
 
-window.__gym={ready:false,ST,get S(){return S;},loadScenario,setCase,setPol,setShield,setMargin,reset,resetCounts,runBatch,DOCS,CMP,openCompare,closeCompare,predictHit,readHash,writeHash,startDemo,plain,log,startReplay};
+window.__gym={ready:false,ST,get S(){return S;},loadScenario,setCase,setPol,setShield,setMargin,reset,resetCounts,runBatch,DOCS,CMP,openCompare,closeCompare,predictHit,readHash,writeHash,startDemo,plain,log,startReplay,friendlyCert,hideHelp,showHelp};
 if(!DOCS.length){document.body.innerHTML='<p style="padding:20px">No scenarios found in data/. Run <code>python -m lcert.framework.gym</code>.</p>';return;}
 const qs=new URLSearchParams(location.search);const qi=DOCS.findIndex(d=>d.name===qs.get('scenario'));
 const hadHash=location.hash.length>1;ST.noHash=true;loadScenario(qi>=0?qi:0);ST.noHash=false;const fromLink=hadHash&&readHash();if(!fromLink)writeHash();
-if(!fromLink&&!qs.has('nohelp')&&!localStorage.getItem('fsbGymSeen')){$('help').classList.add('show');localStorage.setItem('fsbGymSeen','1');}
+if(!fromLink&&!qs.has('nohelp')){let seen=false;try{seen=sessionStorage.getItem('fsbGymSeen');}catch(e){}
+  if(!seen){showHelp(false);try{sessionStorage.setItem('fsbGymSeen','1');}catch(e){}}}
 requestAnimationFrame(frame);window.__gym.ready=true;
 })();
