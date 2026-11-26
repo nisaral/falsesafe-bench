@@ -86,6 +86,16 @@ class EnsembleMLP:
             predictions = torch.stack([model(inputs) for model in self.models])
         return DynamicsPrediction(predictions.mean(dim=0).numpy(), predictions.std(dim=0, correction=0).numpy())
 
+    def predict_mean_std(self, features) -> tuple[np.ndarray, np.ndarray]:
+        """Return per-sample ensemble mean and across-member standard deviation.
+
+        Interface used by the certifiers (conformal, distance-aware): both
+        arrays have shape (n_samples, target_dim) and the standard deviation is
+        the epistemic spread of the ensemble members.
+        """
+        prediction = self.predict(features)
+        return prediction.mean, prediction.epistemic_std
+
     def save(self, path: str | Path) -> None:
         if not self.fitted:
             raise RuntimeError('Cannot save an invented trained checkpoint')

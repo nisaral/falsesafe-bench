@@ -86,3 +86,13 @@ class IndependentExactGP:
                 epistemic.append(latent.stddev.numpy())
                 aleatoric.append(np.full(len(inputs), float(likelihood.noise.sqrt())))
         return DynamicsPrediction(np.column_stack(means), np.column_stack(epistemic), np.column_stack(aleatoric))
+
+    def predict_mean_std(self, features) -> tuple[np.ndarray, np.ndarray]:
+        """Return per-sample posterior mean and epistemic (latent) stddev.
+
+        Interface used by the certifiers: both arrays have shape
+        (n_samples, target_dim); the stddev is the GP posterior (epistemic)
+        standard deviation, not the aleatoric noise term.
+        """
+        prediction = self.predict(features)
+        return prediction.mean, prediction.epistemic_std

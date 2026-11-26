@@ -138,13 +138,13 @@ def run_controls():
     # Compare with hidden physics nominal FSV = 0.0096
     c4_pass = (c4_metrics.fsv < 0.003 and c4_metrics.fuv > 0.001)
     print(f"  Prediction check: FUV elevated ({c4_metrics.fuv:.4f}), FSV sits low ({c4_metrics.fsv:.4f})")
-    print(f"  Verdict: {'PASSED (Confirms drag assists braking, validating geometry assumption)' if c4_pass else 'PASSED'}")
+    print(f"  Verdict: {'PASSED (Confirms drag assists braking, validating geometry assumption)' if c4_pass else 'FAILED'}")
 
     summary = {
         "C1_oracle": {"fsv_floor": c1_floor, "fuv_floor": c1_fuv_floor, "status": "PASSED" if c1_pass else "FLAGGED"},
         "C2_no_gap": {"fsv": float(c2_metrics.fsv), "fuv": float(c2_metrics.fuv), "status": "PASSED" if c2_pass else "FLAGGED"},
         "C3_corrupted": {"fsv": float(c3_metrics.fsv), "status": "PASSED" if c3_pass else "FAILED"},
-        "C4_benign_drag": {"fsv": float(c4_metrics.fsv), "gap_fsv": float(c4_metrics.gap_fsv), "fuv": float(c4_metrics.fuv), "gap_fuv": float(c4_metrics.gap_fuv), "status": "PASSED"},
+        "C4_benign_drag": {"fsv": float(c4_metrics.fsv), "gap_fsv": float(c4_metrics.gap_fsv), "fuv": float(c4_metrics.fuv), "gap_fuv": float(c4_metrics.gap_fuv), "status": "PASSED" if c4_pass else "FAILED"},
     }
 
     out_file = ROOT / "results" / "controls_c1_c4_summary.json"

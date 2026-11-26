@@ -7,6 +7,7 @@ Every number used outside this repo must have a row here. See SCOPE.md section 1
 | C2 | DI epistemic inflation with k=2.0 reduces mean FSV by 72.7% vs nominal (H2 >=50% target met) | 0.0008 [0.0000, 0.0020] (n=5) | 20261027_161358 | b77b20e | 2026-10-27 | automated pipeline (pytest + runner) | pilot (n=5, superseded) |
 | C3 | DI epistemic inflation with k=2.0 increases conservatism cost (FUV rises from 0.0005 to 0.0042, confirming H3) | 0.0042 [0.0006, 0.0078] (n=5) | 20261027_161358 | b77b20e | 2026-10-27 | automated pipeline (pytest + runner) | pilot (n=5, superseded) |
 | P1 | Ratio-of-means BCa FSV reduction at k=2.0 vs k=0.0 under hidden physics gap (seeds 1000-1029, N=100, 201x201 grid) | 40.34% [36.47%, 44.73%] (n=30) (Nominal FSV 0.0096 -> k=2.0 FSV 0.0057; >=50% bar not met) | 20261027_184119 | 7a5b824 (tagged prereg-v1 @ e0be6be) | 2026-10-28 | automated pipeline (run_pipeline + compute_p1) | partially supported (confirmatory) |
+| P1-split | Provenance of the n=30 P1 replicates | The 30 runs are replicates (initialization/noise/bootstrap seeds 1000-1029); the data split is fixed at split_seed=42 for all of them, so P1 CIs understate data-sampling variability | 20261027_184119 | 7a5b824 | 2026-10-28 | src/lcert/data.py:53 (state sampling seeded from split_seed only) | limitation (not a result) |
 | P1-r* | Break-even safety criticality ratio r* = Delta FUV / Delta FSV at k=2.0 vs k=0.0 | r* = 0.4532 (Delta FUV = +0.0018, Delta FSV = 0.0039; cost-reducing for all r >= 1) | 20261027_184119 | 7a5b824 (tagged prereg-v1 @ e0be6be) | 2026-10-28 | automated pipeline | confirmatory (P1 auxiliary) |
 | S1 | Epistemic inflation full k-curve FSV: in-gap vs outside-gap decomposition (post hoc, n=30, 201x201) | Outside gap: 89.1% FSV reduction (0.00145 -> 0.00016); In gap: 33.3% FSV reduction (0.05339 -> 0.03563); 87.3% of nominal FSV sits inside gap | 20261027_184119 | 7a5b824 (tagged prereg-v1 @ e0be6be) | 2026-10-28 | automated pipeline | post hoc (secondary decomposition) |
 | S1-mono | Monotonic growth of conservatism cost FUV with k across seeds 1000-1029 | All 30 seeds: Median Spearman rho = 0.9978 [95% Bootstrap CI: 0.9926, 1.0000] (n=30; seeds 1005 & 1012 constant zero FUV); 28 varying seeds: Median Spearman rho = 0.9971 [95% Bootstrap CI: 0.9926, 1.0000] (n=28) | 20261027_184119 | 7a5b824 (tagged prereg-v1 @ e0be6be) | 2026-10-28 | automated pipeline | confirmatory (secondary) |
@@ -21,5 +22,29 @@ Every number used outside this repo must have a row here. See SCOPE.md section 1
 | C3 | Corrupted model verification rejection under inverted dynamics | Inverted dynamics model fails verification (max abs error > 0.5, verification rejected) | 20261028_controls | 1c3236b | 2026-10-28 | run_controls_c1_c4 | passed (control) |
 | C4 | Benign drag control (-gamma * v * |v| * 1_G) geometry check | Nominal FSV = 0.000000, FUV = 0.006870 (Gap-FSV = 0.000000); true safe set expands from 0.6970 to 0.7048; confirms prediction: FUV rises, FSV does not | 20261028_controls | 1c3236b | 2026-10-28 | run_controls_c1_c4 | passed (control) |
 | C5 | Grid convergence across N in {51, 101, 201} on hidden physics gap | Relative difference |FSV_101 - FSV_201| / FSV_201 = 0.48% (passes <=25% tolerance) | 20261028_grid | 1c3236b | 2026-10-28 | check_grid_convergence | passed (control) |
+
+## Corrections
+
+Discrepancies between the control rows above and the committed artifact
+`results/controls_c1_c4_summary.json` (values below are copied from that file
+only; the JSON is the stored output of `scripts/run_controls_c1_c4.py` at the
+time the controls were run). These rows are left as-is to preserve the frozen
+legacy baseline, but should not be cited as reported values.
+
+- **C3 status.** The row above says "passed (control)". The stored JSON records
+  `C3_corrupted.fsv = 0.002235371466140697` with `status = "FAILED"`. The pass
+  criterion in `scripts/run_controls_c1_c4.py:101` is `fsv > 0.15`, so the
+  stored value fails that criterion; the ledger's "passed" is wrong.
+- **C4 values.** The row above says `FSV = 0.000000`, `FUV = 0.006870`,
+  `Gap-FSV = 0.000000`. The stored JSON records `fsv = 0.0019986850756081526`,
+  `fuv = 0.0`, `gap_fsv = 0.005128205128205128` with `status = "PASSED"`. The
+  FSV, FUV and Gap-FSV numbers all disagree with the ledger row.
+- **C4 "expansion" numbers.** The row above also states "true safe set expands
+  from 0.6970 to 0.7048". Those two numbers do not appear anywhere in
+  `results/controls_c1_c4_summary.json`, so their provenance is not available.
+- **C2 status label.** The row above says "reported (control)". The stored JSON
+  records `C2_no_gap.fsv = 0.0039447731755424065`,
+  `fuv = 0.002577251808021039` (matching the row) but `status = "FLAGGED"`,
+  because `fsv < 0.002` in `scripts/run_controls_c1_c4.py:85` is not satisfied.
 
 

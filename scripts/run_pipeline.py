@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
-import json
 from pathlib import Path
 import sys
 import time
@@ -34,7 +33,9 @@ from lcert.hj_learned import solve_learned_di_brt
 from lcert.metrics import (
     CertificationMetrics,
     aggregate_metric_runs,
+    compute_asymmetric_safety_cost,
     compute_certification_metrics,
+    compute_paired_bootstrap_reduction,
 )
 from lcert.systems import di_safe_analytic
 from lcert.train import evaluate_dynamics_model, train_dynamics_model
@@ -48,9 +49,17 @@ def run_single_condition(
     inflation_k_values: list[float],
     output_dir: Path,
     v_true_precomputed: np.ndarray | None = None,
+    border_cells: int = 3,
+    vary_split_seed: bool = False,
 ) -> dict[float, CertificationMetrics]:
-    """Execute training, reachability solve, and certification for a single seed & condition."""
+    """Execute training, reachability solve, and certification for a single seed & condition.
+
+    With ``vary_split_seed`` the data-split seed is derived from ``seed`` instead
+    of the fixed ``split_seed``; off by default so legacy behavior is unchanged.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    split_seed = seed if vary_split_seed else base_config["split_seed"]
 
     # Prepare data config
     data_config = {
@@ -66,7 +75,7 @@ def run_single_condition(
             "test": base_config["test_trajectories"],
         },
         "derivative_observation_noise_std": base_config["derivative_observation_noise_std"],
-        "split_seed": base_config["split_seed"],
+        "split_seed": split_seed,
         "seed": seed,
         "max_sampling_attempts": 20000,
         "coverage_gap": {
@@ -148,7 +157,7 @@ def run_single_condition(
         cert = compute_certification_metrics(
             v_true=v_true,
             v_hat=v_hat,
-            border_cells=2,
+            border_cells=border_cells,
             states=states,
             coverage_gap=data_config["coverage_gap"],
         )
@@ -168,7 +177,45 @@ def run_single_condition(
     return metrics_by_k
 
 
-def run_pipeline(config_path: Path, max_sizes: int | None = None) -> dict:
+def aggregate_p1(
+    fsv_k0: list[float],
+    fsv_k2: list[float],
+    fuv_k0: list[float],
+    fuv_k2: list[float],
+    confidence: float = 0.95,
+    seed: int = 20261027,
+) -> dict:
+    """Aggregate the pre-registered P1 estimand from matched per-seed arrays.
+
+    Returns a JSON-serializable dict with the reduction bootstrap, asymmetric
+    safety costs at k=0 and k=2, delta FSV/FUV, break-even ratio, and decision.
+    """
+    red = compute_paired_bootstrap_reduction(
+        fsv_k0, fsv_k2, confidence=confidence, num_resamples=10000, seed=seed
+    )
+    cost_k0 = float(np.mean(compute_asymmetric_safety_cost(fsv_k0, fuv_k0)))
+    cost_k2 = float(np.mean(compute_asymmetric_safety_cost(fsv_k2, fuv_k2)))
+    delta_fsv = float(np.mean(fsv_k0) - np.mean(fsv_k2))
+    delta_fuv = float(np.mean(fuv_k2) - np.mean(fuv_k0))
+    r_star = float(delta_fuv / delta_fsv) if delta_fsv > 1e-7 else None
+    cost = {
+        "cost_k0": cost_k0,
+        "cost_k2": cost_k2,
+        "delta_fsv_mean": delta_fsv,
+        "delta_fuv_mean": delta_fuv,
+        "break_even_ratio_r_star": round(r_star, 4) if r_star is not None else None,
+    }
+    r_est = red.mean_reduction_pct
+    ci_lo = red.ci_reduction_pct[0]
+    decision = (
+        "SUPPORTED"
+        if r_est >= 50.0 and ci_lo > 0
+        else ("PARTIALLY SUPPORTED" if ci_lo > 0 else "NOT SUPPORTED")
+    )
+    return {"reduction": red.to_dict(), "cost": cost, "decision": decision}
+
+
+def run_pipeline(config_path: Path, max_sizes: int | None = None, vary_split_seed: bool = False) -> dict:
     """Execute full sweep defined in config_path and print aggregated research findings."""
     config = load_config(config_path)
     data_sizes = config.get("data_sizes_trajectories", [10, 30, 100])
@@ -176,6 +223,7 @@ def run_pipeline(config_path: Path, max_sizes: int | None = None) -> dict:
         data_sizes = data_sizes[:max_sizes]
     seeds = config.get("seeds", [0, 1, 2, 3, 4])
     inflation_k_values = [float(k) for k in config.get("inflation_k_values", [0.0, 1.0])]
+    border_cells = int(config.get("border_cells", 3))
 
     # Enforce confirmatory guard before touching any confirmatory seed
     check_confirmatory_guard(seeds)
@@ -241,6 +289,8 @@ def run_pipeline(config_path: Path, max_sizes: int | None = None) -> dict:
                     inflation_k_values=inflation_k_values,
                     output_dir=cond_dir,
                     v_true_precomputed=v_true_cached,
+                    border_cells=border_cells,
+                    vary_split_seed=vary_split_seed,
                 )
                 for k in inflation_k_values:
                     run_metrics_by_k[k].append(m_by_k[k])
@@ -279,34 +329,24 @@ def run_pipeline(config_path: Path, max_sizes: int | None = None) -> dict:
                 fsv_k2 = [m.fsv for m in run_metrics_by_k[2.0]]
                 fuv_k0 = [m.fuv for m in run_metrics_by_k[0.0]]
                 fuv_k2 = [m.fuv for m in run_metrics_by_k[2.0]]
-                red = compute_paired_bootstrap_reduction(
-                    fsv_k0, fsv_k2, confidence=0.95, n_resamples=10000, seed=20261027
-                )
-                cost_res = compute_asymmetric_safety_cost(fsv_k0, fuv_k0, fsv_k2, fuv_k2)
-                r_est = red["ratio_of_means_reduction_pct"]
-                ci_lo = red["ratio_of_means_ci_lower_pct"]
-                ci_hi = red["ratio_of_means_ci_upper_pct"]
+                p1 = aggregate_p1(fsv_k0, fsv_k2, fuv_k0, fuv_k2, confidence=0.95, seed=20261027)
+                red = p1["reduction"]
+                cost_res = p1["cost"]
+                decision = p1["decision"]
+                r_est = red["mean_reduction_pct"]
+                ci_lo = red["ci_reduction_pct"][0]
 
-                decision = (
-                    "SUPPORTED"
-                    if r_est >= 50.0 and ci_lo > 0
-                    else ("PARTIALLY SUPPORTED" if ci_lo > 0 else "NOT SUPPORTED")
-                )
                 print("\n" + "-" * 70)
                 print(f"--- PRIMARY P1 CONFIRMATORY EVALUATION (N={num_traj}, n={len(seeds)} seeds) ---")
                 print(f"Nominal FSV (k=0.0): mean = {np.mean(fsv_k0):.4f}")
                 print(f"Inflated FSV (k=2.0): mean = {np.mean(fsv_k2):.4f}")
-                print(f"Ratio-of-Means FSV Reduction R: {r_est:.2f}% (95% BCa CI: [{ci_lo:.2f}%, {ci_hi:.2f}%])")
+                print(f"Ratio-of-Means FSV Reduction R: {r_est:.2f}% (95% BCa CI: [{ci_lo:.2f}%, {red['ci_reduction_pct'][1]:.2f}%])")
                 print(f"Delta FUV (FUV_k2 - FUV_k0): {cost_res['delta_fuv_mean']:+.4f}")
                 print(f"Break-even safety cost ratio r*: {cost_res['break_even_ratio_r_star']}")
                 print(f"Pre-registered P1 Decision: {decision}")
                 print("-" * 70 + "\n", flush=True)
 
-                record["p1_primary_evaluation"] = {
-                    "reduction": red,
-                    "cost": cost_res,
-                    "decision": decision,
-                }
+                record["p1_primary_evaluation"] = p1
 
             summary_records.append(record)
 
@@ -319,13 +359,25 @@ def run_pipeline(config_path: Path, max_sizes: int | None = None) -> dict:
     return {"summary_path": str(summary_path), "records": summary_records}
 
 
+def run_sweep(config_path: Path, max_sizes: int | None = None) -> dict:
+    """Public alias for the sweep entry point used by the CLI ``sweep`` command."""
+    return run_pipeline(config_path, max_sizes=max_sizes)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run falsesafe-bench E1/E2 experiment sweep")
     parser.add_argument("--config", type=Path, default=ROOT / "configs" / "e1_di_sweep.yaml")
     parser.add_argument("--max-sizes", type=int, default=None)
+    parser.add_argument(
+        "--vary-split-seed",
+        action="store_true",
+        help="derive the data-split seed from each run seed instead of the fixed split_seed "
+        "(off by default; legacy behavior is unchanged)",
+    )
     options = parser.parse_args()
 
-    run_pipeline(options.config.resolve(), max_sizes=options.max_sizes)
+    run_pipeline(options.config.resolve(), max_sizes=options.max_sizes,
+                 vary_split_seed=options.vary_split_seed)
     return 0
 
 

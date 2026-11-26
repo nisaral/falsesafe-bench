@@ -2,6 +2,10 @@
 
 # 🛡️ falsesafe-bench
 
+**False-safe** means a robot's learned dynamics model says a state is recoverable (safe) when,
+under the real physics, it is already too late to avoid a crash — and this benchmark measures how
+large that wrongly-certified region is when dynamics are learned from finite data.
+
 [![Live demo](https://img.shields.io/badge/live%20demo-nisaral.github.io%2Ffalsesafe--bench-2ea44f)](https://nisaral.github.io/falsesafe-bench/) [![3D viewer](https://img.shields.io/badge/3D-viewer-blue)](https://nisaral.github.io/falsesafe-bench/viewer3d/) [![Gym](https://img.shields.io/badge/interactive-gym-orange)](https://nisaral.github.io/falsesafe-bench/gym/)
 
 **New here?** Robots that *learn* their own safety checks can wrongly say "safe" in places they never saw. FalseSafe-Bench measures how often and how badly. Start with the [interactive gym](https://nisaral.github.io/falsesafe-bench/gym/) (guided tour included) or the [plain-language glossary](https://nisaral.github.io/falsesafe-bench/glossary.html).
@@ -21,6 +25,29 @@
 </div>
 
 ---
+
+## Headline result
+
+On the double integrator with a hidden-physics coverage gap, inflating the disturbance set by
+`k=2.0` times the ensemble epistemic std reduces the False-Safe Volume by **40.34%**
+(95% CI **[36.47%, 44.73%]**, n=30 replicates). The pre-registered bar was a **50%** reduction,
+so the primary hypothesis H2 is **partially supported**: the effect is real and clearly above
+zero, but smaller than claimed. Source: claim P1 in [`claims_ledger.md`](claims_ledger.md).
+
+![FSV versus inflation k with 95% CI error bars, from the n=30 confirmatory run](docs/figures/fsv_vs_k.png)
+
+*FSV falls monotonically with k but flattens well above zero; figure regenerated from stored
+results by `scripts/make_figures.py`.*
+
+## What this repo is and is not
+
+**Is:** a research harness for auditing Hamilton-Jacobi-reachability safety certificates under
+learned dynamics — it computes a ground-truth BRT and a learned-model BRT on the same grid and
+measures False-Safe Volume (FSV), False-Unsafe Volume (FUV) and IoU between them.
+
+**Is not:** an LLM evaluation, a safety-certification product, or a finished benchmark. The
+latent world-model path is exploratory and its gates have not passed; the Dubins experiments
+E1–E3 have not been run. Only the double-integrator results in `results/` are reported claims.
 
 ## What This Does
 
@@ -57,9 +84,11 @@ The **false-safe volume** is the most dangerous error in safety-critical systems
 - **Double integrator (DI), done as pilot/primary runs:** MLP-ensemble dynamics learned from data with a
   coverage gap, learned-model HJ backward reachable tube (`hj_learned.py`), FSV/FUV metrics with
   bootstrap CIs (`metrics.py`), and six certifiers compared (`certifiers/`). Every number is in
-  [`claims_ledger.md`](claims_ledger.md) with run ids and commits. Headline (claim P1, n=30 seeds):
+  [`claims_ledger.md`](claims_ledger.md) with run ids and commits. Headline (claim P1, n=30 replicates):
   epistemic inflation at k=2 cut false-safe volume by 40.3% [36.5%, 44.7%], which **does not meet**
-  the pre-registered ≥50% bar for H2.
+  the pre-registered ≥50% bar for H2. The n=30 are replicates (initialization/noise/bootstrap seeds);
+  the data split is fixed at `split_seed=42`, so these CIs reflect model and noise variability only
+  and thus understate data-sampling variability.
 - **Dubins car:** ground-truth HJ solver and learned-model code exist; the Dubins experiments (incl. H4) are not run yet.
 - **Simulator demos:** seeded scripted-controller replays only. No RL policy has been trained and
   no learned safety filter drives the browser demos.
@@ -67,6 +96,22 @@ The **false-safe volume** is the most dangerous error in safety-critical systems
 ![Recorded scripted fleet replay with a visible collision; not learned or certified](demos/preview.png)
 
 *Midpoint screenshot of the seeded fleet diagnostic, including its recorded failure. This is not a successful-learning or safety result.*
+
+## Repo map
+
+| Path | What it holds |
+|---|---|
+| `src/lcert/metrics.py` | Protected FSV / FUV / IoU / Gap-FSV and bootstrap CIs |
+| `src/lcert/hj_di.py`, `hj_learned.py` | True and learned-model HJ reachability (double integrator) |
+| `src/lcert/certifiers/` | Conformal (C0/C1a/C1b/C2) and distance-aware (L) certifiers |
+| `src/lcert/models/` | MLP ensembles and Gaussian-process dynamics models |
+| `src/lcert/framework/` | Exploratory plug-in harness (env/hazard/policy/certifier) |
+| `scripts/` | Entry points: `run_experiment.py`, `run_pipeline.py`, `validate_runlogs.py`, `make_figures.py` |
+| `configs/` | Experiment configs; the two legacy configs pin `border_cells: 2` |
+| `tests/` | Protected pytest suite (100 passed, 2 skipped) |
+| `results/` | Frozen legacy baseline (see `results/README.md`) |
+| `docs/` | Report, framework docs, known issues, figures |
+| `SCOPE.md`, `claims_ledger.md` | Binding integrity contract and every reportable number |
 
 ## Architecture
 
@@ -108,10 +153,23 @@ falsesafe-bench/
 
 ## Quick Start
 
-### Windows
+```bash
+git clone https://github.com/ManavJobanputra/falsesafe-bench.git && cd falsesafe-bench
+uv venv --python 3.13 && source .venv/bin/activate && uv pip install -r requirements.txt
+python scripts/run_experiment.py doctor
+python -m pytest -q -p no:cacheprovider
+PYTHONPATH=src python -m lcert.framework run configs/framework/di_nominal_sweep.yaml
+```
+
+The last command runs an exploratory framework sweep and writes JSON for the offline 3D viewer
+(`demos/viewer3d/index.html`). It is not the preregistered P1 experiment.
+
+### Platform-specific setup
+
+#### Windows
 
 ```powershell
-git clone https://github.com/nisaral/falsesafe-bench.git
+git clone https://github.com/ManavJobanputra/falsesafe-bench.git
 cd falsesafe-bench
 .\scripts\bootstrap.ps1
 
@@ -126,10 +184,10 @@ cd falsesafe-bench
 .\.venv\Scripts\python.exe scripts/run_experiment.py simulate --config configs/starters/fleet.json
 ```
 
-### Linux / macOS
+#### Linux / macOS
 
 ```bash
-git clone https://github.com/nisaral/falsesafe-bench.git
+git clone https://github.com/ManavJobanputra/falsesafe-bench.git
 cd falsesafe-bench
 
 # Install uv if not present
@@ -163,11 +221,21 @@ Open the printed run folder's `demo.html` in a browser. It works without a serve
 | E7 | Multi-agent fleet learning | 3 Dubins | 📋 Extension |
 | E8-E12 | Population, physics, swarms | Various | 📋 Future |
 
+## Limitations
+
+See [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) for the verified list. In brief: FSV is a
+grid-cell count, so small disturbance changes can be invisible; the committed results used a
+2-cell evaluation border while SCOPE specifies 3; the n=30 replicates share a fixed data split
+(`split_seed=42`), so their CIs understate data-sampling variability; C0 and C2 are bit-identical
+in the stored S2 output; and framework numbers are not comparable to `results/` numbers.
+
 ## Integrity
 
 Every number in this repo is traceable:
 - **No fabricated results.** If a metric isn't computed, it says so.
-- **All runs are logged** with seeds, git commit, configs, and artifact hashes.
+- **New runs must be logged** with seeds, git commit, configs, and artifact hashes, per
+  `runlog_schema.json`. The committed legacy runlogs predate this and do **not** satisfy the schema;
+  `scripts/validate_runlogs.py` reports which fields are missing (see `results/README.md`).
 - **Negative results** are reported with the same prominence as positive ones.
 - **claims_ledger.md** tracks every number that leaves this repo.
 
@@ -199,6 +267,12 @@ Starter tasks are labelled [good first issue](https://github.com/nisaral/falsesa
 - [ ] Gymnasium-compatible environments
 - [ ] Interactive Colab notebooks
 - [ ] Documentation site
+
+## Origin and attribution
+
+This repository began as a fork of [nisaral/falsesafe-bench](https://github.com/nisaral/falsesafe-bench)
+(upstream commit `a4fd856`). Changes since then are listed in [CHANGELOG.md](CHANGELOG.md).
+Upstream authorship and the Apache-2.0 license are preserved unchanged.
 
 ## Citation
 

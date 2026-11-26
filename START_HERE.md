@@ -100,6 +100,6 @@ Next: request explicit human authorisation for protected metrics and Dubins/refi
 
 ## 7. Provenance and publishing
 
-Every run retains config copy/source hashes, seed/split seed, commit, clean-tree checks, timestamps in IST, versions/hardware, stdout, artifact hashes, and failure status. `metrics.json` deliberately has `reportable: false` and empty values until the protected evaluator is reviewed. Failed runs are retained; do not delete them or relabel them as success.
+New runs retain config copy/source hashes, seed/split seed, commit, clean-tree checks, timestamps in IST, versions/hardware, stdout, artifact hashes, and failure status. The committed legacy runlogs under results/ predate this and do not satisfy it (see results/README.md). `metrics.json` deliberately has `reportable: false` and empty values until the protected evaluator is reviewed. Failed runs are retained; do not delete them or relabel them as success.
 
 The source repository does not ship generated runs, environments, checkpoints, or secrets. Regenerate starter diagnostics locally using the committed configs. New configs are copied rather than editing a config already used by a run. `make starter` is convenience orchestration, not the scientific MVR; `make reproduce` refuses to pretend the unfinished benchmark is reproducible.

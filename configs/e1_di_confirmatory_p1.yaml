@@ -9,6 +9,7 @@ trajectory_steps: 10
 horizon: 0.5
 grid_size: 201
 accuracy: "medium"
+border_cells: 2  # legacy: committed P1 results used a 2-cell border (SCOPE default is 3)
 seed: 1000
 seeds: [
   1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009,

@@ -9,6 +9,7 @@ trajectory_steps: 10
 horizon: 0.5
 grid_size: 51
 accuracy: "medium"
+border_cells: 2  # legacy: matches results/sweeps/20261027_161358 (SCOPE default is 3)
 seed: 0
 seeds: [0, 1, 2, 3, 4]
 split_seed: 42

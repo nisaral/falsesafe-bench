@@ -11,7 +11,17 @@ import numpy as np
 
 
 def compute_conformal_quantile(scores: np.ndarray, alpha: float) -> float:
-    """Compute standard split-conformal quantile with finite-sample (n+1)/n correction."""
+    """Compute standard split-conformal quantile with finite-sample (n+1)/n correction.
+
+    The textbook split-conformal quantile is the ceil((n+1)*(1-alpha))-th
+    smallest score. When that rank exceeds n (i.e. ceil((n+1)*(1-alpha)) > n,
+    which happens for small calibration sets such as n=3, alpha=0.1), finite
+    coverage cannot be guaranteed and the textbook rule returns +inf. This
+    implementation instead clamps the requested level to 1.0, so it returns the
+    largest observed score in that case. For all cases where the rank is <= n
+    the result equals the textbook order statistic exactly; only the
+    under-powered (rank > n) regime differs, where it is optimistic.
+    """
     scores = np.sort(np.asarray(scores, dtype=float))
     n = len(scores)
     if n == 0:
@@ -46,18 +56,20 @@ class ConformalCertifier:
         y = np.asarray(calib_targets, dtype=float)
         acc_targets = y[:, 1]
 
-        # Model predictions
-        if hasattr(model, "predict_mean_std"):
+        # Model predictions. model=None selects the explicit nominal residual
+        # (v_dot - u); any supplied model must expose predict_mean_std.
+        if model is None:
+            pred_acc = z[:, 2]
+            sigma_ep = np.ones_like(pred_acc) * 0.1
+        elif hasattr(model, "predict_mean_std"):
             pred_means, pred_stds = model.predict_mean_std(z)
             pred_acc = pred_means[:, 1]
             sigma_ep = pred_stds[:, 1]
-        elif callable(model):
-            pred = model(z)
-            pred_acc = pred[:, 1] if pred.ndim > 1 else pred
-            sigma_ep = np.ones_like(pred_acc) * 0.1
         else:
-            pred_acc = z[:, 2]
-            sigma_ep = np.ones_like(pred_acc) * 0.1
+            raise TypeError(
+                "ConformalCertifier requires a model exposing predict_mean_std(z) "
+                f"or model=None for the nominal residual; got {type(model).__name__}."
+            )
 
         residuals = np.abs(acc_targets - pred_acc)
 
@@ -114,11 +126,13 @@ class ConformalCertifier:
         z_query = np.column_stack([flat_states, flat_actions])
 
         if self.variant == "C1a":
-            if model is not None and hasattr(model, "predict_mean_std"):
-                _, pred_stds = model.predict_mean_std(z_query)
-                sigma_ep = pred_stds[:, 1]
-            else:
-                sigma_ep = np.ones(n, dtype=float) * 0.1
+            if model is None or not hasattr(model, "predict_mean_std"):
+                raise TypeError(
+                    "ConformalCertifier(C1a) requires a model exposing predict_mean_std(z); "
+                    f"got {type(model).__name__}."
+                )
+            _, pred_stds = model.predict_mean_std(z_query)
+            sigma_ep = pred_stds[:, 1]
             bounds = self.q_hat * np.maximum(sigma_ep, 1e-4)
             return bounds.reshape(orig_shape)
 

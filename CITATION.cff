@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "falsesafe-bench"
+abstract: "A benchmark for measuring false-safe errors in Hamilton-Jacobi reachability when dynamics are learned from finite data."
+type: software
+authors:
+  - name: "nisaral"
+    alias: nisaral
+    website: "https://github.com/nisaral"
+  - name: "ManavJobanputra"
+    alias: ManavJobanputra
+    website: "https://github.com/ManavJobanputra"
+repository-code: "https://github.com/ManavJobanputra/falsesafe-bench"
+url: "https://github.com/ManavJobanputra/falsesafe-bench"
+license: Apache-2.0
+keywords:
+  - reachability
+  - safety
+  - learned dynamics
+  - robotics
+  - benchmark

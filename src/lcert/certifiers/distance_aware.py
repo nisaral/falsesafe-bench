@@ -56,7 +56,11 @@ class DistanceAwareCertifier:
                 pred = model(z)
                 pred_acc = pred[:, 1] if pred.ndim > 1 else pred
             else:
-                pred_acc = z[:, 2]  # nominal double integrator: v_dot = u
+                raise TypeError(
+                    "DistanceAwareCertifier requires a model exposing predict_mean_std(z) "
+                    f"or a callable model; got {type(model).__name__}. Pass model=None only for "
+                    "the nominal double-integrator residual (v_dot = u)."
+                )
             residuals = np.abs(acc_target - pred_acc)
             self.epsilon_0 = float(np.max(residuals))
         else:

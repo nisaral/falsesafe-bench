@@ -1,10 +1,14 @@
 PY ?= python
 UV ?= uv
-.PHONY: test reproduce install check list demo fleet data starter
-install:
+.PHONY: setup doctor test figures reproduce install check list demo fleet data starter
+setup:
 	$(UV) pip install --python "$(PY)" --cache-dir .cache/uv -r requirements.txt
+doctor:
+	$(PY) scripts/run_experiment.py doctor
 test:
 	$(PY) -m pytest -v -s -p no:cacheprovider
+figures:
+	$(PY) scripts/make_figures.py
 check:
 	$(PY) scripts/check_scaffold.py
 list:

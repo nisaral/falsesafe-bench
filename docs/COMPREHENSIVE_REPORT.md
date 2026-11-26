@@ -3,6 +3,14 @@
 
 ---
 
+> **SUPERSEDED:** This report contains stale n=5 pilot numbers (e.g. the 72.7%
+> reduction below), which were later superseded by the n=30 confirmatory run.
+> The canonical P1 result lives in [`claims_ledger.md`](../claims_ledger.md):
+> 40.34% [36.47%, 44.73%], n=30, below the 50% bar -> *partially supported*.
+> Treat every figure in this file as historical context only.
+
+---
+
 ## Executive Summary
 
 Autonomous robots deployed in unstructured environments increasingly rely on learned dynamics models (e.g., deep neural networks, Gaussian processes) to forecast trajectories and optimize control actions. However, learning algorithms suffer from a fatal flaw: **the False-Safe illusion**. In state-space regions lacking training data (coverage gaps), models hallucinate safety where catastrophic failure lurks, certifying trajectories that physically crash.
@@ -22,9 +30,9 @@ graph TD
 ```
 
 ### Key Milestones & Empirical Verification
-- **Verified Empirical Claims:** Multi-seed evaluation ($n=5$) confirms that nominal learned models produce a mean False-Safe Volume of **$0.0030$** (Claim C1). Disturbance inflation with multiplier $k=2.0$ cuts False-Safe Volume by **$72.7\%$** (Claim C2), passing the target benchmark threshold of $\ge 50\%$.
+- **Verified Empirical Claims:** Multi-seed evaluation ($n=5$) confirms that nominal learned models produce a mean False-Safe Volume of **$0.0030$** (Claim C1). Disturbance inflation with multiplier $k=2.0$ cuts False-Safe Volume by **$40.34\%$ $[36.47\%, 44.73\%]$** over the confirmatory $n=30$ run (Claim P1), below the $\ge 50\%$ target, so H2 is *partially supported*.
 - **Mission Control Studio v3.0:** Interactive browser cockpit featuring 7 diverse multi-task environments, 2.5D Isometric Hologram projection, Side-by-side Dual Comparative Split-Screen, Interactive Manual WASD driving, and a 60 FPS multi-channel telemetry strip chart with millisecond inspection.
-- **Codebase Integrity:** 19/19 unit and integration tests passing (`pytest -v`), strict zero-fabrication integrity enforcement (`claims_ledger.md`), pinned scientific dependencies, and clean Git synchronization on GitHub.
+- **Codebase Integrity:** 100 passed, 2 skipped unit and integration tests (`pytest -q`), strict zero-fabrication integrity enforcement (`claims_ledger.md`), pinned scientific dependencies, and clean Git synchronization on GitHub.
 
 ---
 
@@ -42,7 +50,7 @@ When a neural network fits transition dynamics $\hat{f}(x, u)$ from finite obser
 | ID | Hypothesis | Scientific Statement | Empirical Status |
 | :--- | :--- | :--- | :--- |
 | **H1** | **Coverage Trap Emergence** | Nominal learned dynamics without uncertainty bounds produce non-zero False-Safe Volume ($\text{FSV} > 0$) localized within unvisited coverage voids. | **CONFIRMED** (Claim C1: $\text{FSV} = 0.0030\,[0.0005, 0.0055]$). |
-| **H2** | **Epistemic Inflation Clearance** | Inflating the disturbance set by $k \cdot \sigma_{\text{ep}}(x)$ reduces False-Safe Volume by at least $50\%$ relative to the nominal model ($k=0$). | **CONFIRMED** (Claim C2: $72.7\%$ reduction with $k=2.0$). |
+| **H2** | **Epistemic Inflation Clearance** | Inflating the disturbance set by $k \cdot \sigma_{\text{ep}}(x)$ reduces False-Safe Volume by at least $50\%$ relative to the nominal model ($k=0$). | **PARTIALLY SUPPORTED** (Claim P1: $40.34\%$ $[36.47\%, 44.73\%]$, $n=30$, $k=2.0$; below the $50\%$ bar). |
 | **H3** | **Conservatism Tradeoff** | Increasing inflation multiplier $k$ strictly increases False-Unsafe Volume ($\text{FUV}$), mapping a Pareto frontier between safety and conservatism. | **CONFIRMED** (Claim C3: $\text{FUV}$ scales from $0.0005$ to $0.0042$). |
 | **H4** | **Dimensional Separation** | In higher-dimensional systems ($\ge 3\text{D}$ Dubins Car), separating epistemic and aleatoric uncertainty ($\mathcal{B}_{\sigma_{\text{al}}} \oplus \mathcal{B}_{k\sigma_{\text{ep}}}$) yields lower $\text{FUV}$ than coupled vector-norm blending ($\sqrt{(k\sigma_{\text{ep}})^2 + \sigma_{\text{al}}^2}$). | **IMPLEMENTED** (Verified in `src/lcert/hj_dubins_learned.py`). |
 | **H5** | **Negative Control Detection** | Deliberately corrupted or inverted dynamics models fail verification checks, preventing false certification before deployment. | **CONFIRMED** (Passing in `test_di_hj_analytic.py`). |
@@ -155,7 +163,7 @@ falsesafe-bench/
 │   ├── models/ensemble.py    # PyTorch ensemble dynamics with checkpoint load/save
 │   ├── envs/arena_env.py     # SafeArenaEnv standardized Gymnasium-compatible RL wrapper
 │   └── systems.py            # Physical dynamics and analytic safe set definitions
-├── tests/                    # Protected pytest test suite (19/19 passing)
+├── tests/                    # Protected pytest test suite (100 passed, 2 skipped)
 ├── claims_ledger.md          # Formal empirical claims repository
 └── requirements.txt          # Pinned scientific library dependencies
 ```
@@ -163,7 +171,7 @@ falsesafe-bench/
 ### Pinned Dependencies & Runtime Stability
 - **Python:** 3.13 tested and verified.
 - **Computation:** JAX `0.12.0.1`, `hj_reachability 0.7.0`, PyTorch `2.14.1`, GPyTorch `1.15.2`, NumPy `2.5.4`, SciPy `1.18.1`.
-- **Integrity:** Zero unverified claims; all reported numbers traced to reproducible seeds and commit hashes.
+- **Integrity:** Numbers trace to the committed legacy runlogs, which record seeds but not git commits or config hashes (see results/README.md).
 
 ---
 
@@ -171,8 +179,9 @@ falsesafe-bench/
 
 | Claim ID | Verified Statement | Mean & 95% Confidence Interval | Seeds ($n$) | Run ID | Commit |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **C1** | Nominal learned model produces non-zero False-Safe Volume in coverage gap ($N=100$) | $\text{FSV} = \mathbf{0.0030} \; [0.0005, 0.0055]$ | $n=5$ | `20261027_161358` | `b77b20e` |
-| **C2** | Epistemic inflation ($k=2.0$) cuts mean False-Safe Volume by **$72.7\%$** (passes $\ge 50\%$ bar) | $\text{FSV} = \mathbf{0.0008} \; [-0.0003, 0.0020]$ | $n=5$ | `20261027_161358` | `b77b20e` |
+| **P1** | Ratio-of-means FSV reduction, $k=2.0$ vs $k=0.0$, hidden-physics gap (confirmatory; canary for H2) | $\mathbf{40.34\%} \; [36.47\%, 44.73\%]$ (nominal FSV 0.0096 -> 0.0057; $\ge 50\%$ bar **not met**) | $n=30$ | `20261027_184119` | `7a5b824` |
+| **C1** | Nominal learned model produces non-zero False-Safe Volume in coverage gap ($N=100$) | $\text{FSV} = \mathbf{0.0030} \; [0.0005, 0.0055]$ | $n=5$ (pilot, superseded by P1) | `20261027_161358` | `b77b20e` |
+| **C2** | Epistemic inflation ($k=2.0$) cuts mean False-Safe Volume by **$72.7\%$** (pilot; superseded, exceeded by confirmatory P1) | $\text{FSV} = \mathbf{0.0008} \; [-0.0003, 0.0020]$ | $n=5$ (pilot, superseded) | `20261027_161358` | `b77b20e` |
 | **C3** | Epistemic inflation induces conservatism cost (False-Unsafe Volume scales from $0.0005$ to $0.0042$) | $\text{FUV} = \mathbf{0.0042} \; [0.0006, 0.0078]$ | $n=5$ | `20261027_161358` | `b77b20e` |
 
 ---
