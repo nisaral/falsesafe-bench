@@ -1,0 +1,26 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Include the exact command and the full error output.
+    validations: {required: true}
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Run command '...'\n2. With config '...'\n3. See error"
+    validations: {required: true}
+  - type: textarea
+    id: expected
+    attributes: {label: What did you expect?}
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "OS, Python version, output of git rev-parse HEAD"
+  - type: markdown
+    attributes: {value: "Please never paste API keys or private data."}

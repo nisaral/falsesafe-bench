@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Start here
+    url: https://github.com/nisaral/falsesafe-bench/blob/main/START_HERE.md
+    about: Setup, first run, and how the benchmark is organised.
+  - name: Interactive demo
+    url: https://nisaral.github.io/falsesafe-bench/
+    about: Try the safety-audit gym in your browser.
