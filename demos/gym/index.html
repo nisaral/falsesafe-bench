@@ -204,10 +204,17 @@ python scripts/build_site.py   # optional: rebuild the static site</pre>
 <script src="gym_core.js"></script>
 <script src="data/index.js"></script>
 <script>
-// load scenario files listed in data/index.js (plain <script> tags so it works from file://)
-(function(){const fs=window.FSB_GYM_FILES||[];let n=0;window.FSB_GYM=window.FSB_GYM||[];
- if(!fs.length){const s=document.createElement('script');s.src='gym.js';document.body.appendChild(s);return;}
- fs.forEach(f=>{const s=document.createElement('script');s.src='data/'+f+'.js';s.onload=s.onerror=()=>{if(++n===fs.length){const g=document.createElement('script');g.src='gym.js';document.body.appendChild(g);}};document.body.appendChild(s);});})();
+// Scenario files are plain <script> tags (works from file://). Only the scenario being opened is
+// fetched before the gym starts; the rest stream in afterwards. Without FSB_GYM_META, load all first.
+(function(){const fs=window.FSB_GYM_FILES||[],P={};window.FSB_GYM=window.FSB_GYM||[];
+ const add=src=>new Promise(ok=>{const s=document.createElement('script');s.src=src;s.onload=s.onerror=ok;document.body.appendChild(s);});
+ window.FSB_GYM_LOAD=n=>P[n]||(P[n]=add('data/'+n+'.js').then(()=>(window.FSB_GYM||[]).find(d=>d.name===n)||null));
+ const boot=()=>add('gym.js');
+ if(!fs.length){boot();return;}
+ if(!window.FSB_GYM_META){Promise.all(fs.map(window.FSB_GYM_LOAD)).then(boot);return;}
+ const want=new URLSearchParams(location.search).get('scenario')||new URLSearchParams(location.hash.slice(1)).get('s');
+ const first=fs.includes(want)?want:fs[0];
+ window.FSB_GYM_LOAD(first).then(boot).then(()=>fs.reduce((p,n)=>p.then(()=>window.FSB_GYM_LOAD(n).then(d=>{if(d&&window.__gym&&window.__gym.addDoc)window.__gym.addDoc(d);})),Promise.resolve()));})();
 </script>
 <script src="gym_insight.js"></script>
 <script src="../common/explain.js" data-page="gym" data-up="../"></script>

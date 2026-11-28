@@ -74,6 +74,15 @@ RELATED_WORK = [
     ("Control barrier-value functions", "Choi, Lee, Sreenath, Tomlin &amp; Herbert, CDC 2021", "https://arxiv.org/abs/2104.02808",
      "Connects HJ value functions with control barrier functions.",
      "Suggests CBF-style filters as another family to grade on the same hidden-physics gaps."),
+    ("Ensemble-penalised model-based RL (MOPO)", "Yu et al., NeurIPS 2020", "https://arxiv.org/abs/2005.13239",
+     "Subtracts the disagreement of an ensemble of learned dynamics models from the reward, so the policy avoids states the models do not know.",
+     "The ensemble certifiers here use the same disagreement signal; this benchmark measures whether it actually flags the hidden-physics gaps."),
+    ("Frozen-encoder world models (DINO-WM)", "Zhou, Pan, LeCun &amp; Pinto, 2024", "https://arxiv.org/abs/2411.04983",
+     "Predicts future features of a frozen pretrained image encoder and plans in that feature space, with no pixel reconstruction.",
+     "A latent space like this is where a latent HJ filter would run; the <i>Learned from pixels</i> panel asks how often such a space hides a trap."),
+    ("Vision-language-action policies (OpenVLA, &pi;0)", "Kim et al., 2024; Black et al., 2024", "https://arxiv.org/abs/2406.09246",
+     "Large pretrained models that map camera images and an instruction straight to robot actions. They have no internal dynamics model to check their own safety.",
+     "Such a policy needs an external filter. The gym's shield is policy-agnostic: its <i>Try to crash</i> driver stands in for any black-box controller, and a false-safe certificate lets it through no matter how capable the policy is."),
 ]
 
 

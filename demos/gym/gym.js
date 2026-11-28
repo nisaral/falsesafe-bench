@@ -3,8 +3,17 @@
 (function(){
 'use strict';
 const G=window.FSBGym,$=id=>document.getElementById(id);
-const order=window.FSB_GYM_FILES||[];
-const DOCS=(window.FSB_GYM||[]).slice().sort((a,b)=>order.indexOf(a.name)-order.indexOf(b.name));
+const order=window.FSB_GYM_FILES||[],META=window.FSB_GYM_META;
+const loaded=n=>(window.FSB_GYM||[]).find(d=>d.name===n);
+// With META, not-yet-downloaded scenarios are stubs {name,title,_stub}; loadScenario fetches them on demand.
+const DOCS=META?META.map(m=>loaded(m.name)||Object.assign({_stub:true},m))
+  :(window.FSB_GYM||[]).slice().sort((a,b)=>order.indexOf(a.name)-order.indexOf(b.name));
+function addDoc(d){const i=DOCS.findIndex(x=>x.name===d.name);if(i>=0&&DOCS[i]._stub)DOCS[i]=d;}
+function ensureDoc(i,then){const d=DOCS[i];if(!d._stub)return true;
+  $('scnInfo').innerHTML='<span class="src">Loading '+d.title+'…</span>';
+  (window.FSB_GYM_LOAD?window.FSB_GYM_LOAD(d.name):Promise.resolve(null)).then(r=>{if(r){addDoc(r);then();}
+    else $('scnInfo').innerHTML='<span class="src">Could not load '+d.title+'. Check that data/'+d.name+'.js exists.</span>';});
+  return false;}
 const ST={si:0,ci:0,pol:'manual',shield:true,paused:false,x:null,t:0,step:0,trace:[],last:null,replay:null,
   score:0,crashes:0,episodes:0,interv:0,fsTime:0,crashT:0,events:[],keys:{},touch:{},banner:null,bannerT:0};
 let S=null,polFn=null;
@@ -169,7 +178,7 @@ function plain(msg,cls){ST.plain=(ST.plain||[]);ST.plain.unshift([`${ST.t.toFixe
 // If the driver had kept its (unfiltered) input, when would the TRUE dynamics hit the hazard?  Look-ahead <= 3 s.
 function predictHit(x,u){const dt=S.doc.dt;let y=x.slice();for(let k=1;k*dt<=3+1e-9;k++){y=G.step(S,y,u,dt);if(S.l(y)<0)return k*dt;}return null;}
 function log(msg,cls){ST.events.unshift([msg,cls]);ST.events=ST.events.slice(0,7);$('log').innerHTML=ST.events.map(([m,c])=>`<div class="${c||''}">${m}</div>`).join('');}
-function loadScenario(i){ST.si=i;S=G.buildScenario(DOCS[i]);ST.ci=0;$('scn').value=i;
+function loadScenario(i){ST.want=i;if(!ensureDoc(i,()=>{if(ST.want===i)loadScenario(i);})){$('scn').value=i;return;}ST.si=i;S=G.buildScenario(DOCS[i]);ST.ci=0;$('scn').value=i;
   opt($('cert'),S.cases.map((c,k)=>[k,friendlyCert(c)]));const d=S.doc,e=S.env;
   const story=$('sceneStory');if(story)story.innerHTML=sceneStory(d,e);
   $('scnInfo').innerHTML=d.blurb?`<span class="src">${d.blurb}</span>`:'';
@@ -179,6 +188,7 @@ function writeHash(){if(!S||ST.noHash)return;const h=new URLSearchParams({s:S.do
   if(S.doc.margin0!=null&&S.doc.filter_margin!==S.doc.margin0)h.set('m',S.doc.filter_margin);
   const v='#'+h.toString();if(location.hash!==v)history.replaceState(null,'',v);}
 function readHash(){const h=new URLSearchParams(location.hash.slice(1));if(!h.has('s'))return false;const i=DOCS.findIndex(d=>d.name===h.get('s'));if(i<0)return false;
+  if(!ensureDoc(i,readHash))return true;
   ST.noHash=true;if(i!==ST.si||!S)loadScenario(i);const c=+h.get('c');if(c>=0&&c<S.cases.length)setCase(c,true);
   if(h.has('sh'))setShield(h.get('sh')!=='0',true);if(h.has('m')&&isFinite(+h.get('m')))setMargin(+h.get('m'),true);const d=h.get('d');if(d&&(d==='manual'||G.POLICIES[d]))setPol(d,true);reset();ST.noHash=false;
   if(h.has('cmp'))openCompare(h.get('cmp'));writeHash();return true;}
@@ -282,16 +292,17 @@ function coachLine(){if(ST.crashT>0)return 'Crashed. The guard trusted a wrong �
   if(ing)return 'You are in the unseen zone. Real physics are worse here. The guard does not know that.';
   if(vt<0)return 'Reality: a crash is already unavoidable.';
   return sceneStory(S.doc,S.env).replace(/<[^>]+>/g,'');}
+function setHTML(el,h){if(el._h!==h){el._h=h;el.innerHTML=h;}}
 function hud(){const V=S.cases[ST.ci].V,x=ST.x,vt=S.Vtrue(x),vh=V(x),inGap=S.gap(x),fs=vh>=0&&vt<0;
   const sh=!ST.shield?'<b style="color:#f85149">OFF — you are on your own</b>':ST.active?'<b style="color:#d29922">grabbing the controls</b>':'<b style="color:#2ea043">watching, not interfering</b>';
   const hudEl=$('hud');hudEl.className=ST.crashT>0?'crash':fs?'fs':ST.active?'sh':'ok';
-  hudEl.innerHTML=`<div class="say">${coachLine()}</div>
+  setHTML(hudEl,`<div class="say">${coachLine()}</div>
    <div class="row"><span class="k">Reality</span><b style="color:${vt>=0?'#2ea043':'#f85149'}">${vt>=0?'still possible to stay safe':'crash already unavoidable'}</b></div>
    <div class="row"><span class="k">Guard thinks</span><b style="color:${fs?'#ff2bd6':vh>=0?'#2ea043':'#f85149'}">${fs?'SAFE — and that is wrong':vh>=0?'safe':'danger'}</b></div>
    <div class="row"><span class="k">Unseen zone</span><b style="color:${inGap?'#58a6ff':'#8b949e'}">${inGap?'you are in it':'not here'}</b></div>
    <div class="row"><span class="k">Guard</span><span>${sh}</span></div>
-   <div class="row"><span class="k">Time</span><span>${ST.replay?'replay':ST.pol==='manual'?'you driving':ST.pol} · ${ST.t.toFixed(1)}s</span></div>`;
-  $('score').innerHTML=`<tr><td>score</td><td><b>${ST.score.toFixed(0)}</b></td></tr><tr><td>episodes / crashes (this guard, ${ST.shield?'ON':'OFF'})</td><td>${ST.episodes} / ${ST.crashes}</td></tr><tr><td>times the guard grabbed the wheel</td><td>${ST.interv}</td></tr><tr><td>time spent in a trap</td><td>${ST.fsTime.toFixed(2)} s</td></tr>`;
+   <div class="row"><span class="k">Time</span><span>${ST.replay?'replay':ST.pol==='manual'?'you driving':ST.pol} · ${ST.t.toFixed(1)}s</span></div>`);
+  setHTML($('score'),`<tr><td>score</td><td><b>${ST.score.toFixed(0)}</b></td></tr><tr><td>episodes / crashes (this guard, ${ST.shield?'ON':'OFF'})</td><td>${ST.episodes} / ${ST.crashes}</td></tr><tr><td>times the guard grabbed the wheel</td><td>${ST.interv}</td></tr><tr><td>time spent in a trap</td><td>${ST.fsTime.toFixed(2)} s</td></tr>`);
   const bn=$('banner');let cls='',txt='';if(ST.crashT>0){cls='crash';txt='CRASH';}else if(ST.replay){cls='replay';txt='Replaying the last run';}else if(fs){cls='fs';txt='TRAP: guard says safe, crash is unavoidable';}else if(ST.active){cls='shield';txt='Guard is driving now';}
   bn.className=cls;bn.textContent=txt;
   ring.material.color.set(ST.crashT>0?0xf85149:fs?0xff2bd6:ST.active?0xd29922:ST.shield?0x2ea043:0x8b949e);
@@ -370,10 +381,12 @@ function runBatch(){const N=Math.max(1,Math.min(1000,+$('bN').value||50)),pk=$('
     $('batchNote').innerHTML=`<span class="tag expl">in-browser simulation</span> ${S.doc.title} · certifier “${S.cases[ci].label}” · policy ${pk} · N=${N} seeded starts (seed ${seed}) sampled in the start box where V̂ ≥ margin, same starts for OFF/ON, ≤ ${S.doc.max_steps} steps of ${S.doc.dt}s, true dynamics via ${S.dyn==='js-mirror'?'JS mirror of the Python env (cross-checked in tests/test_gym_js_parity.py)':'grid-tabulated dynamics'}, value lookups from exported grids. Exploratory, not a preregistered result.`;
     log(`Batch done: crash rate OFF ${pct(r.off.rate)} vs ON ${pct(r.on.rate)}`,'ok');});}
 
-window.__gym={ready:false,ST,get S(){return S;},loadScenario,setCase,setPol,setShield,setMargin,reset,resetCounts,runBatch,DOCS,CMP,openCompare,closeCompare,predictHit,readHash,writeHash,startDemo,plain,log,startReplay,friendlyCert,hideHelp,showHelp};
+window.__gym={ready:false,ST,get S(){return S;},loadScenario,addDoc,setCase,setPol,setShield,setMargin,reset,resetCounts,runBatch,DOCS,CMP,openCompare,closeCompare,predictHit,readHash,writeHash,startDemo,plain,log,startReplay,friendlyCert,hideHelp,showHelp};
 if(!DOCS.length){document.body.innerHTML='<p style="padding:20px">No scenarios found in data/. Run <code>python -m lcert.framework.gym</code>.</p>';return;}
-const qs=new URLSearchParams(location.search);const qi=DOCS.findIndex(d=>d.name===qs.get('scenario'));
-const hadHash=location.hash.length>1;ST.noHash=true;loadScenario(qi>=0?qi:0);ST.noHash=false;const fromLink=hadHash&&readHash();if(!fromLink)writeHash();
+const qs=new URLSearchParams(location.search);let qi=DOCS.findIndex(d=>d.name===qs.get('scenario'));
+if(qi<0)qi=DOCS.findIndex(d=>d.name===new URLSearchParams(location.hash.slice(1)).get('s'));
+if(qi<0||DOCS[qi]._stub)qi=Math.max(0,DOCS.findIndex(d=>!d._stub));
+const hadHash=location.hash.length>1;ST.noHash=true;loadScenario(qi);ST.noHash=false;const fromLink=hadHash&&readHash();if(!fromLink)writeHash();
 if(!fromLink&&!qs.has('nohelp')){let seen=false;try{seen=sessionStorage.getItem('fsbGymSeen');}catch(e){}
   if(!seen){showHelp(false);try{sessionStorage.setItem('fsbGymSeen','1');}catch(e){}}}
 requestAnimationFrame(frame);window.__gym.ready=true;

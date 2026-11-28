@@ -1141,7 +1141,7 @@
     const splitShieldedCtx = splitShieldedCanvas.getContext('2d');
 
     function resizeCanvases() {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
       const w = container.clientWidth;
       const h = container.clientHeight;
 
@@ -2371,7 +2371,17 @@
       renderTelemetryChart();
     }
 
+    // While paused, redraw 4x/s unless the user is interacting, instead of every frame.
+    let lastInput = 0, lastIdleDraw = 0;
+    ['pointermove', 'pointerdown', 'keydown', 'input', 'change', 'wheel', 'resize'].forEach(ev =>
+      addEventListener(ev, () => { lastInput = performance.now(); }, { passive: true, capture: true }));
     function loop() {
+      const now = performance.now();
+      if (!isPlaying && now - lastInput > 500 && now - lastIdleDraw < 250) {
+        requestAnimationFrame(loop);
+        return;
+      }
+      lastIdleDraw = now;
       if (isPlaying) {
         stepSimulation();
       }

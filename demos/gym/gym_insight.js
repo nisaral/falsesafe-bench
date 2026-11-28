@@ -131,10 +131,13 @@ mr.onchange=()=>{const d=g.S.doc;g.resetCounts();g.reset();g.plain(`Shield trigg
 $('margReset').onclick=()=>{const d=g.S.doc;g.setMargin(d.margin0);syncMargin();};
 
 // ------------------------------------------------------------------ loop
-let lastDraw=0;
+let lastDraw=0,drawSig='';
 (function loop(now){requestAnimationFrame(loop);if(document.hidden||!g.S||!ST.x)return;
   const k=g.S.doc.name+'|'+g.S.doc.filter_margin;if(k!==mkey){mkey=k;syncMargin();}
-  trade(false);if(now-lastDraw>33){lastDraw=now;draw();}})(0);
+  trade(false);if(now-lastDraw<=33)return;
+  // redraw only when what the timeline shows has changed (or once a second as a safety net)
+  const s=src(),sig=[k,s.ci,s.tr.length,s.cur,s.crashed,s.replay,hover,cv.clientWidth,cv.clientHeight].join('|');
+  if(sig===drawSig&&now-lastDraw<1000)return;drawSig=sig;lastDraw=now;draw();})(0);
 window.__gymInsight={draw,trade,scrubTo,backToLive,cache};
 }
 })();

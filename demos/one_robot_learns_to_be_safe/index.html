@@ -724,7 +724,7 @@
 
     function resize() {
       const rect = viewport.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.resetTransform();
@@ -964,7 +964,17 @@
     let frameCount = 0;
     let fpsTimer = 0;
 
+    // While paused, redraw 4x/s unless the user is interacting, instead of every frame.
+    let lastInput = 0, lastIdleDraw = 0;
+    ['pointermove', 'pointerdown', 'keydown', 'input', 'change', 'wheel', 'resize'].forEach(ev =>
+      addEventListener(ev, () => { lastInput = performance.now(); }, { passive: true, capture: true }));
     function loop(now) {
+      if (!isPlaying && now - lastInput > 500 && now - lastIdleDraw < 250) {
+        lastTime = now;
+        requestAnimationFrame(loop);
+        return;
+      }
+      lastIdleDraw = now;
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
